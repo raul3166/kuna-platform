@@ -15,7 +15,7 @@ model Organization {
   timezone   String   @default("America/Bogota")
   isActive   Boolean  @default(true)
   branches   Branch[]
-
+  users User[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -35,10 +35,34 @@ model Branch {
 
   phoneNumber String?
   timezone       String
-
+  users User[]
   isActive   Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([organizationId, code])
+}
+
+model User {
+  id             String   @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  branchId       String
+  branch         Branch @relation(fields: [branchId], references: [id])
+
+  firstName      String
+  lastName       String
+
+  email          String   @unique
+
+  passwordHash   String
+
+  phoneNumber    String?
+
+  isActive       Boolean  @default(true)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

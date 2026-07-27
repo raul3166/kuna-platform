@@ -37,7 +37,7 @@
 | ID | Historia | Estado |
 |----|----------|--------|
 | KNA-007 | CRUD Branches | ✅ |
-| KNA-008 | CRUD Users | ⬜ Pendiente |
+| KNA-008 | CRUD Users | ✅ |
 | KNA-009 | Authentication | ⬜ Pendiente |
 | KNA-010 | Roles | ⬜ Pendiente |
 | KNA-011 | Permissions | ⬜ Pendiente |
@@ -97,9 +97,34 @@ Administrar las sucursales pertenecientes a una organización.
 
 ## KNA-008 - CRUD Users
 
-Pendiente de iniciar una vez finalice KNA-007.
+Objetivo de KNA-008
+
+Al finalizar esta historia queremos tener:
+
+✅ Modelo User en Prisma.
+✅ Migración.
+✅ DTOs.
+✅ CRUD completo.
+✅ Validaciones.
+✅ Soft Delete.
+✅ Swagger.
+✅ Pruebas en Postman.
 
 ---
+
+KNA-008
+│
+├── Crear módulo Users
+├── Crear Controller
+├── Crear Service
+├── Crear DTOs
+├── Implementar create()
+├── Implementar findAll()
+├── Implementar findOne()
+├── Implementar update()
+├── Implementar soft delete
+├── Swagger
+└── Tests
 
 # Decisiones tomadas
 

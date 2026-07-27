@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { BranchesModule } from './modules/branches/branches.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BranchesModule } from './modules/branches/branches.module';
     PrismaModule,
     OrganizationsModule,
     BranchesModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
