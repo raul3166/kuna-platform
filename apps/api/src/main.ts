@@ -21,7 +21,14 @@ async function bootstrap() {
     .setTitle('KUNA API')
     .setDescription('API de la plataforma KUNA')
     .setVersion('1.0.0')
-    .addBearerAuth()
+    .addBearerAuth(
+  {
+    type: 'http',
+    scheme: 'bearer',
+    bearerFormat: 'JWT',
+  },
+  'JWT-auth',
+)
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

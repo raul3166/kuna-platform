@@ -5,6 +5,7 @@ import { ConflictException,
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -58,6 +59,10 @@ if (existingUser) {
     'A user with this email already exists',
   );
 }
+const passwordHash = await bcrypt.hash(
+  createUserDto.password,
+  10,
+);
 return this.prisma.user.create({
   data: {
     organizationId: createUserDto.organizationId,
@@ -65,7 +70,7 @@ return this.prisma.user.create({
     firstName: createUserDto.firstName,
     lastName: createUserDto.lastName,
     email: createUserDto.email,
-    passwordHash: createUserDto.password,
+    passwordHash: passwordHash,
     phoneNumber: createUserDto.phoneNumber,
   },
   select: this.userSelect,
