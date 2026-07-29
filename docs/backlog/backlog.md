@@ -38,8 +38,8 @@
 |----|----------|--------|
 | KNA-007 | CRUD Branches | ✅ |
 | KNA-008 | CRUD Users | ✅ |
-| KNA-009 | Authentication | ⬜ Pendiente |
-| KNA-010 | Roles | ⬜ Pendiente |
+| KNA-009 | Authentication | ✅ |
+| KNA-010 | Roles | ✅ |
 | KNA-011 | Permissions | ⬜ Pendiente |
 
 ---
@@ -110,6 +110,7 @@ Al finalizar esta historia queremos tener:
 ✅ Swagger.
 ✅ Pruebas en Postman.
 
+
 ---
 
 KNA-008
@@ -126,6 +127,45 @@ KNA-008
 ├── Swagger
 └── Tests
 
+## KNA-009 - Authentication
+
+### Objetivo
+
+Implementar autenticación basada en JWT.
+
+### Tareas
+
+- [ ] Instalar dependencias
+- [ ] Configurar módulo Auth
+- [ ] Configurar JwtModule
+- [ ] Configurar variables de entorno
+- [ ] Integrar bcrypt
+- [ ] Hashear contraseña en Users
+- [ ] Login
+- [ ] Generar JWT
+- [ ] JwtStrategy
+- [ ] JwtAuthGuard
+- [ ] Proteger endpoints
+- [ ] Swagger
+- [ ] Tests
+- [ ] Documentación
+- [ ] Commit
+
+KNA-010
+Roles
+Funcionalidad	Estado
+Modelo Prisma	✅
+Migración	✅
+DTO	✅
+Create	✅
+FindAll	✅
+FindOne	✅
+Update	✅
+Soft Delete	✅
+JWT	✅
+Swagger	✅
+Validaciones	✅
+Prisma	✅
 # Decisiones tomadas
 
 ## 2026-07-24

@@ -8,61 +8,97 @@ datasource db {
 }
 
 model Organization {
-  id         String   @id @default(cuid())
-  name       String
-  slug       String   @unique
-  country    String
-  timezone   String   @default("America/Bogota")
-  isActive   Boolean  @default(true)
-  branches   Branch[]
-  users User[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  country   String
+  timezone  String   @default("America/Bogota")
+  isActive  Boolean  @default(true)
+  branches  Branch[]
+  users     User[]
+  roles     Role[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Branch {
-  id             String   @id @default(cuid())
+  id String @id @default(cuid())
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  name           String
-  code           String
+  name String
+  code String
 
-  address        String
-  city           String
-  country        String
+  address String
+  city    String
+  country String
 
   phoneNumber String?
-  timezone       String
-  users User[]
-  isActive   Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  timezone    String
+  users       User[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model Role {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  code        String
+  description String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  userRoles UserRole[]
 
   @@unique([organizationId, code])
 }
 
 model User {
-  id             String   @id @default(cuid())
+  id String @id @default(cuid())
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  branchId       String
-  branch         Branch @relation(fields: [branchId], references: [id])
+  branchId  String
+  branch    Branch     @relation(fields: [branchId], references: [id])
+  userRoles UserRole[]
+  firstName String
+  lastName  String
 
-  firstName      String
-  lastName       String
+  email String @unique
 
-  email          String   @unique
+  passwordHash String
 
-  passwordHash   String
+  phoneNumber String?
 
-  phoneNumber    String?
+  isActive Boolean @default(true)
 
-  isActive       Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model UserRole {
+  id String @id @default(cuid())
+
+  userId String
+  roleId String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
 }
