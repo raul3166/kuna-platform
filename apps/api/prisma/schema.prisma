@@ -60,7 +60,8 @@ model Role {
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
-  userRoles UserRole[]
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
 
   @@unique([organizationId, code])
 }
@@ -101,4 +102,38 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
+}
+
+model Permission {
+  id String @id @default(cuid())
+
+  module      String
+  code        String  @unique
+  name        String
+  description String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@index([module])
+}
+
+model RolePermission {
+  id String @id @default(cuid())
+
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }
