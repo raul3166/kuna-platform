@@ -40,10 +40,16 @@
 | KNA-008 | CRUD Users | ✅ |
 | KNA-009 | Authentication | ✅ |
 | KNA-010 | Roles | ✅ |
-| KNA-011 | Permissions | ⬜ Pendiente |
-
+| KNA-011 | Permissions | ✅ |
+| KNA-012 | RolePermission | ✅ |
 ---
-
+##Sprint 3
+ID	    Historia
+KNA-013	UserRole
+KNA-014	Permission Guard
+KNA-015	Decorator @Permissions()
+KNA-016	Auditoría / Logging
+KNA-017	Refresh Tokens
 # KNA-007 - CRUD Branches
 
 ## Objetivo
@@ -166,6 +172,17 @@ JWT	✅
 Swagger	✅
 Validaciones	✅
 Prisma	✅
+
+KNA-011
+Operación	Estado
+✅ Create	✔
+✅ Validación de código duplicado	✔
+✅ FindAll (solo activos)	✔
+✅ FindOne	✔
+✅ Update	✔
+✅ Validación de código duplicado en Update	✔
+✅ Soft Delete	✔
+✅ FindAll después del Delete	✔
 # Decisiones tomadas
 
 ## 2026-07-24

@@ -8,6 +8,7 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { AssignPermissionsDto } from './dto/assign-permissions.dto';
 
 @Injectable()
 export class RolesService {
@@ -174,6 +175,121 @@ export class RolesService {
   });
 }
 
+async assignPermissions(
+  roleId: string,
+  assignPermissionsDto: AssignPermissionsDto,
+) {
+  await this.getRoleOrThrow(roleId);
+
+  await this.getPermissionsOrThrow(
+    assignPermissionsDto.permissionIds,
+  );
+
+  const existingPermissions =
+    await this.prisma.rolePermission.findMany({
+      where: {
+        roleId,
+        permissionId: {
+          in: assignPermissionsDto.permissionIds,
+        },
+      },
+    });
+
+  const existingPermissionIds = new Set(
+    existingPermissions.map(
+      (permission) => permission.permissionId,
+    ),
+  );
+
+  const permissionsToCreate =
+    assignPermissionsDto.permissionIds
+      .filter(
+        (permissionId) =>
+          !existingPermissionIds.has(permissionId),
+      )
+      .map((permissionId) => ({
+        roleId,
+        permissionId,
+      }));
+
+  if (permissionsToCreate.length > 0) {
+    await this.prisma.rolePermission.createMany({
+      data: permissionsToCreate,
+    });
+  }
+
+  return this.prisma.role.findUnique({
+    where: {
+      id: roleId,
+    },
+
+    include: {
+      rolePermissions: {
+        include: {
+          permission: true,
+        },
+      },
+    },
+  });
+}
+
+async getRolePermissions(id: string) {
+  await this.getRoleOrThrow(id);
+
+  return this.prisma.role.findUnique({
+    where: {
+      id,
+    },
+
+    include: {
+      rolePermissions: {
+        include: {
+          permission: true,
+        },
+      },
+    },
+  });
+}
+
+async removePermission(
+  roleId: string,
+  permissionId: string,
+) {
+  await this.getRoleOrThrow(roleId);
+
+  const rolePermission =
+    await this.prisma.rolePermission.findFirst({
+      where: {
+        roleId,
+        permissionId,
+      },
+    });
+
+  if (!rolePermission) {
+    throw new NotFoundException(
+      'Permission is not assigned to this role',
+    );
+  }
+
+  await this.prisma.rolePermission.delete({
+    where: {
+      id: rolePermission.id,
+    },
+  });
+
+  return this.prisma.role.findUnique({
+    where: {
+      id: roleId,
+    },
+    include: {
+      rolePermissions: {
+        include: {
+          permission: true,
+        },
+      },
+    },
+  });
+}
   private async getRoleOrThrow(id: string) {
   const role = await this.prisma.role.findUnique({
     where: {
@@ -197,5 +313,26 @@ export class RolesService {
   }
 
   return role;
+}
+private async getPermissionsOrThrow(
+  permissionIds: string[],
+) {
+  const permissions =
+    await this.prisma.permission.findMany({
+      where: {
+        id: {
+          in: permissionIds,
+        },
+        isActive: true,
+      },
+    });
+
+  if (permissions.length !== permissionIds.length) {
+    throw new NotFoundException(
+      'One or more permissions not found',
+    );
+  }
+
+  return permissions;
 }
 }

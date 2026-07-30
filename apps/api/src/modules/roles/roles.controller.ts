@@ -12,6 +12,7 @@ import {
 import { UseGuards } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AssignPermissionsDto } from './dto/assign-permissions.dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth('JWT-auth')
@@ -116,5 +117,67 @@ remove(
   @Param('id') id: string,
 ) {
   return this.rolesService.remove(id);
+}
+@ApiOperation({
+  summary: 'Assign permissions to a role',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Permissions assigned successfully.',
+})
+@ApiResponse({
+  status: 404,
+  description: 'Role or permission not found.',
+})
+@UseGuards(JwtAuthGuard)
+@Post(':id/permissions')
+assignPermissions(
+  @Param('id') id: string,
+  @Body() assignPermissionsDto: AssignPermissionsDto,
+) {
+  return this.rolesService.assignPermissions(
+    id,
+    assignPermissionsDto,
+  );
+}
+@ApiOperation({
+  summary: 'Get permissions assigned to a role',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Permissions retrieved successfully.',
+})
+@ApiResponse({
+  status: 404,
+  description: 'Role not found.',
+})
+@UseGuards(JwtAuthGuard)
+@Get(':id/permissions')
+getRolePermissions(
+  @Param('id') id: string,
+) {
+  return this.rolesService.getRolePermissions(id);
+}
+@ApiOperation({
+  summary: 'Remove a permission from a role',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Permission removed successfully.',
+})
+@ApiResponse({
+  status: 404,
+  description: 'Role not found or permission is not assigned.',
+})
+@UseGuards(JwtAuthGuard)
+@Delete(':roleId/permissions/:permissionId')
+removePermission(
+  @Param('roleId') roleId: string,
+  @Param('permissionId') permissionId: string,
+) {
+  return this.rolesService.removePermission(
+    roleId,
+    permissionId,
+  );
 }
 }
