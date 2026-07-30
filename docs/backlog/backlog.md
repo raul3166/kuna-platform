@@ -42,6 +42,7 @@
 | KNA-010 | Roles | ✅ |
 | KNA-011 | Permissions | ✅ |
 | KNA-012 | RolePermission | ✅ |
+| KNA-013 | UserRole | ✅ |
 ---
 ##Sprint 3
 ID	    Historia

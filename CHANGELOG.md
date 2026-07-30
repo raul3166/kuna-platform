@@ -85,3 +85,15 @@ This project follows Semantic Versioning.
 - Added RolePermission model.
 - Added UserRole model.
 - Added indexes and unique constraints for RBAC.
+
+## [KNA-013] - User Roles
+
+### Added
+- CRUD for UserRole assignments.
+- Assign one or multiple roles to a user.
+- Retrieve roles assigned to a user.
+- Remove role assignments.
+- Duplicate assignment prevention.
+- JWT protection for all endpoints.
+- Swagger documentation.
+- User and role validation.
