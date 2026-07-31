@@ -55,9 +55,23 @@ El proyecto está pensado para crecer de forma sostenible, facilitando la incorp
 
 ---
 
-## 📦 Módulos previstos
+## 📦 Arquitectura
 
-- Core
+### Core
+
+- Authentication
+- Organizations
+- Branches
+- Users
+- Roles
+- Permissions
+- Configuration
+- Notifications
+- Audit
+- Reports
+
+### Business Modules
+
 - Restaurant
 - Hotel
 - Pharmacy
@@ -68,15 +82,27 @@ El proyecto está pensado para crecer de forma sostenible, facilitando la incorp
 - Inventory
 - Accounting
 
+La plataforma permite desarrollar nuevos módulos reutilizando el Core sin modificar su arquitectura.
+
 ---
 
 ## 🚀 Estado del proyecto
 
-Actualmente el proyecto se encuentra en fase de arquitectura e infraestructura.
+Actualmente KUNA cuenta con un Core funcional que incluye:
 
-Versión prevista:
+- Gestión de organizaciones
+- Gestión de sucursales
+- Gestión de usuarios
+- Gestión de roles
+- Gestión de permisos
+- Autenticación JWT
+- Autorización basada en Roles y Permisos (RBAC)
 
-v0.1.0
+La infraestructura base se encuentra terminada y el desarrollo continúa con la implementación de módulos de negocio.
+
+Versión actual:
+
+v0.2.0
 
 ---
 
