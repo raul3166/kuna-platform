@@ -17,6 +17,7 @@ model Organization {
   branches  Branch[]
   users     User[]
   roles     Role[]
+  customers Customer[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -88,6 +89,42 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  firstName String
+  lastName String?
+
+  companyName String?
+
+  identificationType String?
+  identificationNumber String?
+
+  email String?
+  phoneNumber String?
+
+  address String?
+
+  city String?
+  state String?
+  country String?
+
+  notes String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([identificationNumber])
+  @@index([email])
 }
 
 model UserRole {

@@ -13,6 +13,26 @@ export const userSelect = {
   updatedAt: true,
 } as const;
 
+export const customerSelect = {
+  id: true,
+  organizationId: true,
+  firstName: true,
+  lastName: true,
+  companyName: true,
+  identificationType: true,
+  identificationNumber: true,
+  email: true,
+  phoneNumber: true,
+  address: true,
+  city: true,
+  state: true,
+  country: true,
+  notes: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export const userWithPasswordSelect = {
   id: true,
   email: true,

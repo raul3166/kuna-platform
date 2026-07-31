@@ -45,13 +45,13 @@
 | KNA-013 | UserRole | ✅ |
 | KNA-014 | Authorization (PermissionsGuard) | ✅ |
 ---
-##Sprint 3
-ID	    Historia
-KNA-013	UserRole
-KNA-014	Permission Guard
-KNA-015	Decorator @Permissions()
-KNA-016	Auditoría / Logging
-KNA-017	Refresh Tokens
+Sprint 3
+
+KNA-015 – Customers (Core)  | ✅ |
+KNA-016 – Suppliers (Core)
+KNA-017 – Categories (Core)
+KNA-018 – Products (Core)
+KNA-019 – Inventory (Core)
 # KNA-007 - CRUD Branches
 
 ## Objetivo
