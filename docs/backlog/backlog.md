@@ -48,7 +48,7 @@
 Sprint 3
 
 KNA-015 – Customers (Core)  | ✅ |
-KNA-016 – Suppliers (Core)
+KNA-016 – Suppliers (Core)  | ✅ |
 KNA-017 – Categories (Core)
 KNA-018 – Products (Core)
 KNA-019 – Inventory (Core)

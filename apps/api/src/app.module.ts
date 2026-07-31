@@ -12,6 +12,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { UserRolesModule } from './modules/user-roles/user-roles.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CustomersModule } from './modules/customers/customers.module';
     PermissionsModule,
     UserRolesModule,
     CustomersModule,
+    SuppliersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
