@@ -10,7 +10,8 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
-
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @Controller('users')
@@ -45,8 +46,10 @@ export class UsersController {
   status: 200,
   description: 'List of active users.',
 })
+
+  @Permissions('users.read')
+  @UseGuards(JwtAuthGuard,PermissionsGuard )
   @Get()
-  @UseGuards(JwtAuthGuard)
   findAll() {
     return this.usersService.findAll();
   }

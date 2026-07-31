@@ -43,6 +43,7 @@
 | KNA-011 | Permissions | ✅ |
 | KNA-012 | RolePermission | ✅ |
 | KNA-013 | UserRole | ✅ |
+| KNA-014 | Authorization (PermissionsGuard) | ✅ |
 ---
 ##Sprint 3
 ID	    Historia

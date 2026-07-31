@@ -8,6 +8,8 @@ import { StringValue } from 'ms';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { PermissionsGuard } from './guards/permissions.guard';
+
 @Module({
   imports: [
     ConfigModule,
@@ -31,8 +33,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
   controllers: [AuthController],
 
-  providers: [AuthService,JwtStrategy],
-
+  providers: [
+  AuthService,
+  JwtStrategy,
+  PermissionsGuard,
+],
   exports: [JwtModule],
 })
 export class AuthModule {}

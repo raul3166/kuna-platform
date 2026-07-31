@@ -1,99 +1,69 @@
 # Changelog
 
-All notable changes to the KUNA Platform project will be documented in this file.
+Todas las modificaciones importantes de KUNA Platform serán documentadas en este archivo.
 
-The format is based on Keep a Changelog.
-This project follows Semantic Versioning.
+El formato está basado en Keep a Changelog.
+Versionado basado en Semantic Versioning.
 
 ---
 
-## [Unreleased]
+## [0.2.0] - 2026-07-31
 
 ### Added
 
-#### KNA-007 - CRUD Branches
+#### KNA-007 - Branches
+- CRUD completo de sucursales.
+- Validación de organización existente.
+- Soft Delete.
+- Swagger.
+- Validaciones de negocio.
 
-- Implemented complete CRUD for branches.
-- Added validation for organization existence.
-- Added validation to prevent duplicate branch codes.
-- Implemented soft delete using `isActive`.
-- Added Swagger documentation.
-- Protected endpoints with JWT authentication.
-
-#### KNA-008 - CRUD Users
-
-- Implemented complete CRUD for users.
-- Added password hashing using bcrypt.
-- Added validation for organization and branch.
-- Added validation to ensure the branch belongs to the organization.
-- Added unique email validation.
-- Implemented soft delete using `isActive`.
-- Protected endpoints with JWT authentication.
-- Added Swagger documentation.
+#### KNA-008 - Users
+- CRUD completo de usuarios.
+- Hash de contraseñas con bcrypt.
+- Validación de email único.
+- Validación Organization → Branch.
+- Soft Delete.
 
 #### KNA-009 - Authentication
-
-- Implemented JWT authentication.
-- Added login endpoint.
-- Added password verification using bcrypt.
-- Added JwtStrategy.
-- Added JwtAuthGuard.
-- Added CurrentUser decorator.
-- Protected authenticated endpoints.
-- Configured Swagger Bearer authentication.
+- Login JWT.
+- JwtStrategy.
+- JwtAuthGuard.
+- Passport JWT.
+- Tokens Bearer.
 
 #### KNA-010 - Roles
-
-- Implemented complete CRUD for roles.
-- Added validation for organization existence.
-- Added unique role code validation per organization.
-- Implemented soft delete using `isActive`.
-- Protected endpoints with JWT authentication.
-- Added Swagger documentation.
+- CRUD completo de Roles.
+- Validación de organización.
+- Código único por organización.
+- Soft Delete.
 
 #### KNA-011 - Permissions
-
-- Implemented complete CRUD for permissions.
-- Added unique permission code validation.
-- Implemented soft delete using `isActive`.
-- Protected endpoints with JWT authentication.
-- Added Swagger documentation.
+- CRUD completo de Permisos.
+- Código único.
+- Soft Delete.
 
 #### KNA-012 - RolePermission
+- Asignación de permisos a roles.
+- Eliminación de permisos.
+- Prevención de duplicados.
+- Validaciones de existencia.
 
-- Added role-permission assignment.
-- Added endpoint to assign one or more permissions to a role.
-- Added endpoint to retrieve permissions assigned to a role.
-- Added endpoint to remove permissions from a role.
-- Added validation for existing roles.
-- Added validation for existing permissions.
-- Prevented duplicate role-permission assignments.
-- Protected endpoints with JWT authentication.
-- Added Swagger documentation.
+#### KNA-013 - UserRole
+- Asignación de roles a usuarios.
+- Eliminación de roles.
+- Prevención de duplicados.
+- Validaciones de existencia.
+
+#### KNA-014 - Authorization
+- Decorador @Permissions().
+- PermissionsGuard.
+- Autorización basada en Roles + Permisos.
+- Protección de endpoints mediante permisos.
+- Integración completa con JWT.
 
 ### Security
 
-- JWT authentication enabled across protected modules.
-- Passwords stored using bcrypt hashing.
-- Role-permission assignments protected against duplicates.
-- Soft delete implemented for business entities.
-
-### Database
-
-- Added Role model.
-- Added Permission model.
-- Added RolePermission model.
-- Added UserRole model.
-- Added indexes and unique constraints for RBAC.
-
-## [KNA-013] - User Roles
-
-### Added
-- CRUD for UserRole assignments.
-- Assign one or multiple roles to a user.
-- Retrieve roles assigned to a user.
-- Remove role assignments.
-- Duplicate assignment prevention.
-- JWT protection for all endpoints.
-- Swagger documentation.
-- User and role validation.
+- Contraseñas almacenadas usando bcrypt.
+- Endpoints protegidos mediante JWT.
+- Control de acceso basado en permisos (RBAC).

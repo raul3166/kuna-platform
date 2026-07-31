@@ -6,23 +6,11 @@ import { ConflictException,
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-
+import { userSelect } from '../../common/prisma/selects';
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private readonly userSelect = {
-  id: true,
-  organizationId: true,
-  branchId: true,
-  firstName: true,
-  lastName: true,
-  email: true,
-  phoneNumber: true,
-  isActive: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
 
 async create(createUserDto: CreateUserDto) {
   const organization = await this.prisma.organization.findUnique({
@@ -73,7 +61,7 @@ return this.prisma.user.create({
     passwordHash: passwordHash,
     phoneNumber: createUserDto.phoneNumber,
   },
-  select: this.userSelect,
+  select: userSelect,
 });
 }
 
@@ -85,7 +73,7 @@ async findAll() {
     orderBy: {
       firstName: 'asc',
     },
-    select: this.userSelect,
+    select: userSelect,
   });
 }
 
@@ -142,7 +130,7 @@ return this.prisma.user.update({
     phoneNumber: updateUserDto.phoneNumber,
     branchId: updateUserDto.branchId,
   },
-  select: this.userSelect,
+  select: userSelect,
 });
   }
 
@@ -156,31 +144,19 @@ return this.prisma.user.update({
     data: {
       isActive: false,
     },
-    select: this.userSelect,
+    select: userSelect,
   });
 }
 
   private async getUserOrThrow(id: string) {
-  const user = await this.prisma.user.findFirst({
+  const user = await this.prisma.user.findUnique({
     where: {
       id,
-      isActive: true,
     },
-    select: {
-      id: true,
-      organizationId: true,
-      branchId: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phoneNumber: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: userSelect,
   });
 
-  if (!user) {
+  if (!user || !user.isActive) {
     throw new NotFoundException('User not found');
   }
 
