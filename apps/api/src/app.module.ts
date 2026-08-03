@@ -13,6 +13,8 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { UserRolesModule } from './modules/user-roles/user-roles.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { ProductsModule } from './modules/products/products.module';
+import { ProductCategoriesModule } from './modules/product-categories/product-categories.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
     UserRolesModule,
     CustomersModule,
     SuppliersModule,
+    ProductsModule,
+    ProductCategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
