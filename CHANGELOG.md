@@ -124,3 +124,15 @@ Versionado basado en Semantic Versioning.
 
 - Los productos ahora administran stock automáticamente mediante InventoryMovement.
 - Se centralizó toda la lógica del inventario en un único servicio.
+
+#### KNA-020 - Purchase Orders
+
+- CRUD de órdenes de compra.
+- Numeración única por organización.
+- Validación de proveedor existente.
+- Estados DRAFT y CANCELLED.
+- Solo órdenes DRAFT pueden modificarse.
+- Solo órdenes DRAFT pueden cancelarse.
+- Integración con Swagger.
+- Protección mediante JWT.
+- Control de acceso RBAC.

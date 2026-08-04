@@ -24,3 +24,13 @@
 | KNA-019 | Inventory (Core) | ✅ |
 
 **Sprint 3 completado al 100%.**
+
+# Sprint 4
+
+| ID | Historia | Estado |
+|----|----------|--------|
+| KNA-020 | Purchase Orders | ✅ |
+| KNA-021 | Purchase Order Items | ⏳ |
+| KNA-022 | Goods Receipt | ⏳ |
+| KNA-023 | Inventory Costing | ⏳ |
+| KNA-024 | Stock Adjustments | ⏳ |
