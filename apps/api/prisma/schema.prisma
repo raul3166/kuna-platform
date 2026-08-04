@@ -7,22 +7,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum InventoryMovementType {
+  INITIAL_STOCK
+  PURCHASE
+  SALE
+  PURCHASE_RETURN
+  SALE_RETURN
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
 model Organization {
-  id                String            @id @default(cuid())
-  name              String
-  slug              String            @unique
-  country           String
-  timezone          String            @default("America/Bogota")
-  isActive          Boolean           @default(true)
-  branches          Branch[]
-  users             User[]
-  roles             Role[]
-  customers         Customer[]
-  suppliers         Supplier[]
-  products          Product[]
-  productCategories ProductCategory[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  country            String
+  timezone           String              @default("America/Bogota")
+  isActive           Boolean             @default(true)
+  branches           Branch[]
+  users              User[]
+  roles              Role[]
+  customers          Customer[]
+  suppliers          Supplier[]
+  products           Product[]
+  productCategories  ProductCategory[]
+  inventoryMovements InventoryMovement[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 }
 
 model Branch {
@@ -162,6 +174,8 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  products Product[]
+
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, identificationNumber])
@@ -184,14 +198,24 @@ model Product {
 
   costPrice Decimal @db.Decimal(12, 2)
 
+  stock Decimal @default(0) @db.Decimal(12, 3)
+
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  categoryId String?
+  supplierId String?
+  inventoryMovements InventoryMovement[]
+  category ProductCategory? @relation(fields: [categoryId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+
+  organization       Organization        @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, sku])
+  @@index([categoryId])
+  @@index([supplierId])
 }
 
 model ProductCategory {
@@ -208,9 +232,36 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  products Product[]
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, name])
+}
+
+model InventoryMovement {
+  id String @id @default(cuid())
+
+  organizationId String
+  productId      String
+
+  movementType InventoryMovementType
+
+  quantity Decimal @db.Decimal(12, 3)
+
+  unitCost Decimal? @db.Decimal(12, 2)
+
+  reference String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([organizationId])
+  @@index([productId])
 }
 
 model UserRole {

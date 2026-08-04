@@ -116,3 +116,17 @@ Todos los derechos reservados.
 ## 👨‍💻 Proyecto
 
 Desarrollado como una plataforma modular orientada a empresas de Latinoamérica, con visión de expansión internacional.
+
+Current Version
+
+v0.3.0
+
+Completed Sprints
+
+✅ Sprint 1
+✅ Sprint 2
+✅ Sprint 3
+
+Current Module
+
+Inventory Core
