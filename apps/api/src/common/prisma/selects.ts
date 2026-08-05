@@ -70,6 +70,26 @@ export const purchaseOrderSelect = {
   },
 } as const;
 
+export const purchaseOrderItemSelect = {
+  id: true,
+  purchaseOrderId: true,
+  productId: true,
+  quantity: true,
+  unitCost: true,
+  subtotal: true,
+  notes: true,
+  createdAt: true,
+  updatedAt: true,
+
+  product: {
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+    },
+  },
+} as const;
+
 export const userWithPasswordSelect = {
   id: true,
   email: true,

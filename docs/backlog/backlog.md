@@ -59,7 +59,7 @@ Objetivo del Sprint 4
 
 Construir todo el flujo de compras para que el inventario ya no se alimente manualmente, sino mediante órdenes de compra.
 
-KNA-020 | Purchase Order(Header)
+KNA-020 | Purchase Order(Header) | ✅ |
 KNA-021 | Purchase Order Items 
 KNA-022 | Receive Purchase Order 
 KNA-023 | Purchase Returns

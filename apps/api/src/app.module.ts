@@ -17,6 +17,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { ProductCategoriesModule } from './modules/product-categories/product-categories.module';
 import { InventoryMovementsModule } from './modules/inventory-movements/inventory-movements.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
+import { PurchaseOrderItemsModule } from './modules/purchase-order-items/purchase-order-items.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
     ProductCategoriesModule,
     InventoryMovementsModule,
     PurchaseOrdersModule,
+    PurchaseOrderItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

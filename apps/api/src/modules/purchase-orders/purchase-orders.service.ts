@@ -205,4 +205,38 @@ async cancel(id: string) {
 
   return purchaseOrder;
 }
+private async recalculateTotals(
+  purchaseOrderId: string,
+) {
+  const items =
+    await this.prisma.purchaseOrderItem.findMany({
+      where: {
+        purchaseOrderId,
+      },
+      select: {
+        subtotal: true,
+      },
+    });
+
+  const subtotal = items.reduce(
+    (acc, item) => acc + Number(item.subtotal),
+    0,
+  );
+
+  // Por ahora no manejamos impuestos
+  const tax = 0;
+
+  const total = subtotal + tax;
+
+  await this.prisma.purchaseOrder.update({
+    where: {
+      id: purchaseOrderId,
+    },
+    data: {
+      subtotal,
+      tax,
+      total,
+    },
+  });
+}
 }

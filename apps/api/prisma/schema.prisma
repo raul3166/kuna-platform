@@ -216,6 +216,7 @@ model Product {
   categoryId String?
   supplierId String?
   inventoryMovements InventoryMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
   category ProductCategory? @relation(fields: [categoryId], references: [id])
   supplier Supplier? @relation(fields: [supplierId], references: [id])
 
@@ -297,6 +298,8 @@ model PurchaseOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  items PurchaseOrderItem[]
+
   organization Organization @relation(fields: [organizationId], references: [id])
 
   supplier Supplier @relation(fields: [supplierId], references: [id])
@@ -305,6 +308,31 @@ model PurchaseOrder {
 
   @@index([organizationId])
   @@index([supplierId])
+}
+
+model PurchaseOrderItem {
+  id              String   @id @default(cuid())
+
+  purchaseOrderId String
+  productId       String
+
+  quantity        Decimal  @db.Decimal(18,4)
+  unitCost        Decimal  @db.Decimal(18,4)
+
+  subtotal        Decimal  @db.Decimal(18,4)
+
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  product         Product       @relation(fields: [productId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+
+  @@unique([purchaseOrderId, productId])
 }
 model UserRole {
   id String @id @default(cuid())
