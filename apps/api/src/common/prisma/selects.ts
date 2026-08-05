@@ -90,6 +90,38 @@ export const purchaseOrderItemSelect = {
   },
 } as const;
 
+export const goodsReceiptSelect = {
+  id: true,
+
+  organizationId: true,
+  purchaseOrderId: true,
+
+  number: true,
+  receivedDate: true,
+
+  receivedById: true,
+
+  notes: true,
+
+  createdAt: true,
+  updatedAt: true,
+
+  purchaseOrder: {
+    select: {
+      id: true,
+      number: true,
+    },
+  },
+
+  receivedBy: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+} as const;
+
 export const userWithPasswordSelect = {
   id: true,
   email: true,

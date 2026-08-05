@@ -18,6 +18,8 @@ import { ProductCategoriesModule } from './modules/product-categories/product-ca
 import { InventoryMovementsModule } from './modules/inventory-movements/inventory-movements.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { PurchaseOrderItemsModule } from './modules/purchase-order-items/purchase-order-items.module';
+import { GoodsReceiptsModule } from './modules/goods-receipts/goods-receipts.module';
+import { GoodsReceiptItemsModule } from './modules/goods-receipt-items/goods-receipt-items.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { PurchaseOrderItemsModule } from './modules/purchase-order-items/purchas
     InventoryMovementsModule,
     PurchaseOrdersModule,
     PurchaseOrderItemsModule,
+    GoodsReceiptsModule,
+    GoodsReceiptItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

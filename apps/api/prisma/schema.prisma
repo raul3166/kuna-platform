@@ -41,6 +41,7 @@ model Organization {
   productCategories  ProductCategory[]
   inventoryMovements InventoryMovement[]
   purchaseOrders PurchaseOrder[]
+  goodsReceipts GoodsReceipt[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -99,6 +100,7 @@ model User {
   branchId  String
   branch    Branch     @relation(fields: [branchId], references: [id])
   userRoles UserRole[]
+  goodsReceipts GoodsReceipt[]
   firstName String
   lastName  String
 
@@ -217,6 +219,7 @@ model Product {
   supplierId String?
   inventoryMovements InventoryMovement[]
   purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems GoodsReceiptItem[]
   category ProductCategory? @relation(fields: [categoryId], references: [id])
   supplier Supplier? @relation(fields: [supplierId], references: [id])
 
@@ -299,7 +302,7 @@ model PurchaseOrder {
   updatedAt DateTime @updatedAt
 
   items PurchaseOrderItem[]
-
+  goodsReceipts GoodsReceipt[]
   organization Organization @relation(fields: [organizationId], references: [id])
 
   supplier Supplier @relation(fields: [supplierId], references: [id])
@@ -326,6 +329,8 @@ model PurchaseOrderItem {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  goodsReceiptItems GoodsReceiptItem[]
+
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   product         Product       @relation(fields: [productId], references: [id])
 
@@ -333,6 +338,66 @@ model PurchaseOrderItem {
   @@index([productId])
 
   @@unique([purchaseOrderId, productId])
+}
+
+model GoodsReceipt {
+  id              String   @id @default(cuid())
+
+  organizationId  String
+  purchaseOrderId String
+
+  number          String
+
+  receivedDate    DateTime
+
+  // Nuevo
+  receivedById    String?
+
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  // Nuevo
+  receivedBy      User? @relation(fields: [receivedById], references: [id])
+
+  items           GoodsReceiptItem[]
+
+  @@index([organizationId])
+  @@index([purchaseOrderId])
+  @@index([receivedById])
+
+  @@unique([organizationId, number])
+}
+
+model GoodsReceiptItem {
+  id              String @id @default(cuid())
+
+  goodsReceiptId  String
+
+  purchaseOrderItemId String
+
+  productId       String
+
+  quantityReceived Decimal @db.Decimal(18,4)
+
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  goodsReceipt GoodsReceipt @relation(fields:[goodsReceiptId],references:[id])
+
+  purchaseOrderItem PurchaseOrderItem @relation(fields:[purchaseOrderItemId],references:[id])
+
+  product Product @relation(fields:[productId],references:[id])
+
+  @@index([goodsReceiptId])
+  @@index([productId])
 }
 model UserRole {
   id String @id @default(cuid())
