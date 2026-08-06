@@ -42,6 +42,7 @@ export const productSelect = {
   barcode: true,
   salePrice: true,
   costPrice: true,
+  stock: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -120,6 +121,12 @@ export const goodsReceiptSelect = {
       lastName: true,
     },
   },
+} as const;
+
+export const productSummarySelect = {
+  id: true,
+  sku: true,
+  name: true,
 } as const;
 
 export const userWithPasswordSelect = {

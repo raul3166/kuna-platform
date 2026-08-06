@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
-
+import {
+  productSummarySelect,
+} from '../../common/prisma/selects';
 import { CreateGoodsReceiptItemDto } from './dto/create-goods-receipt-item.dto';
 import { UpdateGoodsReceiptItemDto } from './dto/update-goods-receipt-item.dto';
 
@@ -24,6 +26,10 @@ async create(
     quantityReceived,
     notes,
   } = createGoodsReceiptItemDto;
+
+  // ===========================
+  // VALIDACIONES
+  // ===========================
 
   const goodsReceipt =
     await this.prisma.goodsReceipt.findUnique({
@@ -51,16 +57,6 @@ async create(
   if (!purchaseOrderItem) {
     throw new NotFoundException(
       'Purchase order item not found',
-    );
-  }
-
-   // Validar que no reciba más de lo pedido
-  if (
-    Number(createGoodsReceiptItemDto.quantityReceived) >
-    Number(purchaseOrderItem.quantity)
-  ) {
-    throw new ConflictException(
-      'Received quantity cannot exceed ordered quantity',
     );
   }
 
@@ -95,6 +91,20 @@ async create(
     );
   }
 
+  const orderedQuantity = Number(
+    purchaseOrderItem.quantity,
+  );
+
+  const newQuantity = Number(
+    quantityReceived,
+  );
+
+  if (newQuantity > orderedQuantity) {
+    throw new ConflictException(
+      'Received quantity cannot exceed ordered quantity',
+    );
+  }
+
   const received =
     await this.prisma.goodsReceiptItem.aggregate({
       where: {
@@ -109,14 +119,6 @@ async create(
     received._sum.quantityReceived ?? 0,
   );
 
-  const orderedQuantity = Number(
-    purchaseOrderItem.quantity,
-  );
-
-  const newQuantity = Number(
-    quantityReceived,
-  );
-
   if (
     alreadyReceived + newQuantity >
     orderedQuantity
@@ -126,38 +128,70 @@ async create(
     );
   }
 
-  const goodsReceiptItem =
-    await this.prisma.goodsReceiptItem.create({
-      data: {
-        goodsReceiptId,
-        purchaseOrderItemId,
-        productId,
-        quantityReceived,
-        notes,
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            sku: true,
-            name: true,
+  // ===========================
+  // TRANSACCIÓN
+  // ===========================
+
+  return this.prisma.$transaction(
+    async (tx) => {
+      const goodsReceiptItem =
+        await tx.goodsReceiptItem.create({
+          data: {
+            goodsReceiptId,
+            purchaseOrderItemId,
+            productId,
+            quantityReceived,
+            notes,
+          },
+          include: {
+            product: {
+              select: productSummarySelect,
+            },
+          },
+        });
+
+      await tx.product.update({
+        where: {
+          id: productId,
+        },
+        data: {
+          stock: {
+            increment: quantityReceived,
           },
         },
-      },
-    });
+      });
 
-  return goodsReceiptItem;
+      await tx.inventoryMovement.create({
+        data: {
+          organizationId:
+            goodsReceipt.organizationId,
+
+          productId,
+
+          movementType: 'PURCHASE',
+
+          quantity: quantityReceived,
+
+          unitCost:
+            purchaseOrderItem.unitCost,
+
+          reference:
+            goodsReceipt.number,
+
+          notes,
+        },
+      });
+
+      return goodsReceiptItem;
+    },
+  );
 }
 
   async findAll() {
   return this.prisma.goodsReceiptItem.findMany({
     include: {
       product: {
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-        },
+        select: productSummarySelect,
       },
       goodsReceipt: {
         select: {
@@ -188,11 +222,7 @@ async create(
       },
       include: {
         product: {
-          select: {
-            id: true,
-            sku: true,
-            name: true,
-          },
+          select: productSummarySelect,
         },
         goodsReceipt: {
           select: {
@@ -222,11 +252,15 @@ async update(
   id: string,
   updateGoodsReceiptItemDto: UpdateGoodsReceiptItemDto,
 ) {
-  const existing = await this.prisma.goodsReceiptItem.findUnique({
-    where: {
-      id,
-    },
-  });
+  const existing =
+    await this.prisma.goodsReceiptItem.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        goodsReceipt: true,
+      },
+    });
 
   if (!existing) {
     throw new NotFoundException(
@@ -251,12 +285,15 @@ async update(
     purchaseOrderItem.quantity,
   );
 
+  const oldQuantity = Number(
+    existing.quantityReceived,
+  );
+
   const newQuantity =
     updateGoodsReceiptItemDto.quantityReceived !== undefined
       ? Number(updateGoodsReceiptItemDto.quantityReceived)
-      : Number(existing.quantityReceived);
+      : oldQuantity;
 
-  // Sumar todas las demás recepciones del mismo item
   const received =
     await this.prisma.goodsReceiptItem.aggregate({
       where: {
@@ -284,41 +321,163 @@ async update(
     );
   }
 
-  return this.prisma.goodsReceiptItem.update({
-    where: {
-      id,
+  const difference =
+    newQuantity - oldQuantity;
+
+  return this.prisma.$transaction(
+    async (tx) => {
+      const updatedItem =
+        await tx.goodsReceiptItem.update({
+          where: {
+            id,
+          },
+          data: {
+            quantityReceived:
+              updateGoodsReceiptItemDto.quantityReceived,
+            notes:
+              updateGoodsReceiptItemDto.notes,
+          },
+          include: {
+            product: {
+              select: productSummarySelect,
+            },
+            goodsReceipt: {
+              select: {
+                id: true,
+                number: true,
+              },
+            },
+            purchaseOrderItem: {
+              select: {
+                id: true,
+                purchaseOrderId: true,
+              },
+            },
+          },
+        });
+
+      if (difference !== 0) {
+        await tx.product.update({
+          where: {
+            id: existing.productId,
+          },
+          data: {
+            stock: {
+              increment: difference,
+            },
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            organizationId:
+              existing.goodsReceipt.organizationId,
+
+            productId:
+              existing.productId,
+
+            movementType: 'ADJUSTMENT',
+
+            quantity: difference,
+
+            unitCost:
+              purchaseOrderItem.unitCost,
+
+            reference:
+              existing.goodsReceipt.number,
+
+            notes:
+              'Adjustment after Goods Receipt Item update',
+          },
+        });
+      }
+
+      return updatedItem;
     },
-    data: {
-      quantityReceived:
-        updateGoodsReceiptItemDto.quantityReceived,
-      notes: updateGoodsReceiptItemDto.notes,
-    },
-    include: {
-      product: {
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-        },
-      },
-    },
-  });
+  );
 }
 
-  async remove(
+async remove(
   id: string,
 ) {
-  await this.findOne(id);
+  const existing =
+    await this.prisma.goodsReceiptItem.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        goodsReceipt: true,
+      },
+    });
 
-  await this.prisma.goodsReceiptItem.delete({
-    where: {
-      id,
+  if (!existing) {
+    throw new NotFoundException(
+      'Goods receipt item not found',
+    );
+  }
+
+  const purchaseOrderItem =
+    await this.prisma.purchaseOrderItem.findUnique({
+      where: {
+        id: existing.purchaseOrderItemId,
+      },
+    });
+
+  if (!purchaseOrderItem) {
+    throw new NotFoundException(
+      'Purchase order item not found',
+    );
+  }
+
+  return this.prisma.$transaction(
+    async (tx) => {
+      await tx.product.update({
+        where: {
+          id: existing.productId,
+        },
+        data: {
+          stock: {
+            decrement:
+              existing.quantityReceived,
+          },
+        },
+      });
+
+      await tx.inventoryMovement.create({
+        data: {
+          organizationId:
+            existing.goodsReceipt.organizationId,
+
+          productId:
+            existing.productId,
+
+          movementType: 'ADJUSTMENT',
+
+          quantity:
+            -Number(existing.quantityReceived),
+
+          unitCost:
+            purchaseOrderItem.unitCost,
+
+          reference:
+            existing.goodsReceipt.number,
+
+          notes:
+            'Adjustment after Goods Receipt Item deletion',
+        },
+      });
+
+      await tx.goodsReceiptItem.delete({
+        where: {
+          id,
+        },
+      });
+
+      return {
+        message:
+          'Goods receipt item removed successfully',
+      };
     },
-  });
-
-  return {
-    message:
-      'Goods receipt item removed successfully',
-  };
+  );
 }
 }
