@@ -21,6 +21,7 @@ enum InventoryMovementType {
 enum PurchaseOrderStatus {
   DRAFT
   CONFIRMED
+  PARTIALLY_RECEIVED
   RECEIVED
   CANCELLED
 }

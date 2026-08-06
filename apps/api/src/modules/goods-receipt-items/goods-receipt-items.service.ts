@@ -10,7 +10,7 @@ import {
 } from '../../common/prisma/selects';
 import { CreateGoodsReceiptItemDto } from './dto/create-goods-receipt-item.dto';
 import { UpdateGoodsReceiptItemDto } from './dto/update-goods-receipt-item.dto';
-
+import { Prisma } from '@prisma/client';
 @Injectable()
 export class GoodsReceiptItemsService {
   constructor(
@@ -181,7 +181,10 @@ async create(
           notes,
         },
       });
-
+await this.updatePurchaseOrderStatus(
+  tx,
+  goodsReceipt.purchaseOrderId,
+);
       return goodsReceiptItem;
     },
   );
@@ -252,6 +255,7 @@ async update(
   id: string,
   updateGoodsReceiptItemDto: UpdateGoodsReceiptItemDto,
 ) {
+
   const existing =
     await this.prisma.goodsReceiptItem.findUnique({
       where: {
@@ -311,6 +315,7 @@ async update(
   const receivedByOthers = Number(
     received._sum.quantityReceived ?? 0,
   );
+
 
   if (
     receivedByOthers + newQuantity >
@@ -391,7 +396,10 @@ async update(
           },
         });
       }
-
+await this.updatePurchaseOrderStatus(
+  tx,
+  purchaseOrderItem.purchaseOrderId,
+);
       return updatedItem;
     },
   );
@@ -473,11 +481,88 @@ async remove(
         },
       });
 
+      await this.updatePurchaseOrderStatus(
+  tx,
+  purchaseOrderItem.purchaseOrderId,
+);
+
       return {
         message:
           'Goods receipt item removed successfully',
       };
     },
   );
+}
+private async updatePurchaseOrderStatus(
+  tx: Prisma.TransactionClient,
+  purchaseOrderId: string,
+) {
+  console.log('==============================');
+  console.log('ACTUALIZANDO ESTADO OC');
+  console.log('purchaseOrderId:', purchaseOrderId);
+  // Total ordenado
+  const purchaseOrderItems =
+    await tx.purchaseOrderItem.findMany({
+      where: {
+        purchaseOrderId,
+      },
+      select: {
+        id: true,
+        quantity: true,
+      },
+    });
+  console.log('purchaseOrderItems:', purchaseOrderItems);
+
+  const totalOrdered =
+    purchaseOrderItems.reduce(
+      (sum, item) => sum + Number(item.quantity),
+      0,
+    );
+  console.log('totalOrdered:', totalOrdered);
+
+  // Total recibido
+  const purchaseOrderItemIds =
+    purchaseOrderItems.map((item) => item.id);
+  console.log('purchaseOrderItemIds:', purchaseOrderItemIds);
+
+  const received =
+    await tx.goodsReceiptItem.aggregate({
+      where: {
+        purchaseOrderItemId: {
+          in: purchaseOrderItemIds,
+        },
+      },
+      _sum: {
+        quantityReceived: true,
+      },
+    });
+  console.log('aggregate:', received);
+
+  const totalReceived = Number(
+    received._sum.quantityReceived ?? 0,
+  );
+  console.log('totalReceived:', totalReceived);
+
+  let status: 'CONFIRMED' | 'PARTIALLY_RECEIVED' | 'RECEIVED';
+
+  if (totalReceived === 0) {
+    status = 'CONFIRMED';
+  } else if (totalReceived < totalOrdered) {
+    status = 'PARTIALLY_RECEIVED';
+  } else {
+    status = 'RECEIVED';
+  }
+  console.log('nuevo status:', status);
+
+  await tx.purchaseOrder.update({
+    where: {
+      id: purchaseOrderId,
+    },
+    data: {
+      status,
+    },
+  });
+  console.log('OC actualizada');
+  console.log('==============================');
 }
 }
