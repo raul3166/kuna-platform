@@ -57,13 +57,17 @@ KNA-019 – Inventory (Core) | ✅ |
 Sprint 4
 Objetivo del Sprint 4
 
-Construir todo el flujo de compras para que el inventario ya no se alimente manualmente, sino mediante órdenes de compra.
+Construir el flujo completo de compras para que el inventario se alimente mediante órdenes de compra, desde la creación de la orden hasta la recepción, facturación y devolución, manteniendo control sobre estados, cantidades y relaciones entre documentos.
 
-KNA-020 | Purchase Order(Header) | ✅ |
-KNA-021 | Purchase Order Items | ✅ | 
-KNA-022 | Receive Purchase Order 
-KNA-023 | Purchase Returns
-KNA-024 | Purchase Order Workflow (Draft / Confirmed / Received / Cancelled)
+KNA	Funcionalidad	Estado
+KNA-020	Purchase Order — Header	✅
+KNA-021	Purchase Order — Items	✅
+KNA-022	Receive Purchase Order	✅
+KNA-023	Purchase Invoice — Header	✅
+KNA-024	Purchase Invoice — Items	✅
+KNA-025	Purchase Returns	🔴
+KNA-026	Purchase Order Workflow	🔴
+
 
 # KNA-007 - CRUD Branches
 

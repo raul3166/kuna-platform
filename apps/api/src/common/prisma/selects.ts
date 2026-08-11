@@ -129,6 +129,73 @@ export const productSummarySelect = {
   name: true,
 } as const;
 
+export const purchaseInvoiceSelect = {
+  id: true,
+
+  organizationId: true,
+  supplierId: true,
+
+  purchaseOrderId: true,
+  goodsReceiptId: true,
+
+  number: true,
+  invoiceNumber: true,
+
+  invoiceDate: true,
+  dueDate: true,
+
+  status: true,
+
+  subtotal: true,
+  tax: true,
+  total: true,
+
+  notes: true,
+
+  createdAt: true,
+  updatedAt: true,
+
+  supplier: {
+    select: {
+      id: true,
+      companyName: true,
+    },
+  },
+} as const;
+
+export const purchaseInvoiceItemSelect = {
+  id: true,
+
+  purchaseInvoiceId: true,
+  productId: true,
+
+  quantity: true,
+  unitCost: true,
+  taxRate: true,
+
+  subtotal: true,
+  total: true,
+
+  createdAt: true,
+  updatedAt: true,
+
+  product: {
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+    },
+  },
+
+  purchaseInvoice: {
+    select: {
+      id: true,
+      number: true,
+      invoiceNumber: true,
+    },
+  },
+} as const;
+
 export const userWithPasswordSelect = {
   id: true,
   email: true,

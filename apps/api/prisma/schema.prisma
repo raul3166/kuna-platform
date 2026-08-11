@@ -26,6 +26,21 @@ enum PurchaseOrderStatus {
   CANCELLED
 }
 
+enum PurchaseInvoiceStatus {
+  DRAFT
+  POSTED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum PurchaseReturnStatus {
+  DRAFT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model Organization {
   id                 String              @id @default(cuid())
   name               String
@@ -41,8 +56,10 @@ model Organization {
   products           Product[]
   productCategories  ProductCategory[]
   inventoryMovements InventoryMovement[]
-  purchaseOrders PurchaseOrder[]
-  goodsReceipts GoodsReceipt[]
+  purchaseOrders     PurchaseOrder[]
+  goodsReceipts      GoodsReceipt[]
+  purchaseInvoices   PurchaseInvoice[]
+  purchaseReturns PurchaseReturn[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -98,12 +115,12 @@ model User {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  branchId  String
-  branch    Branch     @relation(fields: [branchId], references: [id])
-  userRoles UserRole[]
+  branchId      String
+  branch        Branch         @relation(fields: [branchId], references: [id])
+  userRoles     UserRole[]
   goodsReceipts GoodsReceipt[]
-  firstName String
-  lastName  String
+  firstName     String
+  lastName      String
 
   email String @unique
 
@@ -185,9 +202,11 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products Product[]
-  purchaseOrders PurchaseOrder[]
-  organization Organization @relation(fields: [organizationId], references: [id])
+  products         Product[]
+  purchaseOrders   PurchaseOrder[]
+  purchaseInvoices PurchaseInvoice[]
+  purchaseReturns PurchaseReturn[]
+  organization     Organization      @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, identificationNumber])
 }
@@ -216,15 +235,17 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  categoryId String?
-  supplierId String?
-  inventoryMovements InventoryMovement[]
-  purchaseOrderItems PurchaseOrderItem[]
-  goodsReceiptItems GoodsReceiptItem[]
-  category ProductCategory? @relation(fields: [categoryId], references: [id])
-  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  categoryId           String?
+  supplierId           String?
+  inventoryMovements   InventoryMovement[]
+  purchaseOrderItems   PurchaseOrderItem[]
+  goodsReceiptItems    GoodsReceiptItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+  purchaseReturnItems PurchaseReturnItem[]
+  category             ProductCategory?      @relation(fields: [categoryId], references: [id])
+  supplier             Supplier?             @relation(fields: [supplierId], references: [id])
 
-  organization       Organization        @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, sku])
   @@index([categoryId])
@@ -245,7 +266,7 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  products Product[]
+  products     Product[]
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, name])
@@ -281,7 +302,7 @@ model PurchaseOrder {
   id String @id @default(cuid())
 
   organizationId String
-  supplierId String
+  supplierId     String
 
   number String
 
@@ -293,113 +314,256 @@ model PurchaseOrder {
 
   notes String?
 
-  subtotal Decimal @default(0) @db.Decimal(12,2)
+  subtotal Decimal @default(0) @db.Decimal(12, 2)
 
-  tax Decimal @default(0) @db.Decimal(12,2)
+  tax Decimal @default(0) @db.Decimal(12, 2)
 
-  total Decimal @default(0) @db.Decimal(12,2)
+  total Decimal @default(0) @db.Decimal(12, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items PurchaseOrderItem[]
-  goodsReceipts GoodsReceipt[]
-  organization Organization @relation(fields: [organizationId], references: [id])
+  items            PurchaseOrderItem[]
+  goodsReceipts    GoodsReceipt[]
+  purchaseInvoices PurchaseInvoice[]
+  purchaseReturns PurchaseReturn[]
+  organization     Organization        @relation(fields: [organizationId], references: [id])
 
   supplier Supplier @relation(fields: [supplierId], references: [id])
 
   @@unique([organizationId, number])
-
   @@index([organizationId])
   @@index([supplierId])
 }
 
 model PurchaseOrderItem {
-  id              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   purchaseOrderId String
   productId       String
 
-  quantity        Decimal  @db.Decimal(18,4)
-  unitCost        Decimal  @db.Decimal(18,4)
+  quantity Decimal @db.Decimal(18, 4)
+  unitCost Decimal @db.Decimal(18, 4)
 
-  subtotal        Decimal  @db.Decimal(18,4)
+  subtotal Decimal @db.Decimal(18, 4)
 
-  notes           String?
+  notes String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   goodsReceiptItems GoodsReceiptItem[]
 
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  product         Product       @relation(fields: [productId], references: [id])
-
-  @@index([purchaseOrderId])
-  @@index([productId])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
 
   @@unique([purchaseOrderId, productId])
+  @@index([purchaseOrderId])
+  @@index([productId])
 }
 
 model GoodsReceipt {
-  id              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   organizationId  String
   purchaseOrderId String
 
-  number          String
+  number String
 
-  receivedDate    DateTime
-
-  // Nuevo
-  receivedById    String?
-
-  notes           String?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  organization    Organization @relation(fields: [organizationId], references: [id])
-
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  receivedDate DateTime
 
   // Nuevo
-  receivedBy      User? @relation(fields: [receivedById], references: [id])
+  receivedById String?
 
-  items           GoodsReceiptItem[]
+  notes String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  // Nuevo
+  receivedBy User? @relation(fields: [receivedById], references: [id])
+
+  items            GoodsReceiptItem[]
+  purchaseInvoices PurchaseInvoice[]
+  purchaseReturns PurchaseReturn[]
+
+  @@unique([organizationId, number])
   @@index([organizationId])
   @@index([purchaseOrderId])
   @@index([receivedById])
-
-  @@unique([organizationId, number])
 }
 
 model GoodsReceiptItem {
-  id              String @id @default(cuid())
+  id String @id @default(cuid())
 
-  goodsReceiptId  String
+  goodsReceiptId String
 
   purchaseOrderItemId String
 
-  productId       String
+  productId String
 
-  quantityReceived Decimal @db.Decimal(18,4)
+  quantityReceived Decimal @db.Decimal(18, 4)
 
-  notes           String?
+  notes String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  goodsReceipt GoodsReceipt @relation(fields:[goodsReceiptId],references:[id])
+  purchaseReturnItems PurchaseReturnItem[]
 
-  purchaseOrderItem PurchaseOrderItem @relation(fields:[purchaseOrderItemId],references:[id])
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id])
 
-  product Product @relation(fields:[productId],references:[id])
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
 
   @@index([goodsReceiptId])
   @@index([productId])
 }
+
+model PurchaseInvoice {
+  id String @id @default(cuid())
+
+  organizationId String
+  supplierId     String
+
+  purchaseOrderId String?
+  goodsReceiptId  String?
+
+  number        String
+  invoiceNumber String
+
+  invoiceDate DateTime
+  dueDate     DateTime?
+
+  status PurchaseInvoiceStatus @default(DRAFT)
+
+  subtotal Decimal @default(0) @db.Decimal(12, 2)
+  tax      Decimal @default(0) @db.Decimal(12, 2)
+  total    Decimal @default(0) @db.Decimal(12, 2)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
+
+  items PurchaseInvoiceItem[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@index([goodsReceiptId])
+}
+
+model PurchaseInvoiceItem {
+  id String @id @default(cuid())
+
+  purchaseInvoiceId String
+  productId         String
+
+  quantity Decimal @db.Decimal(18, 4)
+  unitCost Decimal @db.Decimal(18, 4)
+
+  taxRate Decimal @default(0) @db.Decimal(5, 2)
+
+  subtotal Decimal @db.Decimal(18, 4)
+  total    Decimal @db.Decimal(18, 4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([purchaseInvoiceId])
+  @@index([productId])
+}
+
+model PurchaseReturn {
+
+  id String @id @default(cuid())
+
+  organizationId String
+  supplierId     String
+  purchaseOrderId String
+  goodsReceiptId  String?
+
+  number String
+
+  returnDate DateTime
+
+  status PurchaseReturnStatus @default(DRAFT)
+
+  reason String?
+  notes  String?
+
+  subtotal Decimal @default(0) @db.Decimal(12, 2)
+  tax      Decimal @default(0) @db.Decimal(12, 2)
+  total    Decimal @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId],references: [id])
+
+  supplier Supplier @relation(fields: [supplierId],references: [id])
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId],references: [id])
+
+  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId],references: [id])
+
+  items PurchaseReturnItem[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@index([goodsReceiptId])
+}
+
+model PurchaseReturnItem {
+
+  id String @id @default(cuid())
+
+  purchaseReturnId String
+  goodsReceiptItemId String
+  productId String
+
+  quantity Decimal @db.Decimal(18, 4)
+  unitCost Decimal @db.Decimal(18, 4)
+
+  subtotal Decimal @db.Decimal(18, 4)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId],references: [id])
+
+  goodsReceiptItem GoodsReceiptItem @relation(fields: [goodsReceiptItemId],references: [id])
+
+  product Product @relation(fields: [productId],references: [id])
+
+  @@index([purchaseReturnId])
+  @@index([goodsReceiptItemId])
+  @@index([productId])
+}
+
 model UserRole {
   id String @id @default(cuid())
 

@@ -20,6 +20,10 @@ import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.
 import { PurchaseOrderItemsModule } from './modules/purchase-order-items/purchase-order-items.module';
 import { GoodsReceiptsModule } from './modules/goods-receipts/goods-receipts.module';
 import { GoodsReceiptItemsModule } from './modules/goods-receipt-items/goods-receipt-items.module';
+import { PurchaseInvoicesModule } from './modules/purchase-invoices/purchase-invoices.module';
+import { PurchaseInvoiceItemsModule } from './modules/purchase-invoice-items/purchase-invoice-items.module';
+import { PurchaseReturnsModule } from './modules/purchase-returns/purchase-returns.module';
+import { PurchaseReturnItemsModule } from './modules/purchase-return-items/purchase-return-items.module';
 
 @Module({
   imports: [
@@ -43,6 +47,10 @@ import { GoodsReceiptItemsModule } from './modules/goods-receipt-items/goods-rec
     PurchaseOrderItemsModule,
     GoodsReceiptsModule,
     GoodsReceiptItemsModule,
+    PurchaseInvoicesModule,
+    PurchaseInvoiceItemsModule,
+    PurchaseReturnsModule,
+    PurchaseReturnItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
