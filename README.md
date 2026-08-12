@@ -1,91 +1,3 @@
-# KUNA Platform
-
-> Plataforma modular de gestión empresarial para pequeñas y medianas empresas.
-
-## 📖 Descripción
-
-KUNA Platform es una solución moderna diseñada para administrar diferentes tipos de negocios desde una única plataforma.
-
-Su arquitectura modular permite activar únicamente los componentes que cada empresa necesita, compartiendo un núcleo común de autenticación, usuarios, empresas, sucursales, clientes, inventario, reportes y configuración.
-
-El proyecto está pensado para crecer de forma sostenible, facilitando la incorporación de nuevos módulos sin modificar la arquitectura principal.
-
----
-
-## 🎯 Objetivos
-
-- Arquitectura modular.
-- Multiempresa.
-- Multisucursal.
-- Multipaís.
-- Multimoneda.
-- API First.
-- Escalable.
-- Segura.
-- Fácil de mantener.
-
----
-
-## 🏗️ Tecnologías
-
-### Frontend
-
-- Vue 3
-- TypeScript
-- Vite
-- Pinia
-- Tailwind CSS
-
-### Backend
-
-- Node.js
-- Express
-- TypeScript
-- Prisma ORM
-
-### Base de datos
-
-- PostgreSQL
-
-### Infraestructura
-
-- Docker
-- GitHub
-- GitHub Actions (más adelante)
-
----
-
-## 📦 Arquitectura
-
-### Core
-
-- Authentication
-- Organizations
-- Branches
-- Users
-- Roles
-- Permissions
-- Configuration
-- Notifications
-- Audit
-- Reports
-
-### Business Modules
-
-- Restaurant
-- Hotel
-- Pharmacy
-- Clinic
-- Veterinary
-- Retail
-- CRM
-- Inventory
-- Accounting
-
-La plataforma permite desarrollar nuevos módulos reutilizando el Core sin modificar su arquitectura.
-
----
-
 ## 🚀 Estado del proyecto
 
 Actualmente KUNA cuenta con un Core funcional que incluye:
@@ -98,35 +10,54 @@ Actualmente KUNA cuenta con un Core funcional que incluye:
 - Autenticación JWT
 - Autorización basada en Roles y Permisos (RBAC)
 
-La infraestructura base se encuentra terminada y el desarrollo continúa con la implementación de módulos de negocio.
+Además, se encuentra implementado el Inventory Core con:
+
+- Productos
+- Categorías de productos
+- Proveedores
+- Movimientos de inventario
+- Control automático de stock
+- Kardex por producto
+- Ajustes de inventario
+- Transferencias
+- Devoluciones
+
+El Sprint 4 incorpora el flujo completo de compras:
+
+- Órdenes de compra
+- Ítems de órdenes de compra
+- Confirmación de órdenes
+- Recepción de mercancía
+- Actualización automática de inventario
+- Facturación de compras
+- Devoluciones a proveedores
+- Control de estados y cantidades
+- Trazabilidad entre documentos de compra e inventario
+
+La infraestructura base se encuentra terminada y KUNA continúa evolucionando mediante módulos de negocio independientes.
 
 Versión actual:
 
-v0.2.0
+v0.4.0
 
----
+## 📋 Sprints completados
 
-## 📄 Licencia
-
-Privada.
-Todos los derechos reservados.
-
----
-
-## 👨‍💻 Proyecto
-
-Desarrollado como una plataforma modular orientada a empresas de Latinoamérica, con visión de expansión internacional.
+✅ Sprint 1  
+✅ Sprint 2  
+✅ Sprint 3  
+✅ Sprint 4
 
 Current Version
 
-v0.3.0
+v0.4.0
 
 Completed Sprints
 
-✅ Sprint 1
-✅ Sprint 2
-✅ Sprint 3
+✅ Sprint 1  
+✅ Sprint 2  
+✅ Sprint 3  
+✅ Sprint 4
 
 Current Module
 
-Inventory Core
+Purchase & Inventory Core

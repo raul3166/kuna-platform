@@ -6,7 +6,7 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
-## [0.2.0] - 2026-07-31
+## [0.4.0] - 2026-08-12
 
 ### Added
 
@@ -136,3 +136,86 @@ Versionado basado en Semantic Versioning.
 - Integración con Swagger.
 - Protección mediante JWT.
 - Control de acceso RBAC.
+
+## [0.4.0] - 2026-08-12
+
+### Added
+
+#### KNA-020 - Purchase Order — Header
+
+- CRUD de órdenes de compra.
+- Numeración única por organización.
+- Validación de proveedor existente.
+- Estados de órdenes de compra.
+- Control de modificación y cancelación según estado.
+- Integración con Swagger.
+- Protección mediante JWT.
+- Control de acceso RBAC.
+
+#### KNA-021 - Purchase Order — Items
+
+- CRUD de ítems de órdenes de compra.
+- Validación de producto existente.
+- Validación de orden de compra existente.
+- Restricción de modificación de ítems a órdenes DRAFT.
+- Cálculo automático de subtotal.
+- Recalculo automático de subtotal, impuestos y total de la orden.
+
+#### KNA-022 - Receive Purchase Order
+
+- Creación de Goods Receipts.
+- Recepción de ítems de órdenes de compra.
+- Validación de cantidades recibidas.
+- Control de recepción parcial y completa.
+- Actualización automática del stock.
+- Registro de movimientos de inventario tipo PURCHASE.
+- Actualización automática del estado de la orden de compra.
+- Integración transaccional mediante Prisma.
+
+#### KNA-023 - Purchase Invoice — Header
+
+- CRUD de encabezados de facturas de compra.
+- Relación con proveedores.
+- Relación con órdenes de compra.
+- Validaciones de documentos.
+- Control de estados de factura.
+- Protección mediante JWT y RBAC.
+
+#### KNA-024 - Purchase Invoice — Items
+
+- CRUD de ítems de facturas de compra.
+- Relación con productos.
+- Relación con facturas de compra.
+- Cálculo de subtotales.
+- Validaciones de cantidades y valores.
+
+#### KNA-025 - Purchase Returns
+
+- Creación de devoluciones a proveedores.
+- Gestión de ítems de devolución.
+- Actualización de stock.
+- Registro de movimientos PURCHASE_RETURN.
+- Relación con documentos de compra.
+- Validaciones de cantidades devueltas.
+- Integración transaccional mediante Prisma.
+
+#### KNA-026 - Purchase Order Workflow
+
+- Flujo de estados de órdenes de compra.
+- DRAFT → CONFIRMED.
+- CONFIRMED → PARTIALLY_RECEIVED.
+- CONFIRMED → RECEIVED.
+- Validación de órdenes antes de confirmar.
+- Una orden no puede confirmarse sin ítems.
+- Validación de cantidades recibidas contra cantidades ordenadas.
+- Actualización automática del estado según recepción.
+- Integración entre Purchase Orders, Goods Receipts e Inventory.
+- Actualización transaccional del stock.
+- Trazabilidad mediante InventoryMovement.
+
+### Changed
+
+- El Inventory Core ahora se integra directamente con el flujo de compras.
+- Las recepciones de mercancía generan movimientos de inventario automáticamente.
+- El stock de productos se actualiza mediante transacciones Prisma.
+- Las órdenes de compra mantienen control sobre cantidades ordenadas y recibidas.

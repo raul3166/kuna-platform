@@ -66,7 +66,7 @@ KNA-022	Receive Purchase Order	✅
 KNA-023	Purchase Invoice — Header	✅
 KNA-024	Purchase Invoice — Items	✅
 KNA-025	Purchase Returns	✅
-KNA-026	Purchase Order Workflow	🔴
+KNA-026	Purchase Order Workflow	✅
 
 
 # KNA-007 - CRUD Branches
