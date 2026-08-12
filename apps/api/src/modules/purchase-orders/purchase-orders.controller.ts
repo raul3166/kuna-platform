@@ -136,4 +136,31 @@ cancel(
 ) {
   return this.purchaseOrdersService.cancel(id);
 }
+
+@ApiOperation({
+  summary: 'Confirm purchase order',
+})
+@ApiResponse({
+  status: 200,
+  description: 'Purchase order confirmed successfully.',
+})
+@ApiResponse({
+  status: 404,
+  description: 'Purchase order not found.',
+})
+@ApiResponse({
+  status: 409,
+  description: 'Only draft purchase orders can be confirmed.',
+})
+@Permissions('purchase-orders.confirm')
+@UseGuards(
+  JwtAuthGuard,
+  PermissionsGuard,
+)
+@Patch(':id/confirm')
+confirm(
+  @Param('id') id: string,
+) {
+  return this.purchaseOrdersService.confirm(id);
+}
 }

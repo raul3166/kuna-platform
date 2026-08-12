@@ -205,6 +205,40 @@ async cancel(id: string) {
 
   return purchaseOrder;
 }
+
+async confirm(id: string) {
+  const purchaseOrder =
+    await this.getPurchaseOrderOrThrow(id);
+
+  if (purchaseOrder.status !== PurchaseOrderStatus.DRAFT) {
+    throw new ConflictException(
+      'Only draft purchase orders can be confirmed',
+    );
+  }
+
+  const items =
+    await this.prisma.purchaseOrderItem.count({
+      where: {
+        purchaseOrderId: id,
+      },
+    });
+
+  if (items === 0) {
+    throw new ConflictException(
+      'Purchase orders must have at least one item before confirmation',
+    );
+  }
+
+  return this.prisma.purchaseOrder.update({
+    where: {
+      id,
+    },
+    data: {
+      status: PurchaseOrderStatus.CONFIRMED,
+    },
+    select: purchaseOrderSelect,
+  });
+}
 private async recalculateTotals(
   purchaseOrderId: string,
 ) {
