@@ -59,7 +59,8 @@ model Organization {
   purchaseOrders     PurchaseOrder[]
   goodsReceipts      GoodsReceipt[]
   purchaseInvoices   PurchaseInvoice[]
-  purchaseReturns PurchaseReturn[]
+  purchaseReturns    PurchaseReturn[]
+  inventoryTransfers InventoryTransfer[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -79,10 +80,19 @@ model Branch {
 
   phoneNumber String?
   timezone    String
-  users       User[]
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  users User[]
+
+  productStocks BranchProductStock[]
+
+  sourceTransfers      InventoryTransfer[] @relation("TransferSourceBranch")
+  destinationTransfers InventoryTransfer[] @relation("TransferDestinationBranch")
+
+  inventoryMovements InventoryMovement[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([organizationId, code])
 }
@@ -205,7 +215,7 @@ model Supplier {
   products         Product[]
   purchaseOrders   PurchaseOrder[]
   purchaseInvoices PurchaseInvoice[]
-  purchaseReturns PurchaseReturn[]
+  purchaseReturns  PurchaseReturn[]
   organization     Organization      @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, identificationNumber])
@@ -241,7 +251,9 @@ model Product {
   purchaseOrderItems   PurchaseOrderItem[]
   goodsReceiptItems    GoodsReceiptItem[]
   purchaseInvoiceItems PurchaseInvoiceItem[]
-  purchaseReturnItems PurchaseReturnItem[]
+  purchaseReturnItems  PurchaseReturnItem[]
+  branchStocks         BranchProductStock[]
+  inventoryTransfers   InventoryTransfer[]
   category             ProductCategory?      @relation(fields: [categoryId], references: [id])
   supplier             Supplier?             @relation(fields: [supplierId], references: [id])
 
@@ -277,12 +289,15 @@ model InventoryMovement {
 
   organizationId String
   productId      String
+  branchId       String?
 
   movementType InventoryMovementType
 
   quantity Decimal @db.Decimal(12, 3)
 
   unitCost Decimal? @db.Decimal(12, 2)
+
+  totalCost Decimal? @db.Decimal(14, 2)
 
   reference String?
 
@@ -294,8 +309,11 @@ model InventoryMovement {
 
   product Product @relation(fields: [productId], references: [id])
 
+  branch Branch? @relation(fields: [branchId], references: [id])
+
   @@index([organizationId])
   @@index([productId])
+  @@index([branchId])
 }
 
 model PurchaseOrder {
@@ -326,7 +344,7 @@ model PurchaseOrder {
   items            PurchaseOrderItem[]
   goodsReceipts    GoodsReceipt[]
   purchaseInvoices PurchaseInvoice[]
-  purchaseReturns PurchaseReturn[]
+  purchaseReturns  PurchaseReturn[]
   organization     Organization        @relation(fields: [organizationId], references: [id])
 
   supplier Supplier @relation(fields: [supplierId], references: [id])
@@ -389,7 +407,7 @@ model GoodsReceipt {
 
   items            GoodsReceiptItem[]
   purchaseInvoices PurchaseInvoice[]
-  purchaseReturns PurchaseReturn[]
+  purchaseReturns  PurchaseReturn[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -494,11 +512,10 @@ model PurchaseInvoiceItem {
 }
 
 model PurchaseReturn {
-
   id String @id @default(cuid())
 
-  organizationId String
-  supplierId     String
+  organizationId  String
+  supplierId      String
   purchaseOrderId String
   goodsReceiptId  String?
 
@@ -518,13 +535,13 @@ model PurchaseReturn {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId],references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
-  supplier Supplier @relation(fields: [supplierId],references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
 
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId],references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
 
-  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId],references: [id])
+  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
 
   items PurchaseReturnItem[]
 
@@ -536,12 +553,11 @@ model PurchaseReturn {
 }
 
 model PurchaseReturnItem {
-
   id String @id @default(cuid())
 
-  purchaseReturnId String
+  purchaseReturnId   String
   goodsReceiptItemId String
-  productId String
+  productId          String
 
   quantity Decimal @db.Decimal(18, 4)
   unitCost Decimal @db.Decimal(18, 4)
@@ -553,15 +569,67 @@ model PurchaseReturnItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId],references: [id])
+  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
 
-  goodsReceiptItem GoodsReceiptItem @relation(fields: [goodsReceiptItemId],references: [id])
+  goodsReceiptItem GoodsReceiptItem @relation(fields: [goodsReceiptItemId], references: [id])
 
-  product Product @relation(fields: [productId],references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@index([purchaseReturnId])
   @@index([goodsReceiptItemId])
   @@index([productId])
+}
+
+model BranchProductStock {
+  id String @id @default(cuid())
+
+  branchId  String
+  productId String
+
+  stock Decimal @default(0) @db.Decimal(12, 3)
+  averageCost Decimal @default(0) @db.Decimal(12, 2)
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, productId])
+  @@index([branchId])
+  @@index([productId])
+}
+
+model InventoryTransfer {
+  id String @id @default(cuid())
+
+  organizationId String
+  productId      String
+
+  sourceBranchId      String
+  destinationBranchId String
+
+  quantity Decimal @db.Decimal(12, 3)
+
+  reference String
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  product Product @relation(fields: [productId], references: [id])
+
+  sourceBranch Branch @relation("TransferSourceBranch", fields: [sourceBranchId], references: [id])
+
+  destinationBranch Branch @relation("TransferDestinationBranch", fields: [destinationBranchId], references: [id])
+
+  @@unique([organizationId, reference])
+  @@index([organizationId])
+  @@index([productId])
+  @@index([sourceBranchId])
+  @@index([destinationBranchId])
 }
 
 model UserRole {

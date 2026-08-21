@@ -1,29 +1,22 @@
 import {
-  IsString,
-  IsOptional,
   IsNumberString,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 
-export class CreateInventoryMovementDto {
+export class CreateInventoryAdjustmentDto {
   @IsString()
   organizationId: string;
 
   @IsString()
   productId: string;
 
-   @IsOptional()
+  @IsOptional()
   @IsString()
   branchId?: string;
 
-  @IsString()
-  movementType: string;
-
   @IsNumberString()
   quantity: string;
-
-  @IsOptional()
-  @IsNumberString()
-  unitCost?: string;
 
   @IsOptional()
   @IsString()

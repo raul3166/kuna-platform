@@ -6,14 +6,12 @@
 
 # Estado del Proyecto
 
-| Epic | Nombre | Estado |
-|------|--------|--------|
-| EPIC-01 | Core Platform | 🟡 En progreso |
-| EPIC-02 | Identity & Security | ⬜ Pendiente |
+| EPIC-01 | Core Platform | 🟢 Completado |
+| EPIC-02 | Identity & Security | 🟢 Completado |
 | EPIC-03 | Restaurant Operations | ⬜ Pendiente |
 | EPIC-04 | Reservations | ⬜ Pendiente |
-| EPIC-05 | Inventory | ⬜ Pendiente |
-| EPIC-06 | Billing | ⬜ Pendiente |
+| EPIC-05 | Inventory | 🟡 En progreso |
+| EPIC-06 | Billing | 🟡 En progreso |
 | EPIC-07 | Analytics & Reports | ⬜ Pendiente |
 
 ---
@@ -214,3 +212,23 @@ Operación	Estado
 - El seguimiento del proyecto se realiza mediante historias KNA.
 - Los servicios implementan primero las reglas de negocio y luego la persistencia.
 - Se utilizará desactivación lógica (`isActive`) en lugar de eliminación física.
+
+
+Sprint 5 — Inventory Operations
+
+Objetivo:
+
+Completar las operaciones fundamentales del inventario,
+permitiendo ajustes, transferencias, valoración y trazabilidad
+del stock, manteniendo InventoryMovement como fuente de verdad
+para las operaciones de inventario.
+
+Propongo estas historias:
+
+ID	Historia	Prioridad
+KNA-027	Stock Adjustments	✅
+KNA-028	Inventory Transfers	✅
+KNA-029	Inventory Costing	✅
+KNA-030	Stock Balance & Valuation	🟠 Media
+KNA-031	Inventory History / Kardex	🟠 Media
+KNA-032	Inventory Validation & Integrity	🟠 Media

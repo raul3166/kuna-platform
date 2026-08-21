@@ -24,6 +24,7 @@ import { PurchaseInvoicesModule } from './modules/purchase-invoices/purchase-inv
 import { PurchaseInvoiceItemsModule } from './modules/purchase-invoice-items/purchase-invoice-items.module';
 import { PurchaseReturnsModule } from './modules/purchase-returns/purchase-returns.module';
 import { PurchaseReturnItemsModule } from './modules/purchase-return-items/purchase-return-items.module';
+import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { PurchaseReturnItemsModule } from './modules/purchase-return-items/purch
     PurchaseInvoiceItemsModule,
     PurchaseReturnsModule,
     PurchaseReturnItemsModule,
+    InventoryTransfersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

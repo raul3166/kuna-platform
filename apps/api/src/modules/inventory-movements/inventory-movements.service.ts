@@ -6,12 +6,14 @@ import {
 
 import {
   InventoryMovementType,
+  BranchProductStock,
 } from '@prisma/client';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
 
 import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
 
+import { CreateInventoryAdjustmentDto } from './dto/create-inventory-adjustment.dto';
 @Injectable()
 export class InventoryMovementsService {
   constructor(
@@ -44,102 +46,598 @@ async create(
         );
       }
 
-      const currentStock =
-        Number(product.stock);
-
       const quantity =
         Number(createDto.quantity);
 
-      let newStock = currentStock;
-
       if (quantity <= 0) {
-  throw new BadRequestException(
-    'Quantity must be greater than zero',
-  );
-}
-switch (createDto.movementType) {
-  case InventoryMovementType.INITIAL_STOCK:
-    if (currentStock > 0) {
-    throw new BadRequestException(
-      'Initial stock has already been defined',
+        throw new BadRequestException(
+          'Quantity must be greater than zero',
+        );
+      }
+
+      /*
+       * --------------------------------------------------
+       * VALIDAR SUCURSAL
+       * --------------------------------------------------
+       */
+
+      let branchStock: BranchProductStock | null =
+  null;
+
+      if (createDto.branchId) {
+        const branch =
+          await tx.branch.findUnique({
+            where: {
+              id: createDto.branchId,
+            },
+          });
+
+        if (!branch) {
+          throw new NotFoundException(
+            'Branch not found',
+          );
+        }
+
+        if (
+          branch.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new BadRequestException(
+            'Branch does not belong to the organization',
+          );
+        }
+
+        if (!branch.isActive) {
+          throw new BadRequestException(
+            'Branch is inactive',
+          );
+        }
+
+        branchStock =
+          await tx.branchProductStock.findUnique({
+            where: {
+              branchId_productId: {
+                branchId:
+                  createDto.branchId,
+                productId:
+                  createDto.productId,
+              },
+            },
+          });
+      }
+
+      /*
+       * --------------------------------------------------
+       * STOCK GLOBAL
+       * --------------------------------------------------
+       */
+
+      const currentGlobalStock =
+        Number(product.stock);
+
+      /*
+       * --------------------------------------------------
+       * STOCK DE SUCURSAL
+       * --------------------------------------------------
+       */
+
+      const currentBranchStock =
+        branchStock
+          ? Number(branchStock.stock)
+          : 0;
+
+      const currentAverageCost =
+        branchStock
+          ? Number(branchStock.averageCost)
+          : 0;
+
+      /*
+       * --------------------------------------------------
+       * VARIABLES DE COSTEO
+       * --------------------------------------------------
+       */
+
+      let newGlobalStock =
+        currentGlobalStock;
+
+      let newBranchStock =
+        currentBranchStock;
+
+      let newAverageCost =
+        currentAverageCost;
+
+      let movementUnitCost:
+        number | null = null;
+
+      let totalCost = 0;
+
+      /*
+       * --------------------------------------------------
+       * TIPO DE MOVIMIENTO
+       * --------------------------------------------------
+       */
+
+      switch (createDto.movementType) {
+
+        /*
+         * ================================================
+         * INITIAL STOCK
+         * ================================================
+         */
+
+        case InventoryMovementType.INITIAL_STOCK:
+
+          if (currentGlobalStock > 0) {
+            throw new BadRequestException(
+              'Initial stock has already been defined',
+            );
+          }
+
+          if (
+            createDto.unitCost ===
+            undefined
+          ) {
+            throw new BadRequestException(
+              'Unit cost is required for initial stock',
+            );
+          }
+
+          movementUnitCost =
+            Number(createDto.unitCost);
+
+          if (
+            movementUnitCost < 0
+          ) {
+            throw new BadRequestException(
+              'Unit cost cannot be negative',
+            );
+          }
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            quantity;
+
+          newBranchStock =
+            quantity;
+
+          newAverageCost =
+            movementUnitCost;
+
+          break;
+
+        /*
+         * ================================================
+         * PURCHASE
+         * ================================================
+         */
+
+        case InventoryMovementType.PURCHASE:
+
+          if (
+            createDto.unitCost ===
+            undefined
+          ) {
+            throw new BadRequestException(
+              'Unit cost is required for purchases',
+            );
+          }
+
+          movementUnitCost =
+            Number(createDto.unitCost);
+
+          if (
+            movementUnitCost < 0
+          ) {
+            throw new BadRequestException(
+              'Unit cost cannot be negative',
+            );
+          }
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock +
+            quantity;
+
+          /*
+           * Costo promedio ponderado
+           */
+
+          if (
+  currentBranchStock <= 0 ||
+  currentAverageCost <= 0
+) {
+  newAverageCost = movementUnitCost;
+} else {
+  newAverageCost =
+    (
+      (
+        currentBranchStock *
+        currentAverageCost
+      ) +
+      (
+        quantity *
+        movementUnitCost
+      )
+    ) /
+    (
+      currentBranchStock +
+      quantity
     );
-  }
-    newStock = quantity;
-    break;
-
-  case InventoryMovementType.PURCHASE:
-    if (!createDto.unitCost) {
-    throw new BadRequestException(
-      'Unit cost is required for purchases',
-    );
-  }
-    newStock = currentStock + quantity;
-    break;
-
-  case InventoryMovementType.SALE:
-    if (quantity > currentStock) {
-      throw new BadRequestException(
-        'Insufficient stock',
-      );
-    }
-
-    newStock = currentStock - quantity;
-    break;
-
-  case InventoryMovementType.PURCHASE_RETURN:
-    if (quantity > currentStock) {
-      throw new BadRequestException(
-        'Insufficient stock',
-      );
-    }
-
-    newStock = currentStock - quantity;
-    break;
-
-  case InventoryMovementType.SALE_RETURN:
-    newStock = currentStock + quantity;
-    break;
-
-  case InventoryMovementType.TRANSFER_IN:
-    newStock = currentStock + quantity;
-    break;
-
-  case InventoryMovementType.TRANSFER_OUT:
-    if (quantity > currentStock) {
-      throw new BadRequestException(
-        'Insufficient stock',
-      );
-    }
-
-    newStock = currentStock - quantity;
-    break;
-
-  case InventoryMovementType.ADJUSTMENT:
-    newStock = quantity;
-    break;
-
-  default:
-  throw new BadRequestException(
-    'Invalid movement type',
-  );
 }
+
+          newBranchStock =
+            currentBranchStock +
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * SALE
+         * ================================================
+         */
+
+        case InventoryMovementType.SALE:
+
+          if (
+            quantity >
+            currentGlobalStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock',
+            );
+          }
+
+          if (
+            createDto.branchId &&
+            quantity >
+            currentBranchStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock in branch',
+            );
+          }
+
+          movementUnitCost =
+            currentAverageCost;
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock -
+            quantity;
+
+          newBranchStock =
+            currentBranchStock -
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * PURCHASE RETURN
+         * ================================================
+         */
+
+        case InventoryMovementType.PURCHASE_RETURN:
+
+          if (
+            quantity >
+            currentGlobalStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock',
+            );
+          }
+
+          if (
+            createDto.branchId &&
+            quantity >
+            currentBranchStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock in branch',
+            );
+          }
+
+          movementUnitCost =
+            currentAverageCost;
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock -
+            quantity;
+
+          newBranchStock =
+            currentBranchStock -
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * SALE RETURN
+         * ================================================
+         */
+
+        case InventoryMovementType.SALE_RETURN:
+
+          movementUnitCost =
+            createDto.unitCost
+              ? Number(
+                  createDto.unitCost,
+                )
+              : currentAverageCost;
+
+          if (
+            movementUnitCost < 0
+          ) {
+            throw new BadRequestException(
+              'Unit cost cannot be negative',
+            );
+          }
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock +
+            quantity;
+
+          /*
+           * Si tenemos costo previo,
+           * recalculamos promedio.
+           */
+
+          if (currentBranchStock <= 0) {
+            newAverageCost =
+              movementUnitCost;
+          } else {
+            newAverageCost =
+              (
+                (
+                  currentBranchStock *
+                  currentAverageCost
+                ) +
+                (
+                  quantity *
+                  movementUnitCost
+                )
+              ) /
+              (
+                currentBranchStock +
+                quantity
+              );
+          }
+
+          newBranchStock =
+            currentBranchStock +
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * TRANSFER IN
+         * ================================================
+         */
+
+        case InventoryMovementType.TRANSFER_IN:
+
+          movementUnitCost =
+            createDto.unitCost
+              ? Number(
+                  createDto.unitCost,
+                )
+              : currentAverageCost;
+
+          if (
+            movementUnitCost < 0
+          ) {
+            throw new BadRequestException(
+              'Unit cost cannot be negative',
+            );
+          }
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock +
+            quantity;
+
+          /*
+           * Para una transferencia,
+           * el costo recibido entra
+           * al costo promedio de la sucursal.
+           */
+
+          if (currentBranchStock <= 0) {
+            newAverageCost =
+              movementUnitCost;
+          } else {
+            newAverageCost =
+              (
+                (
+                  currentBranchStock *
+                  currentAverageCost
+                ) +
+                (
+                  quantity *
+                  movementUnitCost
+                )
+              ) /
+              (
+                currentBranchStock +
+                quantity
+              );
+          }
+
+          newBranchStock =
+            currentBranchStock +
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * TRANSFER OUT
+         * ================================================
+         */
+
+        case InventoryMovementType.TRANSFER_OUT:
+
+          if (
+            quantity >
+            currentGlobalStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock',
+            );
+          }
+
+          if (
+            createDto.branchId &&
+            quantity >
+            currentBranchStock
+          ) {
+            throw new BadRequestException(
+              'Insufficient stock in branch',
+            );
+          }
+
+          movementUnitCost =
+            currentAverageCost;
+
+          totalCost =
+            quantity *
+            movementUnitCost;
+
+          newGlobalStock =
+            currentGlobalStock -
+            quantity;
+
+          newBranchStock =
+            currentBranchStock -
+            quantity;
+
+          break;
+
+        /*
+         * ================================================
+         * ADJUSTMENT
+         * ================================================
+         */
+
+        case InventoryMovementType.ADJUSTMENT:
+
+          throw new BadRequestException(
+            'Use the adjustment endpoint for inventory adjustments',
+          );
+
+        /*
+         * ================================================
+         * DEFAULT
+         * ================================================
+         */
+
+        default:
+
+          throw new BadRequestException(
+            'Invalid movement type',
+          );
+      }
+
+      /*
+       * --------------------------------------------------
+       * ACTUALIZAR STOCK GLOBAL
+       * --------------------------------------------------
+       */
 
       await tx.product.update({
         where: {
           id: product.id,
         },
+
         data: {
-          stock: newStock,
+          stock:
+            newGlobalStock,
         },
       });
 
+      /*
+       * --------------------------------------------------
+       * ACTUALIZAR STOCK DE SUCURSAL
+       * --------------------------------------------------
+       */
+
+      if (createDto.branchId) {
+
+        await tx.branchProductStock.upsert({
+          where: {
+            branchId_productId: {
+              branchId:
+                createDto.branchId,
+
+              productId:
+                createDto.productId,
+            },
+          },
+
+          create: {
+            branchId:
+              createDto.branchId,
+
+            productId:
+              createDto.productId,
+
+            stock:
+              newBranchStock,
+
+            averageCost:
+              newAverageCost,
+          },
+
+          update: {
+            stock:
+              newBranchStock,
+
+            averageCost:
+              newAverageCost,
+          },
+        });
+      }
+
+      /*
+       * --------------------------------------------------
+       * CREAR MOVIMIENTO
+       * --------------------------------------------------
+       */
+
       return tx.inventoryMovement.create({
         data: {
+
           organizationId:
             createDto.organizationId,
 
           productId:
             createDto.productId,
+
+          branchId:
+            createDto.branchId,
 
           movementType:
             createDto.movementType,
@@ -148,7 +646,10 @@ switch (createDto.movementType) {
             createDto.quantity,
 
           unitCost:
-            createDto.unitCost,
+            movementUnitCost,
+
+          totalCost:
+            totalCost,
 
           reference:
             createDto.reference,
@@ -158,12 +659,372 @@ switch (createDto.movementType) {
         },
 
         include: {
+
           product: {
             select: {
               id: true,
               sku: true,
               name: true,
               stock: true,
+            },
+          },
+
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+      });
+    },
+  );
+}
+
+async createAdjustment(
+  createDto: CreateInventoryAdjustmentDto,
+) {
+  await this.getOrganizationOrThrow(
+    createDto.organizationId,
+  );
+
+  await this.getProductOrThrow(
+    createDto.productId,
+  );
+
+  return this.prisma.$transaction(
+    async (tx) => {
+      /*
+       * --------------------------------------------------
+       * OBTENER PRODUCTO
+       * --------------------------------------------------
+       */
+
+      const product =
+        await tx.product.findUnique({
+          where: {
+            id: createDto.productId,
+          },
+        });
+
+      if (!product) {
+        throw new NotFoundException(
+          'Product not found',
+        );
+      }
+
+      /*
+       * --------------------------------------------------
+       * VALIDAR STOCK FÍSICO
+       * --------------------------------------------------
+       */
+
+      const physicalStock =
+        Number(createDto.quantity);
+
+      if (physicalStock < 0) {
+        throw new BadRequestException(
+          'Stock cannot be negative',
+        );
+      }
+
+      /*
+       * --------------------------------------------------
+       * VALIDAR SUCURSAL
+       * --------------------------------------------------
+       */
+
+      let branchStock:
+        BranchProductStock | null = null;
+
+      if (createDto.branchId) {
+        const branch =
+          await tx.branch.findUnique({
+            where: {
+              id: createDto.branchId,
+            },
+          });
+
+        if (!branch) {
+          throw new NotFoundException(
+            'Branch not found',
+          );
+        }
+
+        if (
+          branch.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new BadRequestException(
+            'Branch does not belong to the organization',
+          );
+        }
+
+        if (!branch.isActive) {
+          throw new BadRequestException(
+            'Branch is inactive',
+          );
+        }
+
+        branchStock =
+          await tx.branchProductStock.findUnique({
+            where: {
+              branchId_productId: {
+                branchId:
+                  createDto.branchId,
+                productId:
+                  createDto.productId,
+              },
+            },
+          });
+      }
+
+      /*
+       * --------------------------------------------------
+       * STOCK ACTUAL
+       * --------------------------------------------------
+       */
+
+      const currentGlobalStock =
+        Number(product.stock);
+
+      const currentBranchStock =
+        branchStock
+          ? Number(branchStock.stock)
+          : 0;
+
+      const currentAverageCost =
+        branchStock
+          ? Number(branchStock.averageCost)
+          : Number(product.costPrice);
+
+      /*
+       * --------------------------------------------------
+       * DETERMINAR DIFERENCIA
+       * --------------------------------------------------
+       */
+
+      const currentStock =
+        createDto.branchId
+          ? currentBranchStock
+          : currentGlobalStock;
+
+      const difference =
+        physicalStock - currentStock;
+
+      /*
+       * --------------------------------------------------
+       * VALIDAR QUE REALMENTE HAYA CAMBIO
+       * --------------------------------------------------
+       */
+
+      if (difference === 0) {
+        throw new BadRequestException(
+          'Adjustment does not change the current stock',
+        );
+      }
+
+      /*
+       * --------------------------------------------------
+       * NUEVOS STOCKS
+       * --------------------------------------------------
+       */
+
+      let newGlobalStock =
+        currentGlobalStock;
+
+      let newBranchStock =
+        currentBranchStock;
+
+      /*
+       * --------------------------------------------------
+       * SI HAY SUCURSAL
+       * --------------------------------------------------
+       */
+
+      if (createDto.branchId) {
+        newBranchStock =
+          physicalStock;
+
+        /*
+         * El stock global también debe reflejar
+         * la diferencia del ajuste.
+         */
+
+        newGlobalStock =
+          currentGlobalStock +
+          difference;
+      } else {
+        /*
+         * Ajuste global
+         */
+
+        newGlobalStock =
+          physicalStock;
+      }
+
+      /*
+       * --------------------------------------------------
+       * COSTEO DEL AJUSTE
+       * --------------------------------------------------
+       */
+
+      const movementUnitCost =
+        currentAverageCost;
+
+      const totalCost =
+        difference *
+        movementUnitCost;
+
+      /*
+       * --------------------------------------------------
+       * ACTUALIZAR STOCK GLOBAL
+       * --------------------------------------------------
+       */
+
+      await tx.product.update({
+        where: {
+          id: product.id,
+        },
+
+        data: {
+          stock:
+            newGlobalStock,
+        },
+      });
+
+      /*
+       * --------------------------------------------------
+       * ACTUALIZAR STOCK DE SUCURSAL
+       * --------------------------------------------------
+       */
+
+      if (createDto.branchId) {
+        await tx.branchProductStock.upsert({
+          where: {
+            branchId_productId: {
+              branchId:
+                createDto.branchId,
+
+              productId:
+                createDto.productId,
+            },
+          },
+
+          create: {
+            branchId:
+              createDto.branchId,
+
+            productId:
+              createDto.productId,
+
+            stock:
+              newBranchStock,
+
+            /*
+             * El ajuste NO cambia el costo promedio.
+             */
+
+            averageCost:
+              currentAverageCost,
+          },
+
+          update: {
+            stock:
+              newBranchStock,
+
+            /*
+             * Se conserva el costo promedio.
+             */
+
+            averageCost:
+              currentAverageCost,
+          },
+        });
+      }
+
+      /*
+       * --------------------------------------------------
+       * NOTAS DEL AJUSTE
+       * --------------------------------------------------
+       */
+
+      const adjustmentNotes =
+        [
+          createDto.notes,
+
+          `Previous stock: ${currentStock}`,
+
+          `New stock: ${physicalStock}`,
+
+          `Difference: ${difference}`,
+
+          `Unit cost: ${movementUnitCost}`,
+        ]
+          .filter(Boolean)
+          .join(' | ');
+
+      /*
+       * --------------------------------------------------
+       * CREAR MOVIMIENTO
+       * --------------------------------------------------
+       */
+
+      return tx.inventoryMovement.create({
+        data: {
+          organizationId:
+            createDto.organizationId,
+
+          productId:
+            createDto.productId,
+
+          branchId:
+            createDto.branchId,
+
+          movementType:
+            InventoryMovementType.ADJUSTMENT,
+
+          /*
+           * MUY IMPORTANTE:
+           *
+           * Puede ser positivo o negativo.
+           *
+           * +10 = aumentó inventario
+           * -10 = disminuyó inventario
+           */
+
+          quantity:
+            difference,
+
+          unitCost:
+            movementUnitCost,
+
+          totalCost:
+            totalCost,
+
+          reference:
+            createDto.reference,
+
+          notes:
+            adjustmentNotes,
+        },
+
+        include: {
+          product: {
+            select: {
+              id: true,
+              sku: true,
+              name: true,
+              stock: true,
+            },
+          },
+
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
             },
           },
         },
@@ -277,9 +1138,15 @@ async findByProduct(productId: string) {
         break;
 
       case InventoryMovementType.ADJUSTMENT:
-        balance = quantity;
-        entry = quantity;
-        break;
+      balance += quantity;
+
+  if (quantity > 0) {
+    entry = quantity;
+  } else if (quantity < 0) {
+    exit = Math.abs(quantity);
+  }
+
+  break;
     }
 
     return {
