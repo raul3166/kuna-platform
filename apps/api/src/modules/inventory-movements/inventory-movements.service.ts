@@ -1051,6 +1051,153 @@ async createAdjustment(
     });
   }
 
+   /*
+   * --------------------------------------------------
+   * BALANCE Y VALORACIÓN DE INVENTARIO
+   * --------------------------------------------------
+   */
+
+  async getStockBalance() {
+    const products =
+      await this.prisma.product.findMany({
+        where: {
+          isActive: true,
+        },
+
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          stock: true,
+          costPrice: true,
+
+          branchStocks: {
+            include: {
+              branch: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+            },
+
+            orderBy: {
+              branch: {
+                name: 'asc',
+              },
+            },
+          },
+        },
+
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+    let totalStock = 0;
+
+    let totalInventoryValue = 0;
+
+    const productBalances =
+      products.map((product) => {
+        const globalStock =
+          Number(product.stock);
+
+        let productInventoryValue = 0;
+
+        const branches =
+          product.branchStocks.map(
+            (branchStock) => {
+              const stock =
+                Number(branchStock.stock);
+
+              const averageCost =
+                Number(
+                  branchStock.averageCost,
+                );
+
+              const inventoryValue =
+                stock * averageCost;
+
+              productInventoryValue +=
+                inventoryValue;
+
+              return {
+                branchId:
+                  branchStock.branch.id,
+
+                branchName:
+                  branchStock.branch.name,
+
+                branchCode:
+                  branchStock.branch.code,
+
+                stock,
+
+                averageCost,
+
+                inventoryValue,
+              };
+            },
+          );
+
+        /*
+         * Si existen sucursales,
+         * la valoración se obtiene
+         * desde BranchProductStock.
+         *
+         * Si no existen sucursales,
+         * utilizamos el costo del producto.
+         */
+
+        if (branches.length === 0) {
+          productInventoryValue =
+            globalStock *
+            Number(product.costPrice);
+        }
+
+        totalStock +=
+          globalStock;
+
+        totalInventoryValue +=
+          productInventoryValue;
+
+        return {
+          productId:
+            product.id,
+
+          sku:
+            product.sku,
+
+          name:
+            product.name,
+
+          totalStock:
+            globalStock,
+
+          totalInventoryValue:
+            productInventoryValue,
+
+          branches,
+        };
+      });
+
+    return {
+      summary: {
+        totalProducts:
+          productBalances.length,
+
+        totalStock,
+
+        totalInventoryValue,
+      },
+
+      products:
+        productBalances,
+    };
+  }
+
   async findOne(id: string) {
     const movement =
       await this.prisma.inventoryMovement.findUnique({
@@ -1088,15 +1235,21 @@ async findByProduct(productId: string) {
         productId,
       },
 
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: [
+        {
+          createdAt: 'asc',
+        },
+        {
+          id: 'asc',
+        },
+      ],
     });
 
   let balance = 0;
 
   const kardex = movements.map((movement) => {
-    const quantity = Number(movement.quantity);
+    const quantity =
+      Number(movement.quantity);
 
     let entry = 0;
     let exit = 0;
@@ -1138,55 +1291,120 @@ async findByProduct(productId: string) {
         break;
 
       case InventoryMovementType.ADJUSTMENT:
-      balance += quantity;
+        balance += quantity;
 
-  if (quantity > 0) {
-    entry = quantity;
-  } else if (quantity < 0) {
-    exit = Math.abs(quantity);
-  }
+        if (quantity > 0) {
+          entry = quantity;
+        } else if (quantity < 0) {
+          exit = Math.abs(quantity);
+        }
 
-  break;
+        break;
+
+      default:
+        break;
     }
 
     return {
       id: movement.id,
+
       date: movement.createdAt,
-      movementType: movement.movementType,
-      movementName: this.getMovementName(
+
+      movementType:
         movement.movementType,
-      ),
-      reference: movement.reference,
-      notes: movement.notes,
-      unitCost: movement.unitCost
-        ? Number(movement.unitCost)
-        : null,
+
+      movementName:
+        this.getMovementName(
+          movement.movementType,
+        ),
+
+      reference:
+        movement.reference,
+
+      notes:
+        movement.notes,
+
+      branchId:
+        movement.branchId,
+
+      unitCost:
+        movement.unitCost !== null
+          ? Number(movement.unitCost)
+          : null,
+
+      totalCost:
+        movement.totalCost !== null
+          ? Number(movement.totalCost)
+          : null,
+
       quantity,
+
       entry,
+
       exit,
+
       balance,
     };
   });
 
+  const currentProductStock =
+    Number(product.stock);
+
+  const kardexCalculatedStock =
+    balance;
+
+  const stockDifference =
+    currentProductStock -
+    kardexCalculatedStock;
+
   return {
     product: {
-      id: product.id,
-      sku: product.sku,
-      name: product.name,
-      description: product.description,
-      stock: Number(product.stock),
-      salePrice: Number(product.salePrice),
-      costPrice: Number(product.costPrice),
-      categoryId: product.categoryId,
-      supplierId: product.supplierId,
+      id:
+        product.id,
+
+      sku:
+        product.sku,
+
+      name:
+        product.name,
+
+      description:
+        product.description,
+
+      stock:
+        currentProductStock,
+
+      salePrice:
+        Number(product.salePrice),
+
+      costPrice:
+        Number(product.costPrice),
+
+      categoryId:
+        product.categoryId,
+
+      supplierId:
+        product.supplierId,
     },
 
     summary: {
-      totalMovements: kardex.length,
-      currentStock: Number(product.stock),
+      totalMovements:
+        kardex.length,
+
+      currentStock:
+        currentProductStock,
+
+      kardexStock:
+        kardexCalculatedStock,
+
+      stockDifference,
+
+      isConsistent:
+        stockDifference === 0,
     },
 
-    movements: kardex,
+    movements:
+      kardex,
   };
 }
 

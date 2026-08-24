@@ -68,6 +68,24 @@ export class InventoryMovementsController {
   }
 
   @ApiOperation({
+  summary: 'Get inventory stock balance and valuation',
+
+  description:
+    'Returns the current stock balance and inventory valuation by product and branch.',
+})
+@ApiResponse({
+  status: 200,
+  description:
+    'Inventory stock balance and valuation.',
+})
+@Permissions('inventory-movements.read')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Get('stock/balance')
+getStockBalance() {
+  return this.inventoryMovementsService.getStockBalance();
+}
+
+  @ApiOperation({
   summary: 'Create inventory stock adjustment',
   description:
     'Adjusts the product stock using the physical stock count.',

@@ -229,6 +229,6 @@ ID	Historia	Prioridad
 KNA-027	Stock Adjustments	✅
 KNA-028	Inventory Transfers	✅
 KNA-029	Inventory Costing	✅
-KNA-030	Stock Balance & Valuation	🟠 Media
-KNA-031	Inventory History / Kardex	🟠 Media
+KNA-030	Stock Balance & Valuation	✅
+KNA-031	Inventory History / Kardex	✅
 KNA-032	Inventory Validation & Integrity	🟠 Media
