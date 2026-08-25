@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -19,10 +20,17 @@ export class InventoryTransfersService {
   async create(
     createDto: CreateInventoryTransferDto,
   ) {
+    /*
+     * --------------------------------------------------
+     * VALIDAR ORGANIZACIÓN
+     * --------------------------------------------------
+     */
+
     const organization =
       await this.prisma.organization.findUnique({
         where: {
-          id: createDto.organizationId,
+          id:
+            createDto.organizationId,
         },
       });
 
@@ -32,10 +40,23 @@ export class InventoryTransfersService {
       );
     }
 
+    if (!organization.isActive) {
+      throw new BadRequestException(
+        'Organization is inactive',
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * VALIDAR PRODUCTO
+     * --------------------------------------------------
+     */
+
     const product =
       await this.prisma.product.findUnique({
         where: {
-          id: createDto.productId,
+          id:
+            createDto.productId,
         },
       });
 
@@ -45,29 +66,38 @@ export class InventoryTransfersService {
       );
     }
 
+    if (
+      product.organizationId !==
+      createDto.organizationId
+    ) {
+      throw new ConflictException(
+        'Product does not belong to the organization',
+      );
+    }
+
+    if (!product.isActive) {
+      throw new BadRequestException(
+        'Product is inactive',
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * VALIDAR SUCURSAL ORIGEN
+     * --------------------------------------------------
+     */
+
     const sourceBranch =
       await this.prisma.branch.findUnique({
         where: {
-          id: createDto.sourceBranchId,
+          id:
+            createDto.sourceBranchId,
         },
       });
 
     if (!sourceBranch) {
       throw new NotFoundException(
         'Source branch not found',
-      );
-    }
-
-    const destinationBranch =
-      await this.prisma.branch.findUnique({
-        where: {
-          id: createDto.destinationBranchId,
-        },
-      });
-
-    if (!destinationBranch) {
-      throw new NotFoundException(
-        'Destination branch not found',
       );
     }
 
@@ -80,6 +110,32 @@ export class InventoryTransfersService {
       );
     }
 
+    if (!sourceBranch.isActive) {
+      throw new BadRequestException(
+        'Source branch is inactive',
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * VALIDAR SUCURSAL DESTINO
+     * --------------------------------------------------
+     */
+
+    const destinationBranch =
+      await this.prisma.branch.findUnique({
+        where: {
+          id:
+            createDto.destinationBranchId,
+        },
+      });
+
+    if (!destinationBranch) {
+      throw new NotFoundException(
+        'Destination branch not found',
+      );
+    }
+
     if (
       destinationBranch.organizationId !==
       createDto.organizationId
@@ -89,12 +145,49 @@ export class InventoryTransfersService {
       );
     }
 
+    if (!destinationBranch.isActive) {
+      throw new BadRequestException(
+        'Destination branch is inactive',
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * VALIDAR SUCURSALES DIFERENTES
+     * --------------------------------------------------
+     */
+
     if (
       createDto.sourceBranchId ===
       createDto.destinationBranchId
     ) {
       throw new ConflictException(
         'Source and destination branches must be different',
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * VALIDAR CANTIDAD
+     * --------------------------------------------------
+     */
+
+    const quantity =
+      Number(createDto.quantity);
+
+    if (
+      !Number.isFinite(quantity)
+    ) {
+      throw new BadRequestException(
+        'Transfer quantity must be a valid number',
+      );
+    }
+
+    if (
+      quantity <= 0
+    ) {
+      throw new BadRequestException(
+        'Transfer quantity must be greater than zero',
       );
     }
 
@@ -121,14 +214,23 @@ export class InventoryTransfersService {
 
         const sourceCurrentStock =
           sourceStock
-            ? Number(sourceStock.stock)
+            ? Number(
+                sourceStock.stock,
+              )
             : 0;
+
+        if (
+          !Number.isFinite(
+            sourceCurrentStock,
+          )
+        ) {
+          throw new BadRequestException(
+            'Source branch stock is invalid',
+          );
+        }
 
         /*
          * Costo promedio de la sucursal origen.
-         *
-         * Este costo acompaña las unidades que
-         * estamos transfiriendo.
          */
 
         const sourceAverageCost =
@@ -138,22 +240,21 @@ export class InventoryTransfersService {
               )
             : 0;
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR CANTIDAD
-         * --------------------------------------------------
-         */
-
-        const quantity =
-          Number(createDto.quantity);
-
         if (
-          quantity <= 0
+          !Number.isFinite(
+            sourceAverageCost,
+          )
         ) {
-          throw new ConflictException(
-            'Transfer quantity must be greater than zero',
+          throw new BadRequestException(
+            'Source branch average cost is invalid',
           );
         }
+
+        /*
+         * --------------------------------------------------
+         * VALIDAR STOCK SUFICIENTE
+         * --------------------------------------------------
+         */
 
         if (
           quantity >
@@ -190,6 +291,16 @@ export class InventoryTransfersService {
               )
             : 0;
 
+        if (
+          !Number.isFinite(
+            destinationCurrentStock,
+          )
+        ) {
+          throw new BadRequestException(
+            'Destination branch stock is invalid',
+          );
+        }
+
         /*
          * Costo promedio actual
          * de la sucursal destino.
@@ -201,6 +312,16 @@ export class InventoryTransfersService {
                 destinationStock.averageCost,
               )
             : 0;
+
+        if (
+          !Number.isFinite(
+            destinationAverageCost,
+          )
+        ) {
+          throw new BadRequestException(
+            'Destination branch average cost is invalid',
+          );
+        }
 
         /*
          * --------------------------------------------------
@@ -218,23 +339,30 @@ export class InventoryTransfersService {
 
         /*
          * --------------------------------------------------
+         * VALIDAR STOCK FINAL
+         * --------------------------------------------------
+         */
+
+        if (
+          newSourceStock < 0
+        ) {
+          throw new BadRequestException(
+            'Source branch stock cannot be negative',
+          );
+        }
+
+        if (
+          newDestinationStock < 0
+        ) {
+          throw new BadRequestException(
+            'Destination branch stock cannot be negative',
+          );
+        }
+
+        /*
+         * --------------------------------------------------
          * NUEVO COSTO PROMEDIO DESTINO
          * --------------------------------------------------
-         *
-         * Si el destino no tiene stock:
-         *
-         *   costo destino = costo origen
-         *
-         * Si ya tiene stock:
-         *
-         *   (
-         *     stockDestino * costoDestino
-         *     +
-         *     cantidadTransferida * costoOrigen
-         *   )
-         *   /
-         *   stockDestinoNuevo
-         *
          */
 
         const newDestinationAverageCost =
@@ -406,9 +534,6 @@ export class InventoryTransfersService {
          * --------------------------------------------------
          * MOVIMIENTO TRANSFER_OUT
          * --------------------------------------------------
-         *
-         * Sale de la sucursal origen
-         * utilizando su costo promedio.
          */
 
         await tx.inventoryMovement.create({
@@ -446,9 +571,6 @@ export class InventoryTransfersService {
          * --------------------------------------------------
          * MOVIMIENTO TRANSFER_IN
          * --------------------------------------------------
-         *
-         * Entra a la sucursal destino
-         * con el mismo costo de origen.
          */
 
         await tx.inventoryMovement.create({
@@ -527,7 +649,9 @@ export class InventoryTransfersService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(
+    id: string,
+  ) {
     const transfer =
       await this.prisma.inventoryTransfer.findUnique({
         where: {

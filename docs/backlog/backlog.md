@@ -231,4 +231,26 @@ KNA-028	Inventory Transfers	✅
 KNA-029	Inventory Costing	✅
 KNA-030	Stock Balance & Valuation	✅
 KNA-031	Inventory History / Kardex	✅
-KNA-032	Inventory Validation & Integrity	🟠 Media
+KNA-032	Inventory Validation & Integrity	✅
+
+
+Sprint 6 — KUNA Web Foundation & Inventory UI
+
+Objetivo:
+
+Construir la primera interfaz web funcional de KUNA, conectada al backend existente, estableciendo la arquitectura frontend, autenticación, navegación, permisos y los primeros módulos operativos.
+
+Y dividiría las KNA así:
+
+ID	Historia	Prioridad
+KNA-033	Frontend Foundation	🔴 Alta
+KNA-034	Authentication UI	🔴 Alta
+KNA-035	Application Layout & Navigation	🔴 Alta
+KNA-036	RBAC Frontend Authorization	🔴 Alta
+KNA-037	Organizations & Branches UI	🔴 Alta
+KNA-038	Products & Categories UI	🔴 Alta
+KNA-039	Inventory Dashboard	🟠 Media
+KNA-040	Inventory Movements UI	🟠 Media
+KNA-041	Inventory Adjustments UI	🟠 Media
+KNA-042	Inventory Transfers UI	🟠 Media
+KNA-043	Inventory Kardex UI	🟠 Media

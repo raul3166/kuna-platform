@@ -42,3 +42,21 @@ Construir el flujo completo de compras para que el inventario se alimente median
 | KNA-026 | Purchase Order Workflow               | ✅      |
 
 **Sprint 4 completado al 100%.**
+
+
+Sprint 5 — Inventory Operations
+
+Objetivo:
+
+Completar las operaciones fundamentales del inventario,
+permitiendo ajustes, transferencias, valoración y trazabilidad
+del stock, manteniendo InventoryMovement como fuente de verdad
+para las operaciones de inventario.
+
+ID	Historia	Prioridad
+KNA-027	Stock Adjustments	✅
+KNA-028	Inventory Transfers	✅
+KNA-029	Inventory Costing	✅
+KNA-030	Stock Balance & Valuation	✅
+KNA-031	Inventory History / Kardex	✅
+KNA-032	Inventory Validation & Integrity	✅

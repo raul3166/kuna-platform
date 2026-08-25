@@ -1,8 +1,11 @@
 import {
-  IsString,
-  IsOptional,
+  IsEnum,
   IsNumberString,
+  IsOptional,
+  IsString,
 } from 'class-validator';
+
+import { InventoryMovementType } from '@prisma/client';
 
 export class CreateInventoryMovementDto {
   @IsString()
@@ -11,12 +14,12 @@ export class CreateInventoryMovementDto {
   @IsString()
   productId: string;
 
-   @IsOptional()
+  @IsOptional()
   @IsString()
   branchId?: string;
 
-  @IsString()
-  movementType: string;
+  @IsEnum(InventoryMovementType)
+  movementType: InventoryMovementType;
 
   @IsNumberString()
   quantity: string;
