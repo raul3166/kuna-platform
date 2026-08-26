@@ -64,3 +64,11 @@
 * Inter-Branch Logistical Transfers UI
 * Individual Product Analytical Kardex View
 
+## v0.7.0
+
+* Transactional Suppliers Directory with Latam tax selectors
+* Purchase Orders Workflow Board (`DRAFT`, `CONFIRMED`, `CANCELLED`)
+* Master-Detail Step-by-Step Purchasing Assistant
+* Physical Goods Receipts Stock-In Verification Module
+* Accounts Payable Purchase Invoices Ledger with Due-Date semaphores
+* Supply Chain Reverse Logistics Purchase Returns UI

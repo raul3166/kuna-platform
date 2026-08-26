@@ -12,6 +12,23 @@ Versionado basado en Semantic Versioning.
 
 ### Added
 
+#### KNA-044 - Suppliers UI
+* CRUD e historial transaccional de proveedores comerciales con validación cruzada anti-duplicados por número de identificación fiscal.
+
+#### KNA-045 / KNA-046 - Purchase Orders Engine
+* Tablero operativo de control de órdenes emitidas sincronizado con los estados del workflow nativo de NestJS.
+* Formulario asíncrono maestro-detalle para guardar cabeceras en borrador e insertar ítems granulares controlando el costo pactado.
+
+#### KNA-047 / KNA-048 / KNA-049 - Supply Chain & Accounts Payable
+* Módulo logístico de actas de recibo e ingresos físicos a bodegas para órdenes aprobadas.
+* Panel contable de radicación de facturas emitidas por proveedores con alarmas de vencimiento de crédito.
+* Interfaz para emitir notas de devolución y mermas, bloqueando excesos sobre las cantidades recibidas en la orden original.
+
+
+## - 2026-08-26
+
+### Added
+
 #### KNA-033 / KNA-035 - Frontend Foundation & Application Layout
 * Base de SPA moderna con Vue 3, Vite, TypeScript y empaquetado ágil.
 * Diseño responsivo corporativo con Tailwind CSS y control de estados activos.

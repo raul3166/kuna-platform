@@ -263,3 +263,10 @@ KNA-046Purchase Order Creation🔴 AltaFormulario maestro-detalle con guardado d
 KNA-047Goods Receipts UI🟠 MediaInterfaz para recibir físicamente las órdenes de compra (ingreso a /goods-receipts).
 KNA-048Purchase Invoices UI🟠 MediaRegistro de facturas de proveedores vinculadas a las órdenes (/purchase-invoices).
 
+
+📋 Historias de Usuario (Backlog del Sprint 8)
+ID Historia de UsuarioPrioridad Objetivo Técnico en Vue 3 
+KNA-049 Customers CRM UI🔴 AltaTabla maestra y alta de clientes consumiendo GET/POST de /customers.
+KNA-050Users & Staff Directory🔴 AltaBitácora de colaboradores de la organización indexados por sucursal (/users).
+KNA-051Matrix of Roles & Permissions🔴 AltaPanel con interruptores visuales para activar/desactivar códigos de permisos en un Rol (/roles).
+KNA-052User-Role Assignment UI🔴 AltaAsistente dinámico para otorgar o remover cargos a un usuario en caliente (/user-roles).

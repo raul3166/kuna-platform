@@ -136,3 +136,35 @@ v0.6.0
 ## Current Module
 
 Web Foundation & Inventory UI
+
+## 📦 Versión actual
+
+v0.7.0
+
+## 📋 Sprints completados
+
+✅ Sprint 1
+✅ Sprint 2
+✅ Sprint 3
+✅ Sprint 4
+✅ Sprint 5
+✅ Sprint 6
+✅ Sprint 7
+
+## Current Version
+
+v0.7.0
+
+## Completed Sprints
+
+✅ Sprint 1
+✅ Sprint 2
+✅ Sprint 3
+✅ Sprint 4
+✅ Sprint 5
+✅ Sprint 6
+✅ Sprint 7
+
+## Current Module
+
+Access Control & CRM Core

@@ -57,6 +57,29 @@ function handleLogout() {
             </router-link>
           </div>
         </div>
+                <!-- Grupo 3: Compras y Abastecimiento (Módulos del Sprint 7) -->
+        <div>
+          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Compras</p>
+          <div class="mt-2 space-y-1">
+            <router-link to="/suppliers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              🚚 Proveedores
+            </router-link>
+            <router-link to="/purchase-orders" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              📑 Órdenes de Compra
+            </router-link>
+            <router-link to="/goods-receipts" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+  📥 Recepción de Mercancía
+</router-link>
+<router-link to="/purchase-invoices" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+  🧾 Facturas de Proveedores
+</router-link>
+<router-link to="/purchase-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+  ↩️ Devoluciones a Proveedores
+</router-link>
+
+          </div>
+        </div>
+
       </nav>
 
       <!-- Footer del Sidebar -->

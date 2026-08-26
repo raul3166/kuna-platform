@@ -82,3 +82,27 @@ Construir la primera interfaz web funcional de KUNA, conectada al backend existe
 
 **Sprint 6 completado al 100%.**
 
+# Sprint 7 — Procurement & Supply Chain UI
+
+Objetivo:
+Construir el flujo completo de compras en la interfaz web de KUNA, permitiendo la administración de proveedores, el control de órdenes de compra, la recepción de mercancía, la facturación y las notas de devolución.
+
+| ID      | Historia                  | Estado |
+| ------- | ------------------------- | ------ |
+| KNA-044 | Suppliers UI              | ✅      |
+| KNA-045 | Purchase Orders Master    | ✅      |
+| KNA-046 | Purchase Order Creation   | ✅      |
+| KNA-047 | Goods Receipts UI         | ✅      |
+| KNA-048 | Purchase Invoices UI      | ✅      |
+| KNA-049 | Purchase Returns UI       | ✅      |
+
+**Sprint 7 completado al 100%.**
+
+# Sprint 8 — Access Control & CRM Core
+
+| ID      | Historia                         | Estado |
+| ------- | -------------------------------- | ------ |
+| KNA-050 | Customers CRM UI                 | ⏳      |
+| KNA-051 | Users & Staff Directory          | ⏳      |
+| KNA-052 | Matrix of Roles & Permissions    | ⏳      |
+| KNA-053 | User-Role Assignment UI          | ⏳      |

@@ -69,6 +69,36 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
+  path: '/suppliers',
+  name: 'suppliers',
+  component: () => import('../views/SuppliersView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/purchase-orders',
+  name: 'purchase-orders',
+  component: () => import('../views/PurchaseOrdersView.vue'), // La crearemos en la siguiente historia
+  meta: { requiresAuth: true }
+},
+{
+  path: '/goods-receipts',
+  name: 'goods-receipts',
+  component: () => import('../views/GoodsReceiptsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/purchase-invoices',
+  name: 'purchase-invoices',
+  component: () => import('../views/PurchaseInvoicesView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/purchase-returns',
+  name: 'purchase-returns',
+  component: () => import('../views/PurchaseReturnsView.vue'),
+  meta: { requiresAuth: true }
+},
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: NotFoundView,
