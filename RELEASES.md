@@ -72,3 +72,10 @@
 * Physical Goods Receipts Stock-In Verification Module
 * Accounts Payable Purchase Invoices Ledger with Due-Date semaphores
 * Supply Chain Reverse Logistics Purchase Returns UI
+
+## v0.8.0
+
+* Customer Relationship Management (CRM) Core View
+* Organizational Personnel Audit Directory mapped by Branch
+* Reactive Security Control Grid with nested database mapper
+* On-the-fly User-Role Assignment Panel utilizing granular DTO overrides

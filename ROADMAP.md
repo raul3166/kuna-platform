@@ -102,7 +102,9 @@ Construir el flujo completo de compras en la interfaz web de KUNA, permitiendo l
 
 | ID      | Historia                         | Estado |
 | ------- | -------------------------------- | ------ |
-| KNA-050 | Customers CRM UI                 | ⏳      |
-| KNA-051 | Users & Staff Directory          | ⏳      |
-| KNA-052 | Matrix of Roles & Permissions    | ⏳      |
-| KNA-053 | User-Role Assignment UI          | ⏳      |
+| KNA-050 | Customers CRM UI                 | ✅      |
+| KNA-051 | Users & Staff Directory          | ✅      |
+| KNA-052 | Matrix of Roles & Permissions    | ✅      |
+| KNA-053 | User-Role Assignment UI          | ✅      |
+
+**Sprint 8 completado al 100%.**

@@ -98,6 +98,24 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/PurchaseReturnsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/customers',
+  name: 'customers',
+  component: () => import('../views/CustomersView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/users',
+  name: 'users',
+  component: () => import('../views/UsersView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/security-settings',
+  name: 'security-settings',
+  component: () => import('../views/SecuritySettingsView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

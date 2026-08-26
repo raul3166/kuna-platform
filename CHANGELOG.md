@@ -11,6 +11,15 @@ Versionado basado en Semantic Versioning.
 ## - 2026-08-26
 
 ### Added
+* Módulo Comercial de Clientes integrado a `GET/POST /customers` con validación de correo único.
+* Directorio de Talento Humano para altas y suspensiones de operarios ligados a sedes físicas de trabajo.
+* Panel Avanzado de Gobierno de Privilegios con switches reactivos acoplados a transacciones ACID de NestJS.
+* Mapeadores blindados para desestructurar respuestas JSON anidadas complejas de Prisma (`rolePermissions` y `userRoles`).
+
+
+## - 2026-08-26
+
+### Added
 
 #### KNA-044 - Suppliers UI
 * CRUD e historial transaccional de proveedores comerciales con validación cruzada anti-duplicados por número de identificación fiscal.
