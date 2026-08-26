@@ -243,14 +243,23 @@ Construir la primera interfaz web funcional de KUNA, conectada al backend existe
 Y dividiría las KNA así:
 
 ID	Historia	Prioridad
-KNA-033	Frontend Foundation	🔴 Alta
-KNA-034	Authentication UI	🔴 Alta
-KNA-035	Application Layout & Navigation	🔴 Alta
-KNA-036	RBAC Frontend Authorization	🔴 Alta
-KNA-037	Organizations & Branches UI	🔴 Alta
-KNA-038	Products & Categories UI	🔴 Alta
-KNA-039	Inventory Dashboard	🟠 Media
-KNA-040	Inventory Movements UI	🟠 Media
-KNA-041	Inventory Adjustments UI	🟠 Media
-KNA-042	Inventory Transfers UI	🟠 Media
-KNA-043	Inventory Kardex UI	🟠 Media
+KNA-033	Frontend Foundation	🔴 Alta ✅ Completada, Axios, Vite, TypeScript y CORS listos.
+KNA-034	Authentication UI	🔴 Alta ✅ Completada, Login con decodificación segura de JWT.
+KNA-035	Application Layout & Navigation	🔴 Alta ✅ Completada, Sidebar unificado y Topbar corporativo.
+KNA-036	RBAC Frontend Authorization	🔴 Alta ✅ Completada, Rutas protegidas y vinculadas a la sesión
+KNA-037	Organizations & Branches UI	🔴 Alta ✅ Completada, Pestañas unificadas para sedes de la empresa
+KNA-038	Products & Categories UI	🔴 Alta ✅ Completada, Catálogo comercial maestro activo. ✅ Completada,Métricas y KPI de valoración real.
+KNA-039	Inventory Dashboard	🟠 Media ✅ Completada,Métricas y KPI de valoración real.
+KNA-040	Inventory Movements UI	🟠 Media ✅ Completada,Bitácora de transacciones del Kardex unificado.
+KNA-041	Inventory Adjustments UI	🟠 Media ✅ Completada,Formulario atómico de ajustes por conteo físico.
+KNA-042	Inventory Transfers UI	🟠 Media ✅ Completada,Guías logísticas de traslados inter-sucursales.
+KNA-043	Inventory Kardex UI	🟠 Media ✅ Completada,Auditoría y traza de consistencia por producto.
+
+
+🎯 Historias de Usuario Propuestas (Sprint 7)IDHistoria de UsuarioPrioridadObjetivo Técnico
+KNA-044Suppliers UI🔴 AltaCRUD de Proveedores consumiendo GET/POST/PATCH de /suppliers.
+KNA-045Purchase Orders Master🔴 AltaTabla maestra de Órdenes de Compra con filtros por su estado (DRAFT, CONFIRMED).
+KNA-046Purchase Order Creation🔴 AltaFormulario maestro-detalle con guardado dinámico de ítems a /purchase-orders.
+KNA-047Goods Receipts UI🟠 MediaInterfaz para recibir físicamente las órdenes de compra (ingreso a /goods-receipts).
+KNA-048Purchase Invoices UI🟠 MediaRegistro de facturas de proveedores vinculadas a las órdenes (/purchase-invoices).
+

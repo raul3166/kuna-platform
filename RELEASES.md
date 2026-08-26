@@ -52,3 +52,15 @@
 * Inventory Validation & Integrity
 * Branch-level inventory control
 * Inventory movements as the source of truth
+
+## v0.6.0
+
+* Web Foundation Architecture
+* JWT Login & Auto Token Interceptors
+* Multi-Tenant Application Layout & Sidebar Navigation
+* Corporate & Branch UI Catalogs
+* Analytical Stock Dashboard & Real-Time Valuation 
+* Inventory Movements Auditor & Physical Adjustments Form
+* Inter-Branch Logistical Transfers UI
+* Individual Product Analytical Kardex View
+

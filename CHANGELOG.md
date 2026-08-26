@@ -8,6 +8,38 @@ Versionado basado en Semantic Versioning.
 
 ---
 
+## - 2026-08-26
+
+### Added
+
+#### KNA-033 / KNA-035 - Frontend Foundation & Application Layout
+* Base de SPA moderna con Vue 3, Vite, TypeScript y empaquetado ágil.
+* Diseño responsivo corporativo con Tailwind CSS y control de estados activos.
+* Estructuración del Layout maestro (`AppLayout.vue`) con Sidebar lateral y Topbar de sesión contextual.
+
+#### KNA-034 / KNA-036 - Authentication & Authorization UI
+* Formulario reactivo de Login con manejo asíncrono de errores y blindaje contra recargas HTML predeterminadas.
+* Integración con Axios mediante interceptores automáticos para inyección del header `Authorization Bearer`.
+* Control de expiración de sesión (Error 401) y protección estructural de rutas privadas usando Vue Router Guards.
+* Decodificación en caliente del token JWT en el cliente mediante `jwt-decode` para el consumo secuencial de perfiles.
+
+#### KNA-037 / KNA-038 - Corporate & Commercial Catalogs
+* Pestañas dinámicas (Tabs) en Organizaciones para alternar entre empresas del SaaS y Sucursales físicas de NestJS.
+* Tabla transaccional de Productos con control visual de SKU, códigos de barra y formateo monetario regional (Intl).
+
+#### KNA-039 / KNA-043 - Inventory Suite UI
+* Dashboard analítico de stock alimentado por el endpoint `/stock/balance` con cómputo automático de valoración financiera global de mercancías.
+* Bitácora unificada de movimientos históricos mapeada a los tipos de transacción de la base de datos de Postgres.
+* Formulario dinámico de Ajustes Manuales acoplado 1:1 a los validadores numéricos de strings del backend.
+* Interfaz para emitir guías de despacho y transferencias entre sucursales autorizadas.
+* Tarjeta analítica del Kardex por producto con semáforo de flujos (entradas/salidas) y auditoría de consistencia integrada.
+
+### Changed
+* Se migró la navegación de la aplicación de datos fijos (`mock`) a consumo interactivo directo de la API.
+* Las vistas de movimientos logísticos se unificaron bajo interfaces multi-pestaña para mejorar la experiencia de usuario.
+* Toda la lógica de negocio de compras e inventarios del backend ya tiene un reflejo operativo interactivo en la web.
+
+
 ## [0.5.0] - 2026-08-25
 
 ### Added
