@@ -63,6 +63,11 @@ enum PaymentMethod {
   CREDIT          // Crédito comercial / Cuenta por cobrar
 }
 
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
 model Organization {
   id                 String              @id @default(cuid())
   name               String
@@ -87,6 +92,7 @@ model Organization {
   saleReturns SaleReturn[]
   payments Payment[]
   billingResolutions BillingResolution[]
+  cashSessions CashSession[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -118,6 +124,7 @@ model Branch {
   sales Sale[]
   saleReturns SaleReturn[]
   billingResolutions BillingResolution[]
+  cashSessions CashSession[]
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -734,6 +741,34 @@ model BillingResolution {
   @@index([organizationId])
 }
 
+model CashSession {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String
+  userId         String            // Cajero responsable del turno
+
+  status         CashSessionStatus @default(OPEN)
+  openingDate    DateTime          @default(now())
+  closingDate    DateTime?
+
+  openingBalance Decimal           @db.Decimal(12, 2) // Dinero con el que inicia caja
+  expectedBalance Decimal          @default(0) @db.Decimal(12, 2) // openingBalance + ventas en CASH
+  actualBalance   Decimal?         @db.Decimal(12, 2) // Dinero físico real que contó el cajero
+  difference      Decimal?         @db.Decimal(12, 2) // Descuadre (Faltante / Sobrante)
+
+  notes          String?           @db.VarChar(255)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  branch         Branch            @relation(fields: [branchId], references: [id])
+  user           User              @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([userId])
+}
+
 
 model UserRole {
   id String @id @default(cuid())
@@ -815,6 +850,7 @@ model User {
   branch        Branch         @relation(fields: [branchId], references: [id])
   userRoles     UserRole[]
   goodsReceipts GoodsReceipt[]
+  cashSessions CashSession[]
   firstName     String
   lastName      String
 

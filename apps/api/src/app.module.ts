@@ -31,6 +31,7 @@ import { SaleReturnsModule } from './modules/sale-returns/sale-returns.module';
 import { SaleReturnItemsModule } from './modules/sale-return-items/sale-return-items.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { BillingResolutionsModule } from './modules/billing-resolutions/billing-resolutions.module';
+import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { BillingResolutionsModule } from './modules/billing-resolutions/billing-
     SaleReturnItemsModule,
     PaymentsModule,
     BillingResolutionsModule,
+    CashSessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
