@@ -108,3 +108,33 @@ Construir el flujo completo de compras en la interfaz web de KUNA, permitiendo l
 | KNA-053 | User-Role Assignment UI          | ✅      |
 
 **Sprint 8 completado al 100%.**
+
+# Sprint 9 — Sales Core & Inventory Integration (Backend Core)
+
+Objetivo:
+Desarrollar el motor transaccional de ventas en NestJS, permitiendo emitir facturas con cálculo automático de descuentos, controlar el flujo de estados de los comprobantes, impactar de forma atómica el stock de las sucursales mediante transacciones ACID de Prisma, gestionar devoluciones y resoluciones fiscales.
+
+| ID      | Historia                              | Estado | Alcance |
+| ------- | ------------------------------------- | :----: | ------- |
+| KNA-053 | Sales Core / Sales Header             |   ✅   | Backend |
+| KNA-054 | Sales Items                           |   ✅   | Backend |
+| KNA-055 | Sales Calculation & Totals            |   ✅   | Backend |
+| KNA-056 | Sales Workflow & Status               |   ✅   | Backend |
+| KNA-057 | Sales → Inventory Integration         |   ✅   | Backend |
+| KNA-058 | Sales Returns (Maestro-Detalle)       |   ✅   | Backend |
+| KNA-059 | Payments & Treasury                   |   ✅   | Backend |
+| KNA-060 | Billing / Invoice Data (Resoluciones) |   ✅   | Backend |
+| KNA-061 | Sales Validation & Integrity          |   ✅   | Backend |
+| KNA-062 | Sales History & Traceability          |   ✅   | Backend |
+
+**Sprint 9 completado al 100% en el área de API/Backend.**
+
+# Sprint 10 — Sales Core & POS Engine (Frontend UI)
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-063 | POS Terminal / Sales Interface    |   ⏳   | Frontend |
+| KNA-064 | Customer Checkout Link            |   ⏳   | Frontend |
+| KNA-065 | Inventory Depletion UI Trigger    |   ⏳   | Frontend |
+| KNA-066 | Sales Ledger & Invoicing History  |   ⏳   | Frontend |
+

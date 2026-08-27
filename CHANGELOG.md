@@ -7,6 +7,22 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [0.9.0-backend] - 2026-08-27
+
+### Added
+
+#### KNA-053 / KNA-054 / KNA-055 / KNA-056 - Sales API Core
+* Endpoints comerciales granulares y aislados para `sales` y `sale-items` acoplados a Prisma.
+* Lógica en el servicio para acumular subtotales netos deduciendo descuentos parciales por renglón.
+
+#### KNA-057 / KNA-061 - Inventory ACID Protection
+* Motor transaccional interactivo (`$transaction`) que bloquea las confirmaciones de folios si el stock de la sucursal es menor a la cantidad demandada.
+
+#### KNA-058 / KNA-059 - Returns & Payments Logs
+* Sub-módulos para notas de crédito de clientes y dispersión contable de métodos de pago (`CASH`, `CREDIT_CARD`, `TRANSFER`).
+
+#### KNA-060 - Fiscal Billing Resolutions
+* Tabla relacional para configurar prefijos y rangos autorizados por la entidad tributaria, automatizando el incremento secuencial del `saleNumber` en el POS.
 
 ## - 2026-08-26
 

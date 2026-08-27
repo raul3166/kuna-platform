@@ -58,39 +58,39 @@ La infraestructura base se encuentra terminada y KUNA continúa evolucionando me
 
 ## 📦 Versión actual
 
-v0.5.0
+v0.9.0-backend
 
 ## 📋 Sprints completados
 
 ✅ Sprint 1
-
 ✅ Sprint 2
-
 ✅ Sprint 3
-
 ✅ Sprint 4
-
 ✅ Sprint 5
+✅ Sprint 6
+✅ Sprint 7
+✅ Sprint 8
+✅ Sprint 9 (Backend Engine)
 
 ## Current Version
 
-v0.5.0
+v0.9.0-backend
 
 ## Completed Sprints
 
 ✅ Sprint 1
-
 ✅ Sprint 2
-
 ✅ Sprint 3
-
 ✅ Sprint 4
-
 ✅ Sprint 5
+✅ Sprint 6
+✅ Sprint 7
+✅ Sprint 8
+✅ Sprint 9 (Backend Engine)
 
 ## Current Module
 
-Purchase & Inventory Operations
+Sales Core & POS Engine (Frontend UI Transition)
 
 ### Web Foundation & Inventory UI
 

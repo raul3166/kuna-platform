@@ -270,3 +270,13 @@ KNA-049 Customers CRM UI🔴 AltaTabla maestra y alta de clientes consumiendo GE
 KNA-050Users & Staff Directory🔴 AltaBitácora de colaboradores de la organización indexados por sucursal (/users).
 KNA-051Matrix of Roles & Permissions🔴 AltaPanel con interruptores visuales para activar/desactivar códigos de permisos en un Rol (/roles).
 KNA-052User-Role Assignment UI🔴 AltaAsistente dinámico para otorgar o remover cargos a un usuario en caliente (/user-roles).
+
+Para el Sprint 9 — Sales Core & POS Engine (v0.9.0), 
+entraremos en la fase más interactiva y crucial del ERP: el motor de ventas y salidas de inventario. 
+El objetivo principal será crear la interfaz de facturación que descuente existencias automáticamente de tus sucursales y calcule márgenes comerciales utilizando los costos promedio que ya calcula tu backend.
+📑 Backlog del Sprint 9: Sales Core & POS Engine
+ID Historia de Usuario Prioridad Objetivo Técnico en la Web
+KNA-054 POS Terminal / Sales Interface🔴 AltaDiseñar la grilla interactiva del Punto de Venta (POS): un carrito de compras dinámico donde el cajero selecciona productos, ajusta cantidades en caliente y ve el total acumulado.
+KNA-055 Customer Checkout Link🔴 AltaPermitir asociar de forma ágil la orden de venta a un cliente de tu base de datos mediante un selector reactivo conectado al módulo de Customers.
+KNA-056 Inventory Depletion Engine🔴 AltaConectar el botón de "Emitir Factura / Sellar Venta" con los endpoints transaccionales de ventas del backend para disparar la reducción de stock atómica por sucursal.
+KNA-057 Sales Ledger & Invoicing History🟠 MediaCrear la bitácora general de facturas emitidas por la organización para auditar ingresos, devoluciones de clientes y estados de cobro.

@@ -79,3 +79,13 @@
 * Organizational Personnel Audit Directory mapped by Branch
 * Reactive Security Control Grid with nested database mapper
 * On-the-fly User-Role Assignment Panel utilizing granular DTO overrides
+
+## v0.9.0-backend
+
+* Core Commercial Engine for Sales Headers and granular SaleItems in NestJS.
+* High-precision mathematical triggers supporting line-item discounts.
+* ACID Multi-Tenant transaction controllers preventing negative branch stocks.
+* Semantic InventoryMovement ledger using dedicated 'SALE' and 'CUSTOMER_RETURN' enums.
+* Standalone Sales Returns and Independent Payments modules.
+* BillingResolution state engine for automated and secure legal invoice sequencing.
+* Unit-tested permissions infrastructure mapped to the PostgreSQL database.
