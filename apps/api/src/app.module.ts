@@ -25,6 +25,12 @@ import { PurchaseInvoiceItemsModule } from './modules/purchase-invoice-items/pur
 import { PurchaseReturnsModule } from './modules/purchase-returns/purchase-returns.module';
 import { PurchaseReturnItemsModule } from './modules/purchase-return-items/purchase-return-items.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
+import { SalesModule } from './modules/sales/sales.module';
+import { SaleItemsModule } from './modules/sale-items/sale-items.module';
+import { SaleReturnsModule } from './modules/sale-returns/sale-returns.module';
+import { SaleReturnItemsModule } from './modules/sale-return-items/sale-return-items.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { BillingResolutionsModule } from './modules/billing-resolutions/billing-resolutions.module';
 
 @Module({
   imports: [
@@ -53,6 +59,12 @@ import { InventoryTransfersModule } from './modules/inventory-transfers/inventor
     PurchaseReturnsModule,
     PurchaseReturnItemsModule,
     InventoryTransfersModule,
+    SalesModule,
+    SaleItemsModule,
+    SaleReturnsModule,
+    SaleReturnItemsModule,
+    PaymentsModule,
+    BillingResolutionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
