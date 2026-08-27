@@ -116,6 +116,18 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/SecuritySettingsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/pos',
+  name: 'pos',
+  component: () => import('../views/PosTerminalView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/sales',
+  name: 'sales',
+  component: () => import('../views/SalesLedgerView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

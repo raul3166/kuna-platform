@@ -1,9 +1,8 @@
 import {
   IsNotEmpty,
-  IsOptional,
+  IsOptional, // <-- Añadir este import si no está
   IsString,
 } from 'class-validator';
-
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSaleDto {
@@ -32,13 +31,14 @@ export class CreateSaleDto {
   @IsString()
   customerId?: string;
 
-  @ApiProperty({
+  // --- CORREGIDO: SE CAMBIA A OPCIONAL PARA PERMITIR AUTOCONSEGUTIVOS ---
+  @ApiPropertyOptional({
     example: 'VEN-000001',
     description: 'Sale number unique within the organization',
   })
   @IsString()
-  @IsNotEmpty()
-  saleNumber: string;
+  @IsOptional() // <-- CORREGIDO: Cambiado de IsNotEmpty a IsOptional
+  saleNumber?: string; // <-- CORREGIDO: Se le añade el signo ? de opcional
 
   @ApiPropertyOptional({
     example: 'Venta mostrador',

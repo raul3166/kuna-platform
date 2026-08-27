@@ -36,14 +36,21 @@ function handleLogout() {
         </div>
 
         <!-- ¡NUEVO! Grupo 2: Catálogo Comercial / CRM (KNA-050) -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              👥 Clientes (CRM)
-            </router-link>
-          </div>
-        </div>
+       <div>
+  <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
+  <div class="mt-2 space-y-1">
+    <router-link to="/pos" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+      🎛️ Terminal Punto de Venta (POS)
+    </router-link>
+    <router-link to="/sales" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+      📊 Historial de Ventas
+    </router-link>
+    <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+      👥 Clientes (CRM)
+    </router-link>
+  </div>
+</div>
+
 
         <!-- Grupo 3: Inventarios -->
         <div>

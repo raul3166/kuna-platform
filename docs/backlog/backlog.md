@@ -267,16 +267,24 @@ KNA-048Purchase Invoices UI🟠 MediaRegistro de facturas de proveedores vincula
 📋 Historias de Usuario (Backlog del Sprint 8)
 ID Historia de UsuarioPrioridad Objetivo Técnico en Vue 3 
 KNA-049 Customers CRM UI🔴 AltaTabla maestra y alta de clientes consumiendo GET/POST de /customers.
-KNA-050Users & Staff Directory🔴 AltaBitácora de colaboradores de la organización indexados por sucursal (/users).
-KNA-051Matrix of Roles & Permissions🔴 AltaPanel con interruptores visuales para activar/desactivar códigos de permisos en un Rol (/roles).
-KNA-052User-Role Assignment UI🔴 AltaAsistente dinámico para otorgar o remover cargos a un usuario en caliente (/user-roles).
+KNA-050 Users & Staff Directory🔴 AltaBitácora de colaboradores de la organización indexados por sucursal (/users).
+KNA-051 Matrix of Roles & Permissions🔴 AltaPanel con interruptores visuales para activar/desactivar códigos de permisos en un Rol (/roles).
+KNA-052 User-Role Assignment UI🔴 AltaAsistente dinámico para otorgar o remover cargos a un usuario en caliente (/user-roles).
 
-Para el Sprint 9 — Sales Core & POS Engine (v0.9.0), 
-entraremos en la fase más interactiva y crucial del ERP: el motor de ventas y salidas de inventario. 
-El objetivo principal será crear la interfaz de facturación que descuente existencias automáticamente de tus sucursales y calcule márgenes comerciales utilizando los costos promedio que ya calcula tu backend.
-📑 Backlog del Sprint 9: Sales Core & POS Engine
-ID Historia de Usuario Prioridad Objetivo Técnico en la Web
-KNA-054 POS Terminal / Sales Interface🔴 AltaDiseñar la grilla interactiva del Punto de Venta (POS): un carrito de compras dinámico donde el cajero selecciona productos, ajusta cantidades en caliente y ve el total acumulado.
-KNA-055 Customer Checkout Link🔴 AltaPermitir asociar de forma ágil la orden de venta a un cliente de tu base de datos mediante un selector reactivo conectado al módulo de Customers.
-KNA-056 Inventory Depletion Engine🔴 AltaConectar el botón de "Emitir Factura / Sellar Venta" con los endpoints transaccionales de ventas del backend para disparar la reducción de stock atómica por sucursal.
-KNA-057 Sales Ledger & Invoicing History🟠 MediaCrear la bitácora general de facturas emitidas por la organización para auditar ingresos, devoluciones de clientes y estados de cobro.
+Propuesta para las KNA del Sprint 9 Backend
+
+Yo las reorganizaría así:
+
+ID	Historia	Prioridad
+KNA-053	Sales Core / Sales Header	🔴 Alta
+KNA-054	Sales Items	🔴 Alta
+KNA-055	Sales Calculation & Totals	🔴 Alta
+KNA-056	Sales Workflow & Status	🔴 Alta
+KNA-057	Sales → Inventory Integration	🔴 Alta
+KNA-058	Sales Returns	🟠 Media
+KNA-059	Payments	🟠 Media
+KNA-060	Billing / Invoice Data	🟠 Media
+KNA-061	Sales Validation & Integrity	🟠 Media
+KNA-062	Sales History & Traceability	🟠 Media
+
+📑 Backlog Corregido del Sprint 10: Sales Core & POS Engine (Frontend UI)IDHistoria de UsuarioPrioridadObjetivo Técnico en la WebKNA-063POS Terminal / Sales Interface🔴 AltaDiseñar la grilla interactiva del Punto de Venta (POS): un carrito de compras dinámico donde el cajero busca productos por SKU/Nombre, ajusta cantidades en caliente y ve subtotales acumulados con descuentos de línea.KNA-064Customer Checkout Link🔴 AltaPermitir asociar de forma ágil la orden de venta activa a un cliente de tu base de datos mediante un selector reactivo conectado a tu API de Customers.KNA-065Payment Assistant & POS Checkout🔴 AltaDiseñar el modal transaccional para seleccionar el método de pago (CASH, CREDIT_CARD, TRANSFER), validar que cubra el monto neto y disparar la llamada HTTP para avanzar la cabecera a CONFIRMED impactando el stock.KNA-066Sales Ledger & Invoicing History🟠 MediaCrear la bitácora general de facturas emitidas por la organización para auditar ingresos históricos, mermas, devoluciones de clientes y estados de cobro.
