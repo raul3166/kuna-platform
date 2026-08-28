@@ -86,10 +86,17 @@ async function openCreateWizard() {
 }
 
 // Escuchar cuando el usuario cambia de factura para traer sus renglones originales
+// --- CORRECCIÓN INTEGRAL DE NOMBRES Y VALORES NETOS CON DESCUENTO (KNA-073) ---
+// --- CORRECCIÓN INTEGRAL ANTI-FRAUDE: DESCUENTO DE DEVOLUCIONES PREVIAS (KNA-073) ---
+// 1. Añade esta variable reactiva arriba junto a las demás
+const totalAlreadyReturnedMoney = ref(0)
+
+// 2. Busca tu función handleSaleChange y actualízala para que sume el dinero devuelto:
 async function handleSaleChange() {
   if (!selectedSaleId.value) {
     originalSaleItems.value = []
     selectedItemsToReturn.value = []
+    totalAlreadyReturnedMoney.value = 0 // Reset
     return
   }
 
@@ -97,17 +104,59 @@ async function handleSaleChange() {
     const res = await api.get(`/sales/${selectedSaleId.value}`)
     originalSaleItems.value = res.data.items || []
 
-    // Mapeamos los ítems originales a nuestra grilla reactiva de devolución
-    selectedItemsToReturn.value = originalSaleItems.value.map(item => ({
-      saleItemId: item.id,
-      productId: item.productId,
-      name: item.product?.name || 'Insumo',
-      maxQty: item.quantity, // Límite físico vendido originalmente
-      quantity: 0, // Inicia en cero para que el usuario digite cuántas unidades regresan
-      unitCost: Number(item.unitPrice) // Se recupera al precio de venta pactado
-    }))
+    const returnsRes = await api.get('/sale-returns')
+    const allCompletedReturns = returnsRes.data.filter((r: any) => r.status === 'COMPLETED' && r.saleId === selectedSaleId.value)
+
+    // CORREGIDO: Calculamos el total de dinero que ya se le regresó al cliente en notas de crédito previas
+    totalAlreadyReturnedMoney.value = allCompletedReturns.reduce((acc: number, r: any) => acc + Number(r.total || 0), 0)
+
+    const alreadyReturnedMap = new Map<string, number>()
+    for (const ret of allCompletedReturns) {
+      if (ret.items) {
+        for (const retItem of ret.items) {
+          const currentQty = alreadyReturnedMap.get(retItem.productId) || 0
+          alreadyReturnedMap.set(retItem.productId, currentQty + Number(retItem.quantity))
+        }
+      }
+    }
+
+    const groupedMap = new Map<string, any>()
+    for (const item of originalSaleItems.value) {
+      const pId = item.productId
+      const productName = item.product?.name || 'Insumo Comercial'
+      const qty = Number(item.quantity)
+      const basePrice = Number(item.unitPrice)
+      const discountApplied = Number(item.discount || 0)
+
+      const totalLineNet = (qty * basePrice) - discountApplied
+      const unitNetCost = qty > 0 ? (totalLineNet / qty) : basePrice
+
+      if (groupedMap.has(pId)) {
+        const existing = groupedMap.get(pId)
+        existing.maxQty += qty
+      } else {
+        groupedMap.set(pId, {
+          saleItemId: item.id,
+          productId: pId,
+          name: productName,
+          maxQty: qty,
+          quantity: 0,
+          unitCost: unitNetCost
+        })
+      }
+    }
+
+    const finalItems = Array.from(groupedMap.values()).map(item => {
+      const unitsAlreadyReturned = alreadyReturnedMap.get(item.productId) || 0
+      item.maxQty = Math.max(0, item.maxQty - unitsAlreadyReturned)
+      return item
+    }).filter(item => item.maxQty > 0)
+
+    selectedItemsToReturn.value = finalItems
+
   } catch (error) {
-    alert('Error al recuperar el desglose de productos de la factura.')
+    console.error(error)
+    alert('Error al recuperar el desglose financiero cruzado de la factura.')
   }
 }
 
@@ -260,13 +309,26 @@ onMounted(() => { fetchSaleReturns() })
               <input v-model="returnNumberInput" type="text" class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-xs font-mono font-bold bg-slate-100 cursor-not-allowed" readonly required />
             </div>
 
+                        <!-- BLOQUE ACTUALIZADO CON ALERTA DE SEGURIDAD VISUAL (UX) -->
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase">Seleccionar Factura Original *</label>
               <select v-model="selectedSaleId" @change="handleSaleChange" class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold focus:outline-none focus:border-blue-500" required>
                 <option value="">🔍 Vincular Folio de Factura...</option>
                 <option v-for="s in salesList" :key="s.id" :value="s.id">🧾 Folio: {{ s.saleNumber }} (Total: {{ formatCurrency(s.total) }})</option>
               </select>
+
+              <!-- INYECCIÓN CONDICIONAL DE AYUDA AL CAJERO -->
+              <div v-if="selectedSaleId" class="mt-2 text-[11px] font-medium">
+                <div v-if="totalAlreadyReturnedMoney > 0" class="text-rose-600 bg-rose-50 border border-rose-100 rounded-lg p-2 flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
+                  <span>⚠️ Nota: Esta factura tiene devoluciones previas.</span>
+                  <span class="font-mono font-bold">Ya devuelto: {{ formatCurrency(totalAlreadyReturnedMoney) }}</span>
+                </div>
+                <div v-else class="text-green-600 bg-green-50 border border-green-100 rounded-lg p-2">
+                  ✓ Factura limpia. Sin notas de crédito anteriores.
+                </div>
+              </div>
             </div>
+
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
