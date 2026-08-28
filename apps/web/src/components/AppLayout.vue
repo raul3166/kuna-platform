@@ -48,6 +48,9 @@ function handleLogout() {
     <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
       👥 Clientes (CRM)
     </router-link>
+    <router-link to="/sale-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+  ↩️ Devoluciones de Clientes
+</router-link>
   </div>
 </div>
 

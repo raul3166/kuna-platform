@@ -86,6 +86,52 @@ async function handleOpenCashRegister() {
   }
 }
 
+// --- INYECCIÓN SPRINT 11: VARIABLES DE ARQUEO Y CIERRE ---
+const showCloseBoxModal = ref(false)
+const actualBalanceInput = ref(0)
+const closeNotes = ref('')
+
+// Función para disparar el Arqueo y Cierre de Caja definitivo en NestJS
+async function handleCloseCashRegister() {
+  if (!currentCashSessionId.value) return
+
+  isSubmitting.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const payload = {
+      actualBalance: Number(actualBalanceInput.value),
+      notes: closeNotes.value || undefined
+    }
+
+    // Llama directamente a tu endpoint PATCH /cash-sessions/:id/close que usa UpdateCashSessionDto
+    const res = await api.patch(`/cash-sessions/${currentCashSessionId.value}/close`, payload)
+
+    // Si tu API calcula la diferencia, muéstrala en una alerta limpia
+    const diff = Number(res.data.difference)
+    let summaryMessage = '¡Caja cerrada con éxito!'
+    if (diff === 0) summaryMessage += ' Turno cuadrado a la perfección. 0 descuadres.'
+    else if (diff > 0) summaryMessage += ` Advertencia: Sobrante de caja de ${formatCurrency(diff)}.`
+    else summaryMessage += ` Alerta: Faltante de caja de ${formatCurrency(Math.abs(diff))}.`
+
+    alert(summaryMessage)
+
+    // Reset total del estado de tesorería en el Frontend
+    hasActiveCashSession.value = false
+    currentCashSessionId.value = null
+    showCloseBoxModal.value = false
+    activeStep.value = 'header'
+    cart.value = []
+
+  } catch (error: any) {
+    console.error(error)
+    alert(error.response?.data?.message || 'Error al procesar el arqueo del turno.')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 
 async function loadPosData() {
   try {
@@ -272,6 +318,18 @@ onMounted(() => {
             </button>
           </form>
         </div>
+        <!-- Coloca este bloque justo arriba del input de búsqueda de productos (Izquierda) -->
+<div class="mb-4 flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
+  <div class="flex items-center space-x-2">
+    <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+    <span class="text-xs font-bold text-slate-700">Caja Operativa Habilitada</span>
+  </div>
+  <!-- BOTÓN DE ACCIÓN CONTABLE -->
+  <button @click="showCloseBoxModal = true" type="button" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs tracking-wide transition-colors">
+    🔒 Hacer Arqueo / Cerrar Caja
+  </button>
+</div>
+
         <!-- PASO B: CARRITO MAESTRO-DETALLE ACTIVO -->
         <div v-if="activeStep === 'checkout'" class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
           <!-- Catálogo de Artículos (Izquierda) -->
@@ -378,5 +436,35 @@ onMounted(() => {
         </button>
       </div>
     </div>
+        <!-- MODAL DE ARQUEO Y LIQUIDACIÓN DE TURNO (KNA-070) -->
+    <div v-if="showCloseBoxModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="text-base font-black text-slate-900">Arqueo General de Caja (Cierre)</h3>
+          <button @click="showCloseBoxModal = false" type="button" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+        </div>
+
+        <div class="text-center p-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
+          ⚠️ Digita el dinero físico real que tienes en este momento dentro de la gaveta de efectivo. El sistema lo conciliará contra el software.
+        </div>
+
+        <form @submit.prevent="handleCloseCashRegister" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Efectivo Físico Contado ($) *</label>
+            <input v-model.number="actualBalanceInput" type="number" min="0" placeholder="Ej: 250000" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm font-mono font-bold focus:border-blue-500 focus:outline-none bg-slate-50" required />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Novedades / Observaciones de Cierre</label>
+            <textarea v-model="closeNotes" rows="2" placeholder="Ej: Faltó cambio de $500, todo lo demás en orden..." class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-sm focus:border-blue-500 focus:outline-none bg-slate-50"></textarea>
+          </div>
+
+          <button type="submit" :disabled="isSubmitting" class="w-full bg-slate-950 hover:bg-slate-900 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
+            {{ isSubmitting ? 'Procesando Conciliación...' : '🏁 Consolidar Arqueo y Cerrar Caja' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
   </AppLayout>
 </template>

@@ -128,6 +128,12 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/SalesLedgerView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/sale-returns',
+  name: 'sale-returns',
+  component: () => import('../views/SaleReturnsView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
