@@ -67,6 +67,7 @@ export class SalesService {
   }
 
 
+    // --- CORRECCIÓN DE RELACIÓN DE CATÁLOGO EN LISTADO GENERAL (KNA-062) ---
   async findAll(organizationId?: string, status?: string) {
     return this.prisma.sale.findMany({
       where: {
@@ -76,24 +77,38 @@ export class SalesService {
       include: {
         branch: { select: { id: true, name: true, code: true } },
         customer: true,
-        items: true,
+        // CORREGIDO: Incluir la relación profunda del producto para que viaje el nombre real al frontend
+        items: {
+          include: {
+            product: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+
+    // --- CORRECCIÓN DEFINITIVA EN EL MOTOR DE CONSULTA INDIVIDUAL ---
   async findOne(id: string) {
     const sale = await this.prisma.sale.findUnique({
       where: { id },
       include: {
         branch: { select: { id: true, name: true, code: true } },
         customer: true,
-        items: true,
+        // CORREGIDO: Carga anidada profunda para jalar el nombre real del producto
+        items: {
+          include: {
+            product: true // <-- ¡MANDATORIO! Esto elimina para siempre el texto 'Insumo Comercial'
+          }
+        }
       },
     });
-    if (!sale) throw new NotFoundException('Sale not found');
+
+    if (!sale) throw new NotFoundException('Sale record not found');
     return sale;
   }
+
 
   async update(id: string, updateSaleDto: UpdateSaleDto) {
     const sale = await this.prisma.sale.findUnique({ where: { id } });

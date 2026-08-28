@@ -21,6 +21,8 @@ export class SaleItemsService {
     const subtotalNeto = baseSubtotal - discountApplied;
 
     // 1. Crear el ítem en la base de datos
+        // Dentro de sale-items.service.ts -> async create(dto: CreateSaleItemDto)
+    // 1. Crear el ítem en la base de datos con la relación profunda
     const newItem = await this.prisma.saleItem.create({
       data: {
         saleId: dto.saleId,
@@ -32,12 +34,17 @@ export class SaleItemsService {
         total: subtotalNeto,
         description: dto.description || undefined,
       },
+      // CORREGIDO: Mandatorio incluir la relación para que el nombre no se pierda al persistirse
+      include: {
+        product: true
+      }
     });
 
     // 2. Recalcular y actualizar la cabecera directamente con Prisma (KNA-055)
     await this.recalculateTotalsDirect(dto.saleId);
 
     return newItem;
+
   }
 
   // Métodos complementarios para el estándar del controlador

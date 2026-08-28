@@ -8,23 +8,25 @@ const authStore = useAuthStore()
 
 interface Product { id: string; name: string; sku: string; salePrice: number; barcode?: string }
 interface Customer { id: string; firstName: string; lastName: string; email?: string }
-interface CartItem { id?: string; product: Product; quantity: number; unitPrice: number; discount: number }
-interface CashSession { id: string; status: 'OPEN' | 'CLOSED'; openingBalance: number }
+interface CartItem {
+  product: Product
+  quantity: number
+  unitPrice: number
+  discount: number
+}
 
-// Control de flujos extendido para el Sprint 11
+// Control de Caja (Sprint 11)
 const hasActiveCashSession = ref(false)
 const currentCashSessionId = ref<string | null>(null)
-const openingBalanceInput = ref(200000) // Base por defecto sugerida (COP)
+const openingBalanceInput = ref(200000)
 
-const activeStep = ref<'header' | 'checkout'>('header')
 const products = ref<Product[]>([])
 const customers = ref<Customer[]>([])
 const searchQuery = ref('')
 const selectedCustomerId = ref('')
 const notes = ref('')
 
-const createdSaleId = ref<string | null>(null)
-const assignedSaleNumber = ref('')
+// El Carrito de compras ahora opera 100% EN MEMORAL LOCAL
 const cart = ref<CartItem[]>([])
 
 const isLoading = ref(true)
@@ -32,21 +34,29 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+// Modal de Cierre de Caja / Pago
 const showPaymentModal = ref(false)
+const showCloseBoxModal = ref(false)
+const actualBalanceInput = ref(0)
+const closeNotes = ref('')
 const paymentMethod = ref<'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'TRANSFER'>('CASH')
 const amountPaid = ref(0)
 
-// KNA-069: Consultar si el cajero logueado ya cuenta con un turno abierto en NestJS
+// Consultar sesión de caja activa
+// --- CORRECCIÓN INTEGRAL DE FLUJO DE CAJA (KNA-069) ---
 async function checkCashSessionStatus() {
   isLoading.value = true
   errorMessage.value = ''
   try {
     const userId = authStore.user?.id || ''
-    const res = await api.get<CashSession | null>(`/cash-sessions/active?userId=${userId}`)
+    // Consultamos si el cajero ya cuenta con un turno OPEN en la base de datos
+    const res = await api.get(`/cash-sessions/active?userId=${userId}`)
 
-    if (res.data && res.data.status === 'OPEN') {
+    // CORREGIDO: Validamos con total precisión si el registro existe físicamente
+    if (res.data && res.data.id) {
       hasActiveCashSession.value = true
       currentCashSessionId.value = res.data.id
+      await loadPosData() // Cargamos el catálogo automáticamente
     } else {
       hasActiveCashSession.value = false
       currentCashSessionId.value = null
@@ -58,11 +68,10 @@ async function checkCashSessionStatus() {
   }
 }
 
-// KNA-068: Disparar la apertura formal del turno inyectando dinero en efectivo a la DB
-// Reemplaza esta función exacta en tu sección <script> de PosTerminalView.vue
+
+// Registrar apertura de caja
 async function handleOpenCashRegister() {
   isSubmitting.value = true
-  errorMessage.value = ''
   try {
     const payload = {
       organizationId: authStore.user?.organizationId || '',
@@ -70,15 +79,11 @@ async function handleOpenCashRegister() {
       userId: authStore.user?.id || '',
       openingBalance: Number(openingBalanceInput.value)
     }
-
     const res = await api.post('/cash-sessions/open', payload)
     currentCashSessionId.value = res.data.id
     hasActiveCashSession.value = true
-
-    // CORREGIDO: Dispara la carga inmediata del catálogo al abrir la caja en el mismo instante
     await loadPosData()
-
-    successMessage.value = '¡Caja abierta de forma exitosa! Terminal POS liberada para ventas.'
+    successMessage.value = '¡Caja abierta de forma exitosa! Terminal POS liberada.'
   } catch (error: any) {
     errorMessage.value = error.response?.data?.message || 'Error abriendo el turno de caja.'
   } finally {
@@ -86,53 +91,7 @@ async function handleOpenCashRegister() {
   }
 }
 
-// --- INYECCIÓN SPRINT 11: VARIABLES DE ARQUEO Y CIERRE ---
-const showCloseBoxModal = ref(false)
-const actualBalanceInput = ref(0)
-const closeNotes = ref('')
-
-// Función para disparar el Arqueo y Cierre de Caja definitivo en NestJS
-async function handleCloseCashRegister() {
-  if (!currentCashSessionId.value) return
-
-  isSubmitting.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
-
-  try {
-    const payload = {
-      actualBalance: Number(actualBalanceInput.value),
-      notes: closeNotes.value || undefined
-    }
-
-    // Llama directamente a tu endpoint PATCH /cash-sessions/:id/close que usa UpdateCashSessionDto
-    const res = await api.patch(`/cash-sessions/${currentCashSessionId.value}/close`, payload)
-
-    // Si tu API calcula la diferencia, muéstrala en una alerta limpia
-    const diff = Number(res.data.difference)
-    let summaryMessage = '¡Caja cerrada con éxito!'
-    if (diff === 0) summaryMessage += ' Turno cuadrado a la perfección. 0 descuadres.'
-    else if (diff > 0) summaryMessage += ` Advertencia: Sobrante de caja de ${formatCurrency(diff)}.`
-    else summaryMessage += ` Alerta: Faltante de caja de ${formatCurrency(Math.abs(diff))}.`
-
-    alert(summaryMessage)
-
-    // Reset total del estado de tesorería en el Frontend
-    hasActiveCashSession.value = false
-    currentCashSessionId.value = null
-    showCloseBoxModal.value = false
-    activeStep.value = 'header'
-    cart.value = []
-
-  } catch (error: any) {
-    console.error(error)
-    alert(error.response?.data?.message || 'Error al procesar el arqueo del turno.')
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-
+// Cargar catálogo maestro
 async function loadPosData() {
   try {
     const [prodRes, custRes] = await Promise.all([
@@ -142,7 +101,7 @@ async function loadPosData() {
     products.value = prodRes.data
     customers.value = custRes.data
   } catch (error) {
-    errorMessage.value = 'Error al sincronizar el catálogo comercial del POS.'
+    errorMessage.value = 'Error al sincronizar el catálogo comercial.'
   }
 }
 
@@ -152,74 +111,33 @@ const filteredProducts = computed(() => {
   return products.value.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query))
 })
 
-const cartSubtotal = computed(() => cart.value.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unitPrice)), 0))
+// Totales locales reactivos ultrarápidos
+const cartSubtotal = computed(() => cart.value.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0))
 const cartDiscount = computed(() => cart.value.reduce((acc, item) => acc + Number(item.discount), 0))
 const cartTotal = computed(() => cartSubtotal.value - cartDiscount.value)
 const cashChange = computed(() => Math.max(0, amountPaid.value - cartTotal.value))
 
-async function handleInitializeSale() {
-  isSubmitting.value = true
-  errorMessage.value = ''
-  try {
-    const payload = {
-      organizationId: authStore.user?.organizationId || '',
-      branchId: authStore.user?.branchId || '',
-      customerId: selectedCustomerId.value || undefined,
-      notes: notes.value || undefined
-    }
-
-    const res = await api.post('/sales', payload)
-    createdSaleId.value = res.data.id
-    assignedSaleNumber.value = res.data.saleNumber
-    activeStep.value = 'checkout'
-    amountPaid.value = 0
-  } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || 'Falta la resolución de facturación activa para esta sucursal.'
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function addToCart(product: Product) {
-  if (!createdSaleId.value) return
+// AGREGAR AL CARRITO LOCALMENTE (No toca la base de datos)
+function addToCart(product: Product) {
   const existing = cart.value.find(item => item.product.id === product.id)
-  const quantity = existing ? existing.quantity + 1 : 1
-  const discount = existing ? existing.discount : 0
-
-  try {
-    const payload = { saleId: createdSaleId.value, productId: product.id, quantity, unitPrice: Number(product.salePrice), discount }
-    const res = await api.post('/sale-items', payload)
-
-    if (existing) {
-      existing.quantity++
-    } else {
-      cart.value.push({ id: res.data.id, product, quantity: 1, unitPrice: Number(product.salePrice), discount: 0 })
-    }
-  } catch (error: any) {
-    alert(error.response?.data?.message || 'Error al cargar el producto al checkout.')
+  if (existing) {
+    existing.quantity++
+  } else {
+    cart.value.push({ product, quantity: 1, unitPrice: Number(product.salePrice), discount: 0 })
   }
 }
 
-async function applyLineDiscount(item: any, amount: number) {
-  if (!item.id) return
-  try {
-    await api.patch(`/sale-items/${item.id}`, { quantity: item.quantity, unitPrice: item.unitPrice, discount: Number(amount) })
-    item.discount = Number(amount)
-  } catch (error: any) {
-    alert(error.response?.data?.message || 'No se pudo aplicar el descuento.')
-  }
+// MODIFICAR DESCUENTO LOCALMENTE
+function updateLineDiscount(item: CartItem, discountValue: string) {
+  item.discount = Number(discountValue) || 0
 }
 
-async function removeLineItem(item: any, index: number) {
-  if (!item.id) return
-  try {
-    await api.delete(`/sale-items/${item.id}`)
-    cart.value.splice(index, 1)
-  } catch (error: any) {
-    alert(error.response?.data?.message || 'Error al remover el producto.')
-  }
+// REMOVER DEL CARRITO LOCALMENTE
+function removeLineItem(index: number) {
+  cart.value.splice(index, 1)
 }
 
+// PROCESAR COBRO: SE CONSOLIDA Y PERSISTE EN LA DB TODO EN UN SOLO CLIC
 async function handleFinalizeSale() {
   if (amountPaid.value < cartTotal.value && paymentMethod.value === 'CASH') {
     alert('El dinero recibido no cubre el monto neto total de la compra.')
@@ -228,20 +146,70 @@ async function handleFinalizeSale() {
 
   isSubmitting.value = true
   try {
-    await api.post('/payments', { organizationId: authStore.user?.organizationId || '', saleId: createdSaleId.value, method: paymentMethod.value, amount: cartTotal.value })
-    await api.patch(`/sales/${createdSaleId.value}/confirm`)
+    // 1. Crear la Cabecera en la Base de Datos (Consume resolución fiscal aquí)
+    const salePayload = {
+      organizationId: authStore.user?.organizationId || '',
+      branchId: authStore.user?.branchId || '',
+      customerId: selectedCustomerId.value || undefined,
+      notes: notes.value || undefined
+    }
+    const saleRes = await api.post('/sales', salePayload)
+    const saleId = saleRes.data.id
 
-    successMessage.value = `¡Venta ${assignedSaleNumber.value} cobrada y stock descontado con éxito!`
+    // 2. Insertar todos los ítems agregados de forma masiva
+    for (const item of cart.value) {
+      await api.post('/sale-items', {
+        saleId,
+        productId: item.product.id,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount
+      })
+    }
 
-    createdSaleId.value = null
-    assignedSaleNumber.value = ''
+    // 3. Registrar el método de pago recibido
+    await api.post('/payments', {
+      organizationId: authStore.user?.organizationId || '',
+      saleId,
+      method: paymentMethod.value,
+      amount: cartTotal.value
+    })
+
+    // 4. Confirmar Venta (Sella el consecutivo y descuenta stock atómico en NestJS)
+    const confirmRes = await api.patch(`/sales/${saleId}/confirm`)
+
+    successMessage.value = `¡Venta ${confirmRes.data.saleNumber} procesada, cobrada e inventario descontado con éxito!`
+
+    // Resetear el POS limpio para la siguiente venta
     cart.value = []
     selectedCustomerId.value = ''
     notes.value = ''
     showPaymentModal.value = false
-    activeStep.value = 'header'
+    amountPaid.value = 0
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Error crítico de inventario en el checkout.')
+    alert(error.response?.data?.message || 'Error crítico procesando la transacción de venta.')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Arqueo y Cierre de caja
+async function handleCloseCashRegister() {
+  if (!currentCashSessionId.value) return
+  isSubmitting.value = true
+  try {
+    const res = await api.patch(`/cash-sessions/${currentCashSessionId.value}/close`, {
+      actualBalance: Number(actualBalanceInput.value),
+      notes: closeNotes.value || undefined
+    })
+    const diff = Number(res.data.difference)
+    alert(diff === 0 ? '¡Caja cerrada! Turno cuadrado perfectamente.' : `Caja cerrada. Descuadre: ${formatCurrency(diff)}`)
+    hasActiveCashSession.value = false
+    currentCashSessionId.value = null
+    showCloseBoxModal.value = false
+    cart.value = []
+  } catch (error: any) {
+    alert(error.response?.data?.message || 'Error en el arqueo.')
   } finally {
     isSubmitting.value = false
   }
@@ -251,11 +219,7 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value)
 }
 
-onMounted(() => {
-  checkCashSessionStatus().then(() => {
-    if (hasActiveCashSession.value) loadPosData()
-  })
-})
+onMounted(() => { checkCashSessionStatus() })
 </script>
 <template>
   <AppLayout>
@@ -263,13 +227,13 @@ onMounted(() => {
     <div v-if="errorMessage" class="mb-4 bg-red-50 text-red-700 p-4 border border-red-200 rounded-xl text-sm">⚠️ {{ errorMessage }}</div>
     <div v-if="successMessage" class="mb-4 bg-green-50 text-green-700 p-4 border border-green-200 rounded-xl text-sm">🎉 {{ successMessage }}</div>
 
-    <!-- ESTADO DE CARGA MAESTRO -->
+    <!-- CARGA DE DATOS -->
     <div v-if="isLoading" class="p-8 text-center text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl animate-pulse">
       Validando estado de turnos y tesorería en KUNA...
     </div>
 
     <div v-else>
-      <!-- INTERFAZ CON CANDADO DE SEGURIDAD: SI NO HAY CAJA ABIERTA (KNA-069) -->
+      <!-- INTERFAZ CON CANDADO DE CAJA CERRADA -->
       <div v-if="!hasActiveCashSession" class="max-w-md mx-auto bg-white border border-slate-200 p-6 rounded-2xl shadow-xl mt-12 border-t-4 border-t-amber-500">
         <div class="text-center mb-6">
           <span class="text-4xl">🔒</span>
@@ -282,126 +246,109 @@ onMounted(() => {
             <label class="block text-xs font-bold text-slate-700 uppercase">Monto Inicial en Efectivo (Base de Caja) *</label>
             <input v-model.number="openingBalanceInput" type="number" min="0" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 font-mono font-bold focus:border-blue-500 focus:outline-none" required />
           </div>
-
-          <button type="submit" :disabled="isSubmitting" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl text-xs shadow-md transition-colors uppercase tracking-wider">
+          <button type="submit" :disabled="isSubmitting" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
             {{ isSubmitting ? 'Abriendo Turno...' : '🔓 Registrar Base y Habilitar POS' }}
           </button>
         </form>
       </div>
 
-      <!-- INTERFAZ LIBERADA: SI HAY SESIÓN DE CAJA OPERANDO -->
-      <div v-else>
-        <!-- PASO A: CONFIGURACIÓN INICIAL / APERTURA FACTURA -->
-        <div v-if="activeStep === 'header'" class="max-w-md mx-auto bg-white border border-slate-200 p-6 rounded-2xl shadow-sm mt-8">
-          <div class="text-center mb-6">
-            <span class="text-3xl">🎛️</span>
-            <h2 class="text-xl font-black text-slate-900 mt-2">Apertura Factura</h2>
-            <p class="text-xs text-slate-400 mt-1">Sincroniza la resolución fiscal activa y prepara un carro de compras.</p>
+      <!-- INTERFAZ DE PUNTO DE VENTA LIBERADA -->
+      <div v-else class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-10rem)]">
+        <!-- Panel del Catálogo de Productos (Izquierda) -->
+        <div class="lg:col-span-2 flex flex-col bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+          <!-- Barra superior de control de arqueos -->
+          <div class="mb-4 flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div class="flex items-center space-x-2">
+              <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+              <span class="text-xs font-bold text-slate-700">Caja Operativa Habilitada</span>
+            </div>
+            <button @click="showCloseBoxModal = true" type="button" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs tracking-wide transition-colors">
+              🔒 Hacer Arqueo / Cerrar Caja
+            </button>
           </div>
 
-          <form @submit.prevent="handleInitializeSale" class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase">Vincular Cliente (Opcional)</label>
-              <select v-model="selectedCustomerId" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:border-blue-500 focus:outline-none">
+          <div class="mb-4">
+            <input v-model="searchQuery" type="text" placeholder="🔍 Buscar por nombre de insumo o SKU de catálogo..." class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none bg-slate-50" />
+          </div>
+
+          <div class="flex-1 overflow-y-auto grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pr-1">
+            <div v-for="p in filteredProducts" :key="p.id" class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 hover:bg-blue-50/30 transition-colors flex flex-col justify-between items-start">
+              <div>
+                <div class="text-xs font-mono font-bold text-slate-400">SKU: {{ p.sku }}</div>
+                <div class="text-sm font-bold text-slate-900 mt-0.5">{{ p.name }}</div>
+              </div>
+              <div class="w-full flex justify-between items-center mt-4 pt-2 border-t border-slate-100">
+                <span class="font-mono font-black text-slate-950 text-sm">{{ formatCurrency(Number(p.salePrice)) }}</span>
+                <button @click="addToCart(p)" type="button" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs font-bold transition-all shadow-sm">
+                  ➕ Añadir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Panel Lateral del Carrito de Compras (Derecha) -->
+        <div class="bg-slate-900 text-white rounded-2xl p-4 flex flex-col justify-between shadow-lg border border-slate-950">
+          <div class="space-y-4">
+            <div class="border-b border-slate-800 pb-3">
+              <h3 class="text-sm font-black tracking-wide text-slate-200">Carrito de Cobro POS</h3>
+              <p class="text-[10px] text-slate-400 mt-0.5">Agrega productos e indexa los metadatos comerciales.</p>
+            </div>
+
+            <!-- SELECTORES INTEGRADOS COMPACTOS -->
+            <div class="space-y-2 text-slate-900">
+              <select v-model="selectedCustomerId" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none">
                 <option value="">👤 Venta de Mostrador / Cliente Anónimo</option>
                 <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.firstName }} {{ c.lastName || '' }}</option>
               </select>
+              <input v-model="notes" type="text" placeholder="📝 Notas de factura (Ej: Mesa 3, Para llevar...)" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none placeholder-slate-500" />
             </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase">Observación General de Venta</label>
-              <input v-model="notes" type="text" placeholder="Ej: Despacho para llevar..." class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 focus:border-blue-500 focus:outline-none" />
-            </div>
-
-            <button type="submit" :disabled="isSubmitting" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-colors">
-              {{ isSubmitting ? 'Validando...' : '⚡ Inicializar Carrito' }}
-            </button>
-          </form>
-        </div>
-        <!-- Coloca este bloque justo arriba del input de búsqueda de productos (Izquierda) -->
-<div class="mb-4 flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
-  <div class="flex items-center space-x-2">
-    <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
-    <span class="text-xs font-bold text-slate-700">Caja Operativa Habilitada</span>
-  </div>
-  <!-- BOTÓN DE ACCIÓN CONTABLE -->
-  <button @click="showCloseBoxModal = true" type="button" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs tracking-wide transition-colors">
-    🔒 Hacer Arqueo / Cerrar Caja
-  </button>
-</div>
-
-        <!-- PASO B: CARRITO MAESTRO-DETALLE ACTIVO -->
-        <div v-if="activeStep === 'checkout'" class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
-          <!-- Catálogo de Artículos (Izquierda) -->
-          <div class="lg:col-span-2 flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden p-4 shadow-sm">
-            <div class="mb-4">
-              <input v-model="searchQuery" type="text" placeholder="🔍 Buscar por nombre de insumo o SKU..." class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:border-blue-500 focus:outline-none bg-slate-50" />
-            </div>
-
-            <div class="flex-1 overflow-y-auto grid gap-3 sm:grid-cols-2 lg:grid-cols-3 h-full pr-1">
-              <div v-for="p in filteredProducts" :key="p.id" class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 hover:bg-blue-50/30 transition-colors flex flex-col justify-between items-start">
-                <div>
-                  <div class="text-xs font-mono font-bold text-slate-400">SKU: {{ p.sku }}</div>
-                  <div class="text-sm font-bold text-slate-900 mt-0.5">{{ p.name }}</div>
+            <!-- Tabla de Renglones en Memoria -->
+            <div class="mt-4 space-y-2 overflow-y-auto max-h-[calc(100vh-28rem)] pr-1">
+              <div v-for="(item, index) in cart" :key="index" class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="text-xs font-bold text-slate-100">{{ item.product.name }}</div>
+                    <div class="text-[10px] font-mono text-slate-400 mt-0.5">{{ item.quantity }} uds x {{ formatCurrency(item.unitPrice) }}</div>
+                  </div>
+                  <button @click="removeLineItem(index)" type="button" class="text-slate-500 hover:text-rose-400 text-xs transition-colors">🗑️</button>
                 </div>
-                <div class="w-full flex justify-between items-center mt-4 pt-2 border-t border-slate-100">
-                  <span class="font-mono font-black text-slate-950 text-sm">{{ formatCurrency(Number(p.salePrice)) }}</span>
-                  <button @click="addToCart(p)" type="button" class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs font-bold transition-all shadow-sm">➕ Añadir</button>
+                <div class="flex items-center justify-between pt-1.5 border-t border-slate-900/60 text-[11px]">
+                  <div class="flex items-center space-x-1">
+                    <span class="text-slate-500">Desc ($):</span>
+                    <input :value="item.discount" @input="updateLineDiscount(item, ($event.target as HTMLInputElement).value)" type="number" min="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-right font-mono text-xs text-rose-400 focus:outline-none" />
+                  </div>
+                  <div class="font-mono font-bold text-slate-200">
+                    {{ formatCurrency((item.quantity * item.unitPrice) - item.discount) }}
+                  </div>
                 </div>
               </div>
+              <div v-if="cart.length === 0" class="text-center text-xs text-slate-500 italic pt-8">El carro de cobro se encuentra vacío.</div>
             </div>
           </div>
 
-          <!-- Bolsa Factura / Checkout Side (Derecha) -->
-          <div class="bg-slate-900 text-white rounded-2xl p-4 flex flex-col justify-between shadow-lg relative border border-slate-950">
-            <div>
-              <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div>
-                  <h3 class="text-sm font-black tracking-wide text-slate-200">Factura Activa</h3>
-                  <p class="text-[10px] font-mono text-blue-400 font-bold mt-0.5">Consecutivo: {{ assignedSaleNumber }}</p>
-                </div>
-                <span class="text-xs bg-blue-950 text-blue-400 border border-blue-900 font-black px-2 py-0.5 rounded uppercase">DRAFT</span>
-              </div>
-
-              <!-- Renglones Factura -->
-              <div class="mt-4 space-y-2 overflow-y-auto max-h-[calc(100vh-28rem)] pr-1">
-                <div v-for="(item, index) in cart" :key="index" class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
-                  <div class="flex justify-between items-start">
-                    <div>
-                      <div class="text-xs font-bold text-slate-100">{{ item.product.name }}</div>
-                      <div class="text-[10px] font-mono text-slate-400 mt-0.5">{{ item.quantity }} uds x {{ formatCurrency(item.unitPrice) }}</div>
-                    </div>
-                    <button @click="removeLineItem(item, index)" type="button" class="text-slate-500 hover:text-rose-400 text-xs">🗑️</button>
-                  </div>
-                  <div class="flex items-center justify-between pt-1 border-t border-slate-900/60 text-[11px]">
-                    <div class="flex items-center space-x-1">
-                      <span class="text-slate-500">Desc:</span>
-                      <input :value="item.discount" @change="applyLineDiscount(item, ($event.target as HTMLInputElement).value)" type="number" class="w-16 bg-slate-900 border border-slate-700 rounded text-right font-mono text-xs text-rose-400 focus:outline-none" />
-                    </div>
-                    <div class="font-mono font-bold text-slate-200">{{ formatCurrency((item.quantity * item.unitPrice) - item.discount) }}</div>
-                  </div>
-                </div>
+          <!-- Bloque de Totales -->
+          <div class="border-t border-slate-800 pt-4 bg-slate-900 z-10">
+            <div class="space-y-1.5 text-xs text-slate-400">
+              <div class="flex justify-between"><span>Subtotal Bruto:</span><span class="font-mono text-slate-200">{{ formatCurrency(cartSubtotal) }}</span></div>
+              <div class="flex justify-between text-rose-400"><span>Descuentos:</span><span class="font-mono">- {{ formatCurrency(cartDiscount) }}</span></div>
+              <div class="flex justify-between text-base font-black text-white pt-2 border-t border-slate-800">
+                <span>TOTAL NETO:</span>
+                <span class="font-mono text-xl text-green-400">{{ formatCurrency(cartTotal) }}</span>
               </div>
             </div>
 
-            <!-- Bloque de Totales -->
-            <div class="border-t border-slate-800 pt-4 bg-slate-900 z-10">
-              <div class="space-y-1.5 text-xs text-slate-400">
-                <div class="flex justify-between"><span>Subtotal Bruto:</span><span>{{ formatCurrency(cartSubtotal) }}</span></div>
-                <div class="flex justify-between text-rose-400"><span>Descuentos:</span><span>- {{ formatCurrency(cartDiscount) }}</span></div>
-                <div class="flex justify-between text-base font-black text-white pt-2 border-t border-slate-800">
-                  <span>TOTAL NETO:</span><span class="font-mono text-green-400">{{ formatCurrency(cartTotal) }}</span>
-                </div>
-              </div>
-              <button @click="showPaymentModal = true" :disabled="cart.length === 0" type="button" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-black py-3.5 rounded-xl text-sm mt-4 shadow-md transition-all uppercase">✓ Procesar Cobro</button>
-            </div>
+            <button @click="showPaymentModal = true" :disabled="cart.length === 0" type="button" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-black py-3.5 rounded-xl text-sm mt-4 shadow-md transition-all uppercase tracking-wider disabled:opacity-40">
+              ✓ Procesar Cobro
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL DE COBRO PASARELA -->
-    <div v-if="showPaymentModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <!-- MODAL DE PASARELA DE PAGO -->
+        <!-- MODAL DE PASARELA DE PAGO (CORREGIDO COMPLETO) -->
+    <div v-if="showPaymentModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
           <h3 class="text-base font-black text-slate-900">Pasarela de Pago Terminal POS</h3>
@@ -415,56 +362,55 @@ onMounted(() => {
 
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase">Método de Dispersión</label>
-          <select v-model="paymentMethod" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 font-semibold focus:outline-none">
+          <select v-model="paymentMethod" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 font-semibold focus:outline-none text-slate-900">
             <option value="CASH">💵 Dinero en Efectivo</option>
             <option value="CREDIT_CARD">💳 Tarjeta de Crédito</option>
             <option value="DEBIT_CARD">🏦 Tarjeta de Débito</option>
-            <option value="TRANSFER">📱 Transferencia Digital</option>
+            <option value="TRANSFER">📱 Transferencia Digital (Nequi/Daviplata)</option>
           </select>
         </div>
 
-        <div v-if="paymentMethod === 'CASH'">
-          <label class="block text-xs font-bold text-slate-700 uppercase">Efectivo Recibido ($)</label>
-          <input v-model.number="amountPaid" type="number" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-50 font-mono font-bold focus:outline-none" />
-          <div class="mt-3 flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-xs font-semibold text-blue-700">
-            <span>Cambio / Vueltas:</span><span class="font-mono text-sm font-black">{{ formatCurrency(cashChange) }}</span>
+        <!-- CAMPO CORRECTO PARA EFECTIVO RECIBIDO -->
+        <div v-if="paymentMethod === 'CASH'" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase">Efectivo Recibido ($) *</label>
+            <input v-model.number="amountPaid" type="number" min="0" placeholder="Ej: 70000" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm focus:border-blue-500 focus:outline-none bg-slate-50 font-mono font-bold text-slate-900" required />
+          </div>
+          <div class="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-xs font-semibold text-blue-700">
+            <span>Cambio / Vueltas:</span>
+            <span class="font-mono text-sm font-black">{{ formatCurrency(cashChange) }}</span>
           </div>
         </div>
 
-        <button @click="handleFinalizeSale" :disabled="isSubmitting" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs uppercase">
-          {{ isSubmitting ? 'Egresando...' : 'Sellar y Emitir Factura POS' }}
+        <button @click="handleFinalizeSale" :disabled="isSubmitting" type="button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider transition-colors mt-2">
+          {{ isSubmitting ? 'Egresando Inventario...' : 'Sellar y Emitir Factura POS' }}
         </button>
       </div>
     </div>
-        <!-- MODAL DE ARQUEO Y LIQUIDACIÓN DE TURNO (KNA-070) -->
-    <div v-if="showCloseBoxModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+
+
+    <!-- MODAL DE ARQUEO Y CIERRE DE CAJA -->
+    <div v-if="showCloseBoxModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
           <h3 class="text-base font-black text-slate-900">Arqueo General de Caja (Cierre)</h3>
           <button @click="showCloseBoxModal = false" type="button" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
         </div>
 
-        <div class="text-center p-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
-          ⚠️ Digita el dinero físico real que tienes en este momento dentro de la gaveta de efectivo. El sistema lo conciliará contra el software.
-        </div>
-
         <form @submit.prevent="handleCloseCashRegister" class="space-y-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase">Efectivo Físico Contado ($) *</label>
-            <input v-model.number="actualBalanceInput" type="number" min="0" placeholder="Ej: 250000" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm font-mono font-bold focus:border-blue-500 focus:outline-none bg-slate-50" required />
+            <input v-model.number="actualBalanceInput" type="number" min="0" placeholder="Ej: 250000" class="mt-1 w-full border border-slate-300 rounded-xl p-2.5 text-sm font-mono font-bold focus:border-blue-500 focus:outline-none bg-slate-50 text-slate-900" required />
           </div>
-
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase">Novedades / Observaciones de Cierre</label>
-            <textarea v-model="closeNotes" rows="2" placeholder="Ej: Faltó cambio de $500, todo lo demás en orden..." class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-sm focus:border-blue-500 focus:outline-none bg-slate-50"></textarea>
+            <textarea v-model="closeNotes" rows="2" placeholder="Ej: Turno en orden..." class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-sm focus:border-blue-500 focus:outline-none bg-slate-50 text-slate-900"></textarea>
           </div>
-
           <button type="submit" :disabled="isSubmitting" class="w-full bg-slate-950 hover:bg-slate-900 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
             {{ isSubmitting ? 'Procesando Conciliación...' : '🏁 Consolidar Arqueo y Cerrar Caja' }}
           </button>
         </form>
       </div>
     </div>
-
   </AppLayout>
 </template>

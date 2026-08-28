@@ -29,3 +29,42 @@ body,
 body {
   min-width: 320px;
 }
+
+/* --- INYECCIÓN SPRINT 13: DIRECTIVAS DE IMPRESIÓN TÉRMICA POS --- */
+@media print {
+  /* 1. Ocultar absolutamente todo el ERP vivo en la pantalla */
+  body *,
+  #app *,
+  .no-print {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  /* 2. Habilitar únicamente el contenedor exclusivo del ticket fiscal */
+  .print-ticket-area,
+  .print-ticket-area * {
+    visibility: visible !important;
+    display: block !important;
+  }
+
+  /* 3. Posicionar el ticket en la esquina superior izquierda del papel térmico */
+  .print-ticket-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important; /* Ancho estándar de tirilla POS */
+    margin: 0 !important;
+    padding: 0 3mm !important;
+    background: white !important;
+    color: black !important;
+    font-family: 'Courier New', Courier, monospace !important; /* Tipografía clásica de ticket */
+    font-size: 12px !important;
+  }
+
+  /* Reset de márgenes de página del navegador para evitar encabezados con URLs */
+  @page {
+    margin: 0 !important;
+    size: auto !important;
+  }
+}
+
