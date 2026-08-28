@@ -295,3 +295,10 @@ Backlog Oficial del Sprint 12: Sales Returns UI (v1.0.0-rc3)IDHistoria de Usuari
 
 Sprint 13
 IDHistoria de UsuarioPrioridadAlcanceObjetivo Técnico en KUNAKNA-075Thermal Print Template Layout🔴 AltaFrontendDiseñar el componente estructurado CSS tipo tirilla (80mm o 58mm) con el logo de KUNA, cabecera de la sucursal, datos de la resolución legal, desglose de ítems, totales financieros y sección de cambio.KNA-076POS Success Printing Modal🔴 AltaFrontendDesarrollar una ventana emergente o modal de éxito al finalizar la venta en handleFinalizeSale, permitiendo al cajero disparar el comando nativo de impresión con un clic.KNA-077Native Browser Print Driver Trigger🟠 MediaFrontendImplementar las directivas @media print en Tailwind / CSS para ocultar el menú lateral, la barra de navegación y los botones, asegurando que la impresora térmica reciba únicamente el cuerpo del recibo limpio.KNA-078Ledger Historical Re-Print Trigger🟠 MediaFrontendAñadir un botón de acción en la bitácora contable de la ruta /sales para permitir re-imprimir cualquier factura histórica emitida en el pasado.
+
+# Sprint 14 — Customers & CRM Module (Frontend UI)
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-079 | Customers Directory Grid          |   ⏳   | Frontend |
+| KNA-080 | Customer Creation & Upsert Form   |   ⏳   | Frontend |

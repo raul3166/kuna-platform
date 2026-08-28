@@ -138,3 +138,42 @@ Desarrollar el motor transaccional de ventas en NestJS, permitiendo emitir factu
 | KNA-065 | Inventory Depletion UI Trigger    |   ⏳   | Frontend |
 | KNA-066 | Sales Ledger & Invoicing History  |   ⏳   | Frontend |
 
+# Sprint 11 — Cash Control & POS Treasury (Turn Engine)
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-067 | Cash Sessions Schema              |   ✅   | Backend  |
+| KNA-068 | Cash Sessions API & Turn Engine   |   ✅   | Backend  |
+| KNA-069 | POS Lock UI Integration           |   ✅   | Frontend |
+| KNA-070 | Cash Close Out Widget & Audit     |   ✅   | Frontend |
+
+**Sprint 11 completado al 100%. El sistema blinda la caja contra desfalcos y calcula descuadres.**
+
+# Sprint 12 — Sales Returns & Credit Notes UI
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-071 | Sales Returns Directory           |   ✅   | Frontend |
+| KNA-072 | Credit Note Creation Wizard       |   ✅   | Frontend |
+| KNA-073 | Return Items Selector & Validation|   ✅   | Frontend |
+| KNA-074 | Reintegrate Stock Trigger (ACID)  |   ✅   | Frontend |
+
+**Sprint 12 completado al 100%. Notas de crédito inteligentes con validación anti-fraude y control de saldos.**
+
+# Sprint 13 — POS Receipt Thermal Printing
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-075 | Thermal Print Template Layout     |   ✅   | Frontend |
+| KNA-076 | POS Success Printing Modal        |   ✅   | Frontend |
+| KNA-077 | Native Browser Print Driver Trigger|   ✅   | Frontend |
+| KNA-078 | Ledger Historical Re-Print Trigger|   ✅   | Frontend |
+
+**Sprint 13 completado al 100%. Tirilla térmica legal de 80mm acoplada al hardware POS de forma nativa.**
+
+# Sprint 14 — Customers & CRM Module (Frontend UI)
+
+| ID      | Historia                          | Estado | Alcance  |
+| ------- | --------------------------------- | :----: | -------- |
+| KNA-079 | Customers Directory Grid          |   ⏳   | Frontend |
+| KNA-080 | Customer Creation & Upsert Form   |   ⏳   | Frontend |

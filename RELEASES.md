@@ -89,3 +89,10 @@
 * Standalone Sales Returns and Independent Payments modules.
 * BillingResolution state engine for automated and secure legal invoice sequencing.
 * Unit-tested permissions infrastructure mapped to the PostgreSQL database.
+## v1.0.0-rc4 (Release Candidate 4)
+
+* Complete Point of Sale (POS) infrastructure uncoupling database state from hot memory.
+* Multi-tenant Cash Session manager with automatic cash sales variance accounting.
+* Advanced Sale Returns manager enforcing historical purchase caps to block double-refund fraud.
+* Embedded 80mm thermal receipt generator using native browser print pipeline overrides.
+* Interactive post-sale checkout success workflows and real-time ledger re-printing drivers.

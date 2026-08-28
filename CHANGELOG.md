@@ -7,6 +7,24 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [1.0.0-rc4] - 2026-08-28
+
+### Added
+
+#### KNA-067 / KNA-068 / KNA-069 / KNA-070 - Caja y Tesorería
+* Alertas preventivas que congelan el POS si el operario no registra un monto inicial en efectivo.
+* Modal de Arqueo de Cierre que contrasta la gaveta física contra el acumulado de ventas transaccionales en Postgres.
+
+#### KNA-071 / KNA-072 / KNA-073 / KNA-074 - Notas de Crédito y Devoluciones
+* Interfaz reactiva que unifica filas repetidas y calcula precios netos reales cobrados deduciendo descuentos del POS.
+* Algoritmo cruzado de base de datos que descuenta devoluciones previas para impedir reembolsar más unidades de las vendidas.
+
+#### KNA-075 / KNA-076 / KNA-077 / KNA-078 - Impresión de Comprobantes POS
+* Maquetación tipográfica clásica monocromática adaptada para rollos de papel térmico de 80mm.
+* Directivas `@media print` en el CSS raíz para aislar el ticket y omitir barras y botones del sistema operativo.
+* Botón de acción en el Libro Auxiliar de Ventas para jalar metadatos históricos y disparar la reimpresión.
+
+
 ## [0.9.0-backend] - 2026-08-27
 
 ### Added

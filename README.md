@@ -58,6 +58,37 @@ La infraestructura base se encuentra terminada y KUNA continúa evolucionando me
 
 ## 📦 Versión actual
 
+## 📦 Versión actual
+
+v1.0.0-rc4
+
+## 📋 Sprints completados
+
+✅ Sprint 1 a Sprint 8 (Base Core, Inventarios y Seguridad)
+✅ Sprint 9 (Sales Backend Engine)
+✅ Sprint 10 (POS Frontend Interface)
+✅ Sprint 11 (Cash Control & POS Treasury)
+✅ Sprint 12 (Sales Returns & Credit Notes UI)
+✅ Sprint 13 (POS Receipt Thermal Printing)
+
+## Current Version
+
+v1.0.0-rc4
+
+## Completed Sprints
+
+✅ Sprints 1 to 8 (Core Base, Inventory & Security)
+✅ Sprint 9 (Sales Backend Engine)
+✅ Sprint 10 (POS Frontend Interface)
+✅ Sprint 11 (Cash Control & POS Treasury)
+✅ Sprint 12 (Sales Returns & Credit Notes UI)
+✅ Sprint 13 (POS Receipt Thermal Printing)
+
+## Current Module
+
+Customers & CRM Module (Frontend UI Transition)
+
+
 v0.9.0-backend
 
 ## 📋 Sprints completados
