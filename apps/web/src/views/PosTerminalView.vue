@@ -138,6 +138,18 @@ function removeLineItem(index: number) {
 }
 
 // PROCESAR COBRO: SE CONSOLIDA Y PERSISTE EN LA DB TODO EN UN SOLO CLIC
+// --- INYECCIÓN SPRINT 13: METADATOS DE IMPRESIÓN TÉRMICA ---
+const showInvoiceSuccessModal = ref(false)
+const lastPrintedInvoice = ref<any>(null) // Almacena el JSON de la última factura confirmada
+
+// Driver nativo del navegador para lanzar el cuadro de diálogo de impresión de la tirilla
+function triggerNativePrint() {
+  setTimeout(() => {
+    window.print()
+  }, 300)
+}
+
+// NUEVA COMPLEMENTADA: Modificaremos handleFinalizeSale para que capture los datos del ticket antes de limpiar el carro
 async function handleFinalizeSale() {
   if (amountPaid.value < cartTotal.value && paymentMethod.value === 'CASH') {
     alert('El dinero recibido no cubre el monto neto total de la compra.')
@@ -146,7 +158,7 @@ async function handleFinalizeSale() {
 
   isSubmitting.value = true
   try {
-    // 1. Crear la Cabecera en la Base de Datos (Consume resolución fiscal aquí)
+    // 1. Persistir Cabecera
     const salePayload = {
       organizationId: authStore.user?.organizationId || '',
       branchId: authStore.user?.branchId || '',
@@ -156,7 +168,7 @@ async function handleFinalizeSale() {
     const saleRes = await api.post('/sales', salePayload)
     const saleId = saleRes.data.id
 
-    // 2. Insertar todos los ítems agregados de forma masiva
+    // 2. Persistir Ítems de forma síncrona encadenada
     for (const item of cart.value) {
       await api.post('/sale-items', {
         saleId,
@@ -167,7 +179,7 @@ async function handleFinalizeSale() {
       })
     }
 
-    // 3. Registrar el método de pago recibido
+    // 3. Persistir Pago
     await api.post('/payments', {
       organizationId: authStore.user?.organizationId || '',
       saleId,
@@ -175,12 +187,25 @@ async function handleFinalizeSale() {
       amount: cartTotal.value
     })
 
-    // 4. Confirmar Venta (Sella el consecutivo y descuenta stock atómico en NestJS)
+    // 4. Confirmar y Sellar (Esto genera los totales finales en el backend)
     const confirmRes = await api.patch(`/sales/${saleId}/confirm`)
 
-    successMessage.value = `¡Venta ${confirmRes.data.saleNumber} procesada, cobrada e inventario descontado con éxito!`
+    // 5. CAPTURA CRÍTICA: Traemos la factura completa procesada con sus relaciones profundas para el ticket
+    const invoiceDetail = await api.get(`/sales/${saleId}`)
 
-    // Resetear el POS limpio para la siguiente venta
+    // Almacenamos el JSON enriquecido listo para el render térmico
+    lastPrintedInvoice.value = {
+      ...invoiceDetail.data,
+      paymentMethod: paymentMethod.value,
+      amountPaid: amountPaid.value,
+      cashChange: cashChange.value,
+      cashierName: `${authStore.user?.firstName || 'Operador'} ${authStore.user?.lastName || ''}`
+    }
+
+    // Levantamos la ventana de éxito de facturación
+    showInvoiceSuccessModal.value = true
+
+    // Resetear el carro de compras local de forma segura para la siguiente venta
     cart.value = []
     selectedCustomerId.value = ''
     notes.value = ''
@@ -192,6 +217,7 @@ async function handleFinalizeSale() {
     isSubmitting.value = false
   }
 }
+
 
 // Arqueo y Cierre de caja
 async function handleCloseCashRegister() {
@@ -256,7 +282,6 @@ onMounted(() => { checkCashSessionStatus() })
       <div v-else class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-10rem)]">
         <!-- Panel del Catálogo de Productos (Izquierda) -->
         <div class="lg:col-span-2 flex flex-col bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <!-- Barra superior de control de arqueos -->
           <div class="mb-4 flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3">
             <div class="flex items-center space-x-2">
               <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
@@ -294,7 +319,6 @@ onMounted(() => { checkCashSessionStatus() })
               <p class="text-[10px] text-slate-400 mt-0.5">Agrega productos e indexa los metadatos comerciales.</p>
             </div>
 
-            <!-- SELECTORES INTEGRADOS COMPACTOS -->
             <div class="space-y-2 text-slate-900">
               <select v-model="selectedCustomerId" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none">
                 <option value="">👤 Venta de Mostrador / Cliente Anónimo</option>
@@ -303,7 +327,6 @@ onMounted(() => { checkCashSessionStatus() })
               <input v-model="notes" type="text" placeholder="📝 Notas de factura (Ej: Mesa 3, Para llevar...)" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none placeholder-slate-500" />
             </div>
 
-            <!-- Tabla de Renglones en Memoria -->
             <div class="mt-4 space-y-2 overflow-y-auto max-h-[calc(100vh-28rem)] pr-1">
               <div v-for="(item, index) in cart" :key="index" class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
                 <div class="flex justify-between items-start">
@@ -327,7 +350,6 @@ onMounted(() => { checkCashSessionStatus() })
             </div>
           </div>
 
-          <!-- Bloque de Totales -->
           <div class="border-t border-slate-800 pt-4 bg-slate-900 z-10">
             <div class="space-y-1.5 text-xs text-slate-400">
               <div class="flex justify-between"><span>Subtotal Bruto:</span><span class="font-mono text-slate-200">{{ formatCurrency(cartSubtotal) }}</span></div>
@@ -345,13 +367,11 @@ onMounted(() => { checkCashSessionStatus() })
         </div>
       </div>
     </div>
-
     <!-- MODAL DE PASARELA DE PAGO -->
-        <!-- MODAL DE PASARELA DE PAGO (CORREGIDO COMPLETO) -->
     <div v-if="showPaymentModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
-          <h3 class="text-base font-black text-slate-900">Pasarela de Pago Terminal POS</h3>
+          <h3 class="text-base font-black text-slate-900">Pasarela de Pago Terminal</h3>
           <button @click="showPaymentModal = false" type="button" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
         </div>
 
@@ -366,11 +386,10 @@ onMounted(() => { checkCashSessionStatus() })
             <option value="CASH">💵 Dinero en Efectivo</option>
             <option value="CREDIT_CARD">💳 Tarjeta de Crédito</option>
             <option value="DEBIT_CARD">🏦 Tarjeta de Débito</option>
-            <option value="TRANSFER">📱 Transferencia Digital (Nequi/Daviplata)</option>
+            <option value="TRANSFER">📱 Transferencia Digital</option>
           </select>
         </div>
 
-        <!-- CAMPO CORRECTO PARA EFECTIVO RECIBIDO -->
         <div v-if="paymentMethod === 'CASH'" class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase">Efectivo Recibido ($) *</label>
@@ -388,6 +407,23 @@ onMounted(() => { checkCashSessionStatus() })
       </div>
     </div>
 
+    <!-- MODAL DE ÉXITO DE VENTA E IMPRESIÓN -->
+    <div v-if="showInvoiceSuccessModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl border p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
+        <span class="text-4xl">🎉</span>
+        <h3 class="text-lg font-black text-slate-900">¡Factura Emitida con Éxito!</h3>
+        <p class="text-xs text-slate-500">El consecutivo fiscal ha sido sellado y los inventarios se redujeron correctamente.</p>
+
+        <div class="grid gap-2 pt-2">
+          <button @click="triggerNativePrint" type="button" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
+            🖨️ Imprimir Recibo Térmico (80mm)
+          </button>
+          <button @click="showInvoiceSuccessModal = false" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
+            ✕ Cerrar y Nueva Venta
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL DE ARQUEO Y CIERRE DE CAJA -->
     <div v-if="showCloseBoxModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -412,5 +448,58 @@ onMounted(() => { checkCashSessionStatus() })
         </form>
       </div>
     </div>
+    <!-- LAYOUT DE LA TIRILLA TÉRMICA LEGAL (OCULTO EN PANTALLA) -->
+    <div v-if="lastPrintedInvoice" class="print-ticket-area font-mono text-black">
+      <div style="text-align: center; margin-bottom: 4mm;">
+        <div style="font-size: 16px; font-weight: bold;">*** KUNA ERP ***</div>
+        <div style="font-size: 11px; margin-top: 1mm;">NIT: 901.432.887-1</div>
+        <div style="font-size: 11px;">📍 Sucursal: {{ lastPrintedInvoice.branch?.name }}</div>
+        <div style="font-size: 10px; color: #555;">Sede Code: {{ lastPrintedInvoice.branch?.code }}</div>
+      </div>
+
+      <div style="border-bottom: 1px dashed black; margin-bottom: 3mm; padding-bottom: 2mm; font-size: 11px; line-height: 1.4;">
+        <div><b>FACTURA POS:</b> {{ lastPrintedInvoice.saleNumber }}</div>
+        <div><b>FECHA:</b> {{ new Date(lastPrintedInvoice.createdAt).toLocaleString('es-CO') }}</div>
+        <div><b>CAJERO:</b> {{ lastPrintedInvoice.cashierName }}</div>
+        <div><b>CLIENTE:</b> {{ lastPrintedInvoice.customer ? `${lastPrintedInvoice.customer.firstName} ${lastPrintedInvoice.customer.lastName || ''}` : 'Venta de Mostrador' }}</div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 3mm;">
+        <thead>
+          <tr style="border-bottom: 1px dashed black; text-align: left;">
+            <th style="padding-bottom: 1mm;">CONCEPTO</th>
+            <th style="text-align: center; padding-bottom: 1mm;">CANT</th>
+            <th style="text-align: right; padding-bottom: 1mm;">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in lastPrintedInvoice.items" :key="item.id">
+            <td style="padding: 1mm 0; max-width: 40mm; word-wrap: break-word;">{{ item.product?.name || 'Insumo comercial' }}</td>
+            <td style="text-align: center; padding: 1mm 0;">{{ item.quantity }}</td>
+            <td style="text-align: right; padding: 1mm 0;">{{ formatCurrency((item.quantity * item.unitPrice) - item.discount) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="border-top: 1px dashed black; padding-top: 2mm; font-size: 11px; line-height: 1.5; text-align: right; margin-bottom: 4mm;">
+        <div>SUBTOTAL BRUTO: {{ formatCurrency(lastPrintedInvoice.subtotal) }}</div>
+        <div v-if="Number(lastPrintedInvoice.discount) > 0">DESCUENTOS: - {{ formatCurrency(lastPrintedInvoice.discount) }}</div>
+        <div style="font-size: 13px; font-weight: bold; margin-top: 1mm; border-top: 1px solid black; padding-top: 1mm;">
+          TOTAL NETO: {{ formatCurrency(lastPrintedInvoice.total) }}
+        </div>
+        <div style="margin-top: 2mm; font-size: 10px; color: #333;">
+          <div>MÉTODO: {{ lastPrintedInvoice.paymentMethod }}</div>
+          <div v-if="lastPrintedInvoice.paymentMethod === 'CASH'">RECIBIDO: {{ formatCurrency(lastPrintedInvoice.amountPaid) }}</div>
+          <div v-if="lastPrintedInvoice.paymentMethod === 'CASH'">CAMBIO: {{ formatCurrency(lastPrintedInvoice.cashChange) }}</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; font-size: 10px; margin-top: 6mm; font-style: italic; border-top: 1px dashed black; padding-top: 3mm;">
+        ¡Gracias por tu compra en KUNA!<br>
+        Resolución DIAN Autorizada N° RES-2026-POS<br>
+        Rango del 1 al 10000 v0.9.0
+      </div>
+    </div>
   </AppLayout>
+
 </template>

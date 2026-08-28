@@ -16,11 +16,15 @@ interface Sale {
   createdAt: string
   branch: Branch
   customer?: Customer | null
+  payments?: any[]
 }
 
 const sales = ref<Sale[]>([])
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// --- INYECCIÓN SPRINT 13: REIMPRESIÓN HISTÓRICA (KNA-078) ---
+const lastPrintedInvoice = ref<any>(null)
 
 async function fetchSalesLedger() {
   isLoading.value = true
@@ -45,13 +49,39 @@ function getStatusBadgeClass(status: string) {
   return styles[status] || 'bg-slate-50 text-slate-700 border-slate-200'
 }
 
+// ÚNICA DECLARACIÓN GENERAL CALIBRADA
 function formatCurrency(value: number | string) {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
 }
 
+// Función para jalar los datos de la factura histórica y disparar el driver térmico
+async function handleReprintInvoice(sale: any) {
+  try {
+    const res = await api.get(`/sales/${sale.id}`)
+
+    // Mapeamos el JSON enriquecido idéntico al formato del POS
+    lastPrintedInvoice.value = {
+      ...res.data,
+      paymentMethod: sale.payments?.[0]?.method || 'EFECTIVO',
+      amountPaid: sale.payments?.[0]?.amount || sale.total,
+      cashChange: 0,
+      cashierName: 'Administrador ERP'
+    }
+
+    // Disparamos la impresión nativa del navegador en limpio
+    setTimeout(() => {
+      window.print()
+    }, 300)
+
+  } catch (error) {
+    alert('No se pudieron recuperar los metadatos de impresión de esta factura.')
+  }
+}
+
 onMounted(() => { fetchSalesLedger() })
 </script>
+
 <template>
   <AppLayout>
     <header class="mb-6">
@@ -78,6 +108,7 @@ onMounted(() => { fetchSalesLedger() })
                 <th class="px-6 py-3">Fecha Emisión</th>
                 <th class="px-6 py-3">Estado</th>
                 <th class="px-6 py-3 text-right">Monto Total</th>
+                <th class="px-6 py-3 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-sans">
@@ -99,11 +130,58 @@ onMounted(() => { fetchSalesLedger() })
                 <td class="px-6 py-4 text-right font-mono font-bold text-slate-950">
                   {{ formatCurrency(sale.total) }}
                 </td>
+                <td class="px-6 py-4 text-center">
+                  <button @click="handleReprintInvoice(sale)" type="button" class="bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 font-bold px-2 py-1 rounded-lg text-xs transition-colors border">
+                    🖨️ Reimprimir
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
+      <!-- LAYOUT AUXILIAR DE REIMPRESIÓN (KNA-078) -->
+  <div v-if="lastPrintedInvoice" class="print-ticket-area">
+    <div style="text-align: center; margin-bottom: 4mm;">
+      <div style="font-size: 16px; font-weight: bold;">*** KUNA ERP ***</div>
+      <div style="font-size: 11px; margin-top: 1mm;">NIT: 901.432.887-1</div>
+      <div style="font-size: 11px;">📍 Sucursal: {{ lastPrintedInvoice.branch?.name }}</div>
+    </div>
+    <div style="border-bottom: 1px dashed black; margin-bottom: 3mm; padding-bottom: 2mm; font-size: 11px; line-height: 1.4; text-align: left; color: black;">
+      <div><b>FACTURA POS:</b> {{ lastPrintedInvoice.saleNumber }}</div>
+      <div><b>FECHA:</b> {{ new Date(lastPrintedInvoice.createdAt).toLocaleString('es-CO') }}</div>
+      <div><b>OPERADOR:</b> {{ lastPrintedInvoice.cashierName }}</div>
+      <div><b>CLIENTE:</b> {{ lastPrintedInvoice.customer ? `${lastPrintedInvoice.customer.firstName} ${lastPrintedInvoice.customer.lastName || ''}` : 'Venta de Mostrador' }}</div>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 3mm; color: black; text-align: left;">
+      <thead>
+        <tr style="border-bottom: 1px dashed black;">
+          <th style="padding-bottom: 1mm;">CONCEPTO</th>
+          <th style="text-align: center; padding-bottom: 1mm;">CANT</th>
+          <th style="text-align: right; padding-bottom: 1mm;">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in lastPrintedInvoice.items" :key="item.id">
+          <td style="padding: 1mm 0; max-width: 40mm; word-wrap: break-word;">{{ item.product?.name || 'Insumo comercial' }}</td>
+          <td style="text-align: center; padding: 1mm 0;">{{ item.quantity }}</td>
+          <td style="text-align: right; padding: 1mm 0;">{{ formatCurrency((item.quantity * item.unitPrice) - item.discount) }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="border-top: 1px dashed black; padding-top: 2mm; font-size: 11px; line-height: 1.5; text-align: right; margin-bottom: 4mm; color: black;">
+      <div>SUBTOTAL BRUTO: {{ formatCurrency(lastPrintedInvoice.subtotal) }}</div>
+      <div v-if="Number(lastPrintedInvoice.discount) > 0">DESCUENTOS: - {{ formatCurrency(lastPrintedInvoice.discount) }}</div>
+      <div style="font-size: 13px; font-weight: bold; margin-top: 1mm; border-top: 1px solid black; padding-top: 1mm;">
+        TOTAL NETO: {{ formatCurrency(lastPrintedInvoice.total) }}
+      </div>
+    </div>
+    <div style="text-align: center; font-size: 10px; margin-top: 6mm; font-style: italic; border-top: 1px dashed black; padding-top: 3mm; color: black;">
+      ¡Reimpresión de Comprobante Oficial KUNA!<br>
+      Resolución DIAN N° RES-2026-POS
+    </div>
+  </div>
+
   </AppLayout>
 </template>
