@@ -134,6 +134,18 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/SaleReturnsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+    path: '/executive-dashboard',
+    name: 'executive-dashboard',
+    component: () => import('../views/ExecutiveDashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+  path: '/sales-performance',
+  name: 'sales-performance-report',
+  component: () => import('../views/SalesPerformanceReportView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

@@ -17,187 +17,177 @@ export class InventoryTransfersService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // ============================================================
+  // CREAR TRANSFERENCIA
+  // ============================================================
+
   async create(
     createDto: CreateInventoryTransferDto,
   ) {
-    /*
-     * --------------------------------------------------
-     * VALIDAR ORGANIZACIÓN
-     * --------------------------------------------------
-     */
-
-    const organization =
-      await this.prisma.organization.findUnique({
-        where: {
-          id:
-            createDto.organizationId,
-        },
-      });
-
-    if (!organization) {
-      throw new NotFoundException(
-        'Organization not found',
-      );
-    }
-
-    if (!organization.isActive) {
-      throw new BadRequestException(
-        'Organization is inactive',
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VALIDAR PRODUCTO
-     * --------------------------------------------------
-     */
-
-    const product =
-      await this.prisma.product.findUnique({
-        where: {
-          id:
-            createDto.productId,
-        },
-      });
-
-    if (!product) {
-      throw new NotFoundException(
-        'Product not found',
-      );
-    }
-
-    if (
-      product.organizationId !==
-      createDto.organizationId
-    ) {
-      throw new ConflictException(
-        'Product does not belong to the organization',
-      );
-    }
-
-    if (!product.isActive) {
-      throw new BadRequestException(
-        'Product is inactive',
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VALIDAR SUCURSAL ORIGEN
-     * --------------------------------------------------
-     */
-
-    const sourceBranch =
-      await this.prisma.branch.findUnique({
-        where: {
-          id:
-            createDto.sourceBranchId,
-        },
-      });
-
-    if (!sourceBranch) {
-      throw new NotFoundException(
-        'Source branch not found',
-      );
-    }
-
-    if (
-      sourceBranch.organizationId !==
-      createDto.organizationId
-    ) {
-      throw new ConflictException(
-        'Source branch does not belong to the organization',
-      );
-    }
-
-    if (!sourceBranch.isActive) {
-      throw new BadRequestException(
-        'Source branch is inactive',
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VALIDAR SUCURSAL DESTINO
-     * --------------------------------------------------
-     */
-
-    const destinationBranch =
-      await this.prisma.branch.findUnique({
-        where: {
-          id:
-            createDto.destinationBranchId,
-        },
-      });
-
-    if (!destinationBranch) {
-      throw new NotFoundException(
-        'Destination branch not found',
-      );
-    }
-
-    if (
-      destinationBranch.organizationId !==
-      createDto.organizationId
-    ) {
-      throw new ConflictException(
-        'Destination branch does not belong to the organization',
-      );
-    }
-
-    if (!destinationBranch.isActive) {
-      throw new BadRequestException(
-        'Destination branch is inactive',
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VALIDAR SUCURSALES DIFERENTES
-     * --------------------------------------------------
-     */
-
-    if (
-      createDto.sourceBranchId ===
-      createDto.destinationBranchId
-    ) {
-      throw new ConflictException(
-        'Source and destination branches must be different',
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * VALIDAR CANTIDAD
-     * --------------------------------------------------
-     */
-
-    const quantity =
-      Number(createDto.quantity);
-
-    if (
-      !Number.isFinite(quantity)
-    ) {
-      throw new BadRequestException(
-        'Transfer quantity must be a valid number',
-      );
-    }
-
-    if (
-      quantity <= 0
-    ) {
-      throw new BadRequestException(
-        'Transfer quantity must be greater than zero',
-      );
-    }
-
     return this.prisma.$transaction(
       async (tx) => {
-        /*
-         * --------------------------------------------------
-         * STOCK DE LA SUCURSAL ORIGEN
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // VALIDAR ORGANIZACIÓN
+        // ------------------------------------------------------
+
+        const organization =
+          await tx.organization.findUnique({
+            where: {
+              id:
+                createDto.organizationId,
+            },
+          });
+
+        if (!organization) {
+          throw new NotFoundException(
+            'Organization not found',
+          );
+        }
+
+        if (!organization.isActive) {
+          throw new BadRequestException(
+            'Organization is inactive',
+          );
+        }
+
+        // ------------------------------------------------------
+        // VALIDAR PRODUCTO
+        // ------------------------------------------------------
+
+        const product =
+          await tx.product.findUnique({
+            where: {
+              id:
+                createDto.productId,
+            },
+          });
+
+        if (!product) {
+          throw new NotFoundException(
+            'Product not found',
+          );
+        }
+
+        if (
+          product.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new ConflictException(
+            'Product does not belong to the organization',
+          );
+        }
+
+        if (!product.isActive) {
+          throw new BadRequestException(
+            'Product is inactive',
+          );
+        }
+
+        // ------------------------------------------------------
+        // VALIDAR SUCURSAL ORIGEN
+        // ------------------------------------------------------
+
+        const sourceBranch =
+          await tx.branch.findUnique({
+            where: {
+              id:
+                createDto.sourceBranchId,
+            },
+          });
+
+        if (!sourceBranch) {
+          throw new NotFoundException(
+            'Source branch not found',
+          );
+        }
+
+        if (
+          sourceBranch.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new ConflictException(
+            'Source branch does not belong to the organization',
+          );
+        }
+
+        if (!sourceBranch.isActive) {
+          throw new BadRequestException(
+            'Source branch is inactive',
+          );
+        }
+
+        // ------------------------------------------------------
+        // VALIDAR SUCURSAL DESTINO
+        // ------------------------------------------------------
+
+        const destinationBranch =
+          await tx.branch.findUnique({
+            where: {
+              id:
+                createDto.destinationBranchId,
+            },
+          });
+
+        if (!destinationBranch) {
+          throw new NotFoundException(
+            'Destination branch not found',
+          );
+        }
+
+        if (
+          destinationBranch.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new ConflictException(
+            'Destination branch does not belong to the organization',
+          );
+        }
+
+        if (!destinationBranch.isActive) {
+          throw new BadRequestException(
+            'Destination branch is inactive',
+          );
+        }
+
+        // ------------------------------------------------------
+        // SUCURSALES DIFERENTES
+        // ------------------------------------------------------
+
+        if (
+          createDto.sourceBranchId ===
+          createDto.destinationBranchId
+        ) {
+          throw new ConflictException(
+            'Source and destination branches must be different',
+          );
+        }
+
+        // ------------------------------------------------------
+        // VALIDAR CANTIDAD
+        // ------------------------------------------------------
+
+        const quantity =
+          Number(createDto.quantity);
+
+        if (
+          !Number.isFinite(quantity)
+        ) {
+          throw new BadRequestException(
+            'Transfer quantity must be a valid number',
+          );
+        }
+
+        if (
+          quantity <= 0
+        ) {
+          throw new BadRequestException(
+            'Transfer quantity must be greater than zero',
+          );
+        }
+
+        // ======================================================
+        // STOCK ORIGEN
+        // ======================================================
 
         const sourceStock =
           await tx.branchProductStock.findUnique({
@@ -229,16 +219,14 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * Costo promedio de la sucursal origen.
-         */
-
         const sourceAverageCost =
           sourceStock
             ? Number(
                 sourceStock.averageCost,
               )
-            : 0;
+            : Number(
+                product.costPrice,
+              );
 
         if (
           !Number.isFinite(
@@ -250,11 +238,9 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR STOCK SUFICIENTE
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK SUFICIENTE
+        // ------------------------------------------------------
 
         if (
           quantity >
@@ -265,11 +251,9 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * STOCK DE LA SUCURSAL DESTINO
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // STOCK DESTINO
+        // ======================================================
 
         const destinationStock =
           await tx.branchProductStock.findUnique({
@@ -301,11 +285,6 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * Costo promedio actual
-         * de la sucursal destino.
-         */
-
         const destinationAverageCost =
           destinationStock
             ? Number(
@@ -323,11 +302,9 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * NUEVOS STOCKS
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // NUEVOS STOCKS
+        // ======================================================
 
         const newSourceStock =
           sourceCurrentStock -
@@ -336,12 +313,6 @@ export class InventoryTransfersService {
         const newDestinationStock =
           destinationCurrentStock +
           quantity;
-
-        /*
-         * --------------------------------------------------
-         * VALIDAR STOCK FINAL
-         * --------------------------------------------------
-         */
 
         if (
           newSourceStock < 0
@@ -359,11 +330,9 @@ export class InventoryTransfersService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * NUEVO COSTO PROMEDIO DESTINO
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // COSTO PROMEDIO DESTINO
+        // ======================================================
 
         const newDestinationAverageCost =
           destinationCurrentStock <= 0
@@ -383,11 +352,9 @@ export class InventoryTransfersService {
                 quantity
               );
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK ORIGEN
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // ACTUALIZAR ORIGEN
+        // ======================================================
 
         await tx.branchProductStock.upsert({
           where: {
@@ -418,16 +385,19 @@ export class InventoryTransfersService {
             stock:
               newSourceStock,
 
+            /*
+             * La transferencia no modifica
+             * el costo promedio del origen.
+             */
+
             averageCost:
               sourceAverageCost,
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK DESTINO
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // ACTUALIZAR DESTINO
+        // ======================================================
 
         await tx.branchProductStock.upsert({
           where: {
@@ -463,21 +433,31 @@ export class InventoryTransfersService {
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * COSTO TOTAL DE LA TRANSFERENCIA
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // IMPORTANTE:
+        //
+        // NO ACTUALIZAMOS product.stock.
+        //
+        // Ejemplo:
+        //
+        // Norte: 100 -> 70
+        // Centro: 50  -> 80
+        //
+        // Global antes: 150
+        // Global después: 150
+        //
+        // Por lo tanto:
+        //
+        // Product.stock permanece igual.
+        // ======================================================
 
         const totalCost =
           quantity *
           sourceAverageCost;
 
-        /*
-         * --------------------------------------------------
-         * CREAR TRANSFERENCIA
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // CREAR INVENTORY TRANSFER
+        // ======================================================
 
         const transfer =
           await tx.inventoryTransfer.create({
@@ -509,6 +489,7 @@ export class InventoryTransfersService {
                   id: true,
                   sku: true,
                   name: true,
+                  stock: true,
                 },
               },
 
@@ -530,11 +511,9 @@ export class InventoryTransfersService {
             },
           });
 
-        /*
-         * --------------------------------------------------
-         * MOVIMIENTO TRANSFER_OUT
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // KARDEX - TRANSFER OUT
+        // ======================================================
 
         await tx.inventoryMovement.create({
           data: {
@@ -549,6 +528,11 @@ export class InventoryTransfersService {
 
             movementType:
               InventoryMovementType.TRANSFER_OUT,
+
+            /*
+             * Siempre positivo en InventoryMovement.
+             * El Kardex interpreta TRANSFER_OUT como salida.
+             */
 
             quantity,
 
@@ -567,11 +551,9 @@ export class InventoryTransfersService {
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * MOVIMIENTO TRANSFER_IN
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // KARDEX - TRANSFER IN
+        // ======================================================
 
         await tx.inventoryMovement.create({
           data: {
@@ -586,6 +568,11 @@ export class InventoryTransfersService {
 
             movementType:
               InventoryMovementType.TRANSFER_IN,
+
+            /*
+             * Siempre positivo.
+             * El Kardex interpreta TRANSFER_IN como entrada.
+             */
 
             quantity,
 
@@ -604,16 +591,18 @@ export class InventoryTransfersService {
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * RETORNAR TRANSFERENCIA
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // RETORNAR TRANSFERENCIA
+        // ======================================================
 
         return transfer;
       },
     );
   }
+
+  // ============================================================
+  // LISTAR TRANSFERENCIAS
+  // ============================================================
 
   async findAll() {
     return this.prisma.inventoryTransfer.findMany({
@@ -627,6 +616,7 @@ export class InventoryTransfersService {
             id: true,
             sku: true,
             name: true,
+            stock: true,
           },
         },
 
@@ -649,6 +639,10 @@ export class InventoryTransfersService {
     });
   }
 
+  // ============================================================
+  // BUSCAR TRANSFERENCIA
+  // ============================================================
+
   async findOne(
     id: string,
   ) {
@@ -664,6 +658,7 @@ export class InventoryTransfersService {
               id: true,
               sku: true,
               name: true,
+              stock: true,
             },
           },
 

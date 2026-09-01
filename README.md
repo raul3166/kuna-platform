@@ -56,6 +56,32 @@ El Sprint 5 completó las operaciones fundamentales de inventario:
 
 La infraestructura base se encuentra terminada y KUNA continúa evolucionando mediante módulos de negocio independientes.
 
+## 🚀 Estado del proyecto
+
+KUNA cuenta con un núcleo comercial, logístico y de fidelización completamente operativo:
+
+* **Core & Security:** Autenticación JWT, RBAC multi-inquilino, permisos por rol y asignación dinámica.
+* **Supply Chain & Inventory:** Registro de compras, recepción de mercancía, devoluciones a proveedores, Kardex analítico en tiempo real y valoración de stock por costo promedio.
+* **POS & Commercial Engine:** Punto de venta de alta disponibilidad, aperturas y cierres de caja con arqueo, emisión de comprobantes, devoluciones con notas de crédito e impresión térmica nativa de 80mm.
+* **CRM & Accounts:** Directorio unificado de clientes con motor de actualización atómica (Upsert), soporte para personas naturales y empresas, y segmentación por sucursal/organización.
+
+## 📦 Versión actual
+
+v1.1.0-rc1
+
+## 📋 Sprints completados
+
+✅ Sprint 1 a Sprint 8 (Base Core, Inventarios y Seguridad)
+✅ Sprint 9 (Sales Backend Engine)
+✅ Sprint 10 (POS Frontend Interface)
+✅ Sprint 11 (Cash Control & POS Treasury)
+✅ Sprint 12 (Sales Returns & Credit Notes UI)
+✅ Sprint 13 (POS Receipt Thermal Printing)
+✅ Sprint 14 (Customers & CRM Module UI)
+
+## Current Module
+
+Próximo Bloque de Desarrollo
 ## 📦 Versión actual
 
 ## 📦 Versión actual
@@ -199,3 +225,96 @@ v0.7.0
 ## Current Module
 
 Access Control & CRM Core
+
+# KUNA Platform
+
+> Plataforma modular de gestión empresarial para pequeñas y medianas empresas.
+
+## 📖 Descripción
+
+KUNA Platform es una solución moderna diseñada para administrar diferentes tipos de negocios desde una única plataforma.
+
+Su arquitectura modular permite activar únicamente los componentes que cada empresa necesita, compartiendo un núcleo común de autenticación, usuarios, empresas, sucursales, clientes, inventario, reportes y configuración.
+
+El proyecto está pensado para crecer de forma sostenible, facilitando la incorporación de nuevos módulos sin modificar la arquitectura principal.
+
+---
+
+## 🎯 Objetivos
+
+- Arquitectura modular.
+- Multiempresa.
+- Multisucursal.
+- Multipaís.
+- Multimoneda.
+- API First.
+- Escalable.
+- Segura.
+- Fácil de mantener.
+
+---
+
+## 🏗️ Tecnologías
+
+### Frontend
+
+- Vue 3
+- TypeScript
+- Vite
+- Pinia
+- Tailwind CSS
+
+### Backend
+
+- Node.js
+- Express
+- TypeScript
+- Prisma ORM
+
+### Base de datos
+
+- PostgreSQL
+
+### Infraestructura
+
+- Docker
+- GitHub
+- GitHub Actions (más adelante)
+
+---
+
+## 📦 Módulos previstos
+
+- Core
+- Restaurant
+- Hotel
+- Pharmacy
+- Clinic
+- Veterinary
+- Retail
+- CRM
+- Inventory
+- Accounting
+
+---
+
+## 🚀 Estado del proyecto
+
+Actualmente el proyecto se encuentra en fase de arquitectura e infraestructura.
+
+Versión prevista:
+
+v0.1.0
+
+---
+
+## 📄 Licencia
+
+Privada.
+Todos los derechos reservados.
+
+---
+
+## 👨‍💻 Proyecto
+
+Desarrollado como una plataforma modular orientada a empresas de Latinoamérica, con visión de expansión internacional.

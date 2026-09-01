@@ -12,7 +12,6 @@ import {
 import { PrismaService } from '../../core/prisma/prisma.service';
 
 import { CreateInventoryMovementDto } from './dto/create-inventory-movement.dto';
-
 import { CreateInventoryAdjustmentDto } from './dto/create-inventory-adjustment.dto';
 
 @Injectable()
@@ -21,6 +20,10 @@ export class InventoryMovementsService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // ============================================================
+  // CREAR MOVIMIENTO DE INVENTARIO
+  // ============================================================
+
   async create(
     createDto: CreateInventoryMovementDto,
   ) {
@@ -28,25 +31,43 @@ export class InventoryMovementsService {
       createDto.organizationId,
     );
 
-    const product =
-      await this.getProductOrThrow(
-        createDto.productId,
-        createDto.organizationId,
-      );
-
     return this.prisma.$transaction(
       async (tx) => {
-        /*
-         * --------------------------------------------------
-         * VALIDAR PRODUCTO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // VALIDAR PRODUCTO DENTRO DE LA TRANSACCIÓN
+        // ------------------------------------------------------
+
+        const product =
+          await tx.product.findUnique({
+            where: {
+              id: createDto.productId,
+            },
+          });
+
+        if (!product) {
+          throw new NotFoundException(
+            'Product not found',
+          );
+        }
+
+        if (
+          product.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new BadRequestException(
+            'Product does not belong to the organization',
+          );
+        }
 
         if (!product.isActive) {
           throw new BadRequestException(
             'Product is inactive',
           );
         }
+
+        // ------------------------------------------------------
+        // VALIDAR CANTIDAD
+        // ------------------------------------------------------
 
         const quantity =
           Number(createDto.quantity);
@@ -63,11 +84,42 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR SUCURSAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // TRANSFERENCIAS
+        //
+        // Las transferencias deben utilizar
+        // InventoryTransfersService.
+        // ------------------------------------------------------
+
+        if (
+          createDto.movementType ===
+            InventoryMovementType.TRANSFER_IN ||
+          createDto.movementType ===
+            InventoryMovementType.TRANSFER_OUT
+        ) {
+          throw new BadRequestException(
+            'Transfers must be created using the inventory transfer endpoint',
+          );
+        }
+
+        // ------------------------------------------------------
+        // ADJUSTMENT
+        //
+        // Los ajustes utilizan createAdjustment().
+        // ------------------------------------------------------
+
+        if (
+          createDto.movementType ===
+          InventoryMovementType.ADJUSTMENT
+        ) {
+          throw new BadRequestException(
+            'Use the adjustment endpoint for inventory adjustments',
+          );
+        }
+
+        // ------------------------------------------------------
+        // VALIDAR SUCURSAL
+        // ------------------------------------------------------
 
         let branchStock:
           BranchProductStock | null = null;
@@ -107,7 +159,6 @@ export class InventoryMovementsService {
                 branchId_productId: {
                   branchId:
                     createDto.branchId,
-
                   productId:
                     createDto.productId,
                 },
@@ -115,11 +166,9 @@ export class InventoryMovementsService {
             });
         }
 
-        /*
-         * --------------------------------------------------
-         * STOCK GLOBAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK GLOBAL ACTUAL
+        // ------------------------------------------------------
 
         const currentGlobalStock =
           Number(product.stock);
@@ -134,11 +183,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * STOCK DE SUCURSAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK SUCURSAL ACTUAL
+        // ------------------------------------------------------
 
         const currentBranchStock =
           branchStock
@@ -155,12 +202,18 @@ export class InventoryMovementsService {
           );
         }
 
+        // ------------------------------------------------------
+        // COSTO PROMEDIO ACTUAL
+        // ------------------------------------------------------
+
         const currentAverageCost =
           branchStock
             ? Number(
                 branchStock.averageCost,
               )
-            : 0;
+            : Number(
+                product.costPrice,
+              );
 
         if (
           !Number.isFinite(
@@ -172,11 +225,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * VARIABLES DE COSTEO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // VARIABLES
+        // ------------------------------------------------------
 
         let newGlobalStock =
           currentGlobalStock;
@@ -192,22 +243,15 @@ export class InventoryMovementsService {
 
         let totalCost = 0;
 
-        /*
-         * --------------------------------------------------
-         * TIPO DE MOVIMIENTO
-         * --------------------------------------------------
-         */
+        // ======================================================
+        // INITIAL STOCK
+        // ======================================================
 
         switch (
           createDto.movementType
         ) {
-          /*
-           * ================================================
-           * INITIAL STOCK
-           * ================================================
-           */
-
           case InventoryMovementType.INITIAL_STOCK:
+
             if (
               currentGlobalStock > 0
             ) {
@@ -252,10 +296,18 @@ export class InventoryMovementsService {
               quantity *
               movementUnitCost;
 
+            /*
+             * El stock inicial se crea en la sucursal
+             * indicada y pasa a formar parte del
+             * stock global.
+             */
+
             newGlobalStock =
+              currentGlobalStock +
               quantity;
 
             newBranchStock =
+              currentBranchStock +
               quantity;
 
             newAverageCost =
@@ -263,13 +315,12 @@ export class InventoryMovementsService {
 
             break;
 
-          /*
-           * ================================================
-           * PURCHASE
-           * ================================================
-           */
+          // ====================================================
+          // PURCHASE
+          // ====================================================
 
           case InventoryMovementType.PURCHASE:
+
             if (
               createDto.unitCost ===
               undefined
@@ -310,60 +361,59 @@ export class InventoryMovementsService {
               currentGlobalStock +
               quantity;
 
-            /*
-             * Costo promedio ponderado
-             */
-
             if (
-              currentBranchStock <= 0 ||
-              currentAverageCost <= 0
+              createDto.branchId
             ) {
-              newAverageCost =
-                movementUnitCost;
-            } else {
-              newAverageCost =
-                (
+              if (
+                currentBranchStock <= 0 ||
+                currentAverageCost <= 0
+              ) {
+                newAverageCost =
+                  movementUnitCost;
+              } else {
+                newAverageCost =
                   (
-                    currentBranchStock *
-                    currentAverageCost
-                  ) +
+                    (
+                      currentBranchStock *
+                      currentAverageCost
+                    ) +
+                    (
+                      quantity *
+                      movementUnitCost
+                    )
+                  ) /
                   (
-                    quantity *
-                    movementUnitCost
-                  )
-                ) /
-                (
-                  currentBranchStock +
-                  quantity
-                );
-            }
+                    currentBranchStock +
+                    quantity
+                  );
+              }
 
-            newBranchStock =
-              currentBranchStock +
-              quantity;
+              newBranchStock =
+                currentBranchStock +
+                quantity;
+            }
 
             break;
 
-          /*
-           * ================================================
-           * SALE
-           * ================================================
-           */
+          // ====================================================
+          // SALE
+          // ====================================================
 
           case InventoryMovementType.SALE:
+
             if (
               quantity >
               currentGlobalStock
             ) {
               throw new BadRequestException(
-                'Insufficient stock',
+                'Insufficient global stock',
               );
             }
 
             if (
               createDto.branchId &&
               quantity >
-              currentBranchStock
+                currentBranchStock
             ) {
               throw new BadRequestException(
                 'Insufficient stock in branch',
@@ -381,32 +431,35 @@ export class InventoryMovementsService {
               currentGlobalStock -
               quantity;
 
-            newBranchStock =
-              currentBranchStock -
-              quantity;
+            if (
+              createDto.branchId
+            ) {
+              newBranchStock =
+                currentBranchStock -
+                quantity;
+            }
 
             break;
 
-          /*
-           * ================================================
-           * PURCHASE RETURN
-           * ================================================
-           */
+          // ====================================================
+          // PURCHASE RETURN
+          // ====================================================
 
           case InventoryMovementType.PURCHASE_RETURN:
+
             if (
               quantity >
               currentGlobalStock
             ) {
               throw new BadRequestException(
-                'Insufficient stock',
+                'Insufficient global stock',
               );
             }
 
             if (
               createDto.branchId &&
               quantity >
-              currentBranchStock
+                currentBranchStock
             ) {
               throw new BadRequestException(
                 'Insufficient stock in branch',
@@ -424,21 +477,25 @@ export class InventoryMovementsService {
               currentGlobalStock -
               quantity;
 
-            newBranchStock =
-              currentBranchStock -
-              quantity;
+            if (
+              createDto.branchId
+            ) {
+              newBranchStock =
+                currentBranchStock -
+                quantity;
+            }
 
             break;
 
-          /*
-           * ================================================
-           * SALE RETURN
-           * ================================================
-           */
+          // ====================================================
+          // SALE RETURN
+          // ====================================================
 
           case InventoryMovementType.SALE_RETURN:
+
             movementUnitCost =
-              createDto.unitCost
+              createDto.unitCost !==
+              undefined
                 ? Number(
                     createDto.unitCost,
                   )
@@ -470,49 +527,48 @@ export class InventoryMovementsService {
               currentGlobalStock +
               quantity;
 
-            /*
-             * Si tenemos costo previo,
-             * recalculamos promedio.
-             */
-
             if (
-              currentBranchStock <= 0
+              createDto.branchId
             ) {
-              newAverageCost =
-                movementUnitCost;
-            } else {
-              newAverageCost =
-                (
+              if (
+                currentBranchStock <= 0
+              ) {
+                newAverageCost =
+                  movementUnitCost;
+              } else {
+                newAverageCost =
                   (
-                    currentBranchStock *
-                    currentAverageCost
-                  ) +
+                    (
+                      currentBranchStock *
+                      currentAverageCost
+                    ) +
+                    (
+                      quantity *
+                      movementUnitCost
+                    )
+                  ) /
                   (
-                    quantity *
-                    movementUnitCost
-                  )
-                ) /
-                (
-                  currentBranchStock +
-                  quantity
-                );
-            }
+                    currentBranchStock +
+                    quantity
+                  );
+              }
 
-            newBranchStock =
-              currentBranchStock +
-              quantity;
+              newBranchStock =
+                currentBranchStock +
+                quantity;
+            }
 
             break;
 
-          /*
-           * ================================================
-           * TRANSFER IN
-           * ================================================
-           */
+          // ====================================================
+          // CUSTOMER RETURN
+          // ====================================================
 
-          case InventoryMovementType.TRANSFER_IN:
+          case InventoryMovementType.CUSTOMER_RETURN:
+
             movementUnitCost =
-              createDto.unitCost
+              createDto.unitCost !==
+              undefined
                 ? Number(
                     createDto.unitCost,
                   )
@@ -540,116 +596,63 @@ export class InventoryMovementsService {
               quantity *
               movementUnitCost;
 
+            /*
+             * La devolución de cliente
+             * incrementa el stock global.
+             */
+
             newGlobalStock =
               currentGlobalStock +
               quantity;
 
-            /*
-             * Para una transferencia,
-             * el costo recibido entra
-             * al costo promedio de la sucursal.
-             */
-
             if (
-              currentBranchStock <= 0
+              createDto.branchId
             ) {
-              newAverageCost =
-                movementUnitCost;
-            } else {
-              newAverageCost =
-                (
-                  (
-                    currentBranchStock *
-                    currentAverageCost
-                  ) +
-                  (
-                    quantity *
-                    movementUnitCost
-                  )
-                ) /
-                (
-                  currentBranchStock +
-                  quantity
-                );
-            }
+              /*
+               * La mercancía vuelve a la sucursal
+               * emisora de la devolución.
+               */
 
-            newBranchStock =
-              currentBranchStock +
-              quantity;
+              if (
+                currentBranchStock <= 0
+              ) {
+                newAverageCost =
+                  movementUnitCost;
+              } else {
+                newAverageCost =
+                  (
+                    (
+                      currentBranchStock *
+                      currentAverageCost
+                    ) +
+                    (
+                      quantity *
+                      movementUnitCost
+                    )
+                  ) /
+                  (
+                    currentBranchStock +
+                    quantity
+                  );
+              }
+
+              newBranchStock =
+                currentBranchStock +
+                quantity;
+            }
 
             break;
-
-          /*
-           * ================================================
-           * TRANSFER OUT
-           * ================================================
-           */
-
-          case InventoryMovementType.TRANSFER_OUT:
-            if (
-              quantity >
-              currentGlobalStock
-            ) {
-              throw new BadRequestException(
-                'Insufficient stock',
-              );
-            }
-
-            if (
-              createDto.branchId &&
-              quantity >
-              currentBranchStock
-            ) {
-              throw new BadRequestException(
-                'Insufficient stock in branch',
-              );
-            }
-
-            movementUnitCost =
-              currentAverageCost;
-
-            totalCost =
-              quantity *
-              movementUnitCost;
-
-            newGlobalStock =
-              currentGlobalStock -
-              quantity;
-
-            newBranchStock =
-              currentBranchStock -
-              quantity;
-
-            break;
-
-          /*
-           * ================================================
-           * ADJUSTMENT
-           * ================================================
-           */
-
-          case InventoryMovementType.ADJUSTMENT:
-            throw new BadRequestException(
-              'Use the adjustment endpoint for inventory adjustments',
-            );
-
-          /*
-           * ================================================
-           * DEFAULT
-           * ================================================
-           */
 
           default:
+
             throw new BadRequestException(
               'Invalid movement type',
             );
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR STOCK FINAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // VALIDAR STOCK FINAL
+        // ------------------------------------------------------
 
         if (
           newGlobalStock < 0
@@ -668,11 +671,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK GLOBAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // ACTUALIZAR PRODUCT.STOCK
+        // ------------------------------------------------------
 
         await tx.product.update({
           where: {
@@ -685,11 +686,9 @@ export class InventoryMovementsService {
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK DE SUCURSAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // ACTUALIZAR BRANCH PRODUCT STOCK
+        // ------------------------------------------------------
 
         if (
           createDto.branchId
@@ -729,11 +728,9 @@ export class InventoryMovementsService {
           });
         }
 
-        /*
-         * --------------------------------------------------
-         * CREAR MOVIMIENTO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // CREAR INVENTORY MOVEMENT
+        // ------------------------------------------------------
 
         return tx.inventoryMovement.create({
           data: {
@@ -788,6 +785,10 @@ export class InventoryMovementsService {
     );
   }
 
+  // ============================================================
+  // AJUSTE DE INVENTARIO
+  // ============================================================
+
   async createAdjustment(
     createDto: CreateInventoryAdjustmentDto,
   ) {
@@ -795,19 +796,33 @@ export class InventoryMovementsService {
       createDto.organizationId,
     );
 
-    const product =
-      await this.getProductOrThrow(
-        createDto.productId,
-        createDto.organizationId,
-      );
-
     return this.prisma.$transaction(
       async (tx) => {
-        /*
-         * --------------------------------------------------
-         * VALIDAR PRODUCTO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // PRODUCTO
+        // ------------------------------------------------------
+
+        const product =
+          await tx.product.findUnique({
+            where: {
+              id: createDto.productId,
+            },
+          });
+
+        if (!product) {
+          throw new NotFoundException(
+            'Product not found',
+          );
+        }
+
+        if (
+          product.organizationId !==
+          createDto.organizationId
+        ) {
+          throw new BadRequestException(
+            'Product does not belong to the organization',
+          );
+        }
 
         if (!product.isActive) {
           throw new BadRequestException(
@@ -815,11 +830,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR STOCK FÍSICO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK FÍSICO
+        // ------------------------------------------------------
 
         const physicalStock =
           Number(createDto.quantity);
@@ -842,11 +855,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR SUCURSAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // SUCURSAL
+        // ------------------------------------------------------
 
         let branchStock:
           BranchProductStock | null = null;
@@ -897,14 +908,19 @@ export class InventoryMovementsService {
             });
         }
 
-        /*
-         * --------------------------------------------------
-         * STOCK ACTUAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK ACTUAL
+        // ------------------------------------------------------
 
         const currentGlobalStock =
           Number(product.stock);
+
+        const currentBranchStock =
+          branchStock
+            ? Number(
+                branchStock.stock,
+              )
+            : 0;
 
         if (
           !Number.isFinite(
@@ -916,13 +932,6 @@ export class InventoryMovementsService {
           );
         }
 
-        const currentBranchStock =
-          branchStock
-            ? Number(
-                branchStock.stock,
-              )
-            : 0;
-
         if (
           !Number.isFinite(
             currentBranchStock,
@@ -932,6 +941,10 @@ export class InventoryMovementsService {
             'Current branch stock is invalid',
           );
         }
+
+        // ------------------------------------------------------
+        // COSTO PROMEDIO
+        // ------------------------------------------------------
 
         const currentAverageCost =
           branchStock
@@ -952,11 +965,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * DETERMINAR DIFERENCIA
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // STOCK QUE SE ESTÁ AJUSTANDO
+        // ------------------------------------------------------
 
         const currentStock =
           createDto.branchId
@@ -967,12 +978,6 @@ export class InventoryMovementsService {
           physicalStock -
           currentStock;
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR QUE REALMENTE HAYA CAMBIO
-         * --------------------------------------------------
-         */
-
         if (
           difference === 0
         ) {
@@ -981,11 +986,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * NUEVOS STOCKS
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // NUEVOS STOCKS
+        // ------------------------------------------------------
 
         let newGlobalStock =
           currentGlobalStock;
@@ -993,40 +996,33 @@ export class InventoryMovementsService {
         let newBranchStock =
           currentBranchStock;
 
-        /*
-         * --------------------------------------------------
-         * SI HAY SUCURSAL
-         * --------------------------------------------------
-         */
-
         if (
           createDto.branchId
         ) {
+          /*
+           * El ajuste de una sucursal modifica
+           * también el stock global en exactamente
+           * la misma diferencia.
+           */
+
           newBranchStock =
             physicalStock;
-
-          /*
-           * El stock global también debe reflejar
-           * la diferencia del ajuste.
-           */
 
           newGlobalStock =
             currentGlobalStock +
             difference;
         } else {
           /*
-           * Ajuste global
+           * Ajuste global.
            */
 
           newGlobalStock =
             physicalStock;
         }
 
-        /*
-         * --------------------------------------------------
-         * VALIDAR STOCK FINAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // VALIDAR STOCK FINAL
+        // ------------------------------------------------------
 
         if (
           newGlobalStock < 0
@@ -1045,11 +1041,9 @@ export class InventoryMovementsService {
           );
         }
 
-        /*
-         * --------------------------------------------------
-         * COSTEO DEL AJUSTE
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // COSTO DEL MOVIMIENTO
+        // ------------------------------------------------------
 
         const movementUnitCost =
           currentAverageCost;
@@ -1058,11 +1052,9 @@ export class InventoryMovementsService {
           difference *
           movementUnitCost;
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK GLOBAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // ACTUALIZAR PRODUCTO
+        // ------------------------------------------------------
 
         await tx.product.update({
           where: {
@@ -1075,11 +1067,9 @@ export class InventoryMovementsService {
           },
         });
 
-        /*
-         * --------------------------------------------------
-         * ACTUALIZAR STOCK DE SUCURSAL
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // ACTUALIZAR SUCURSAL
+        // ------------------------------------------------------
 
         if (
           createDto.branchId
@@ -1105,11 +1095,6 @@ export class InventoryMovementsService {
               stock:
                 newBranchStock,
 
-              /*
-               * El ajuste NO cambia
-               * el costo promedio.
-               */
-
               averageCost:
                 currentAverageCost,
             },
@@ -1118,22 +1103,15 @@ export class InventoryMovementsService {
               stock:
                 newBranchStock,
 
-              /*
-               * Se conserva
-               * el costo promedio.
-               */
-
               averageCost:
                 currentAverageCost,
             },
           });
         }
 
-        /*
-         * --------------------------------------------------
-         * NOTAS DEL AJUSTE
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // NOTAS
+        // ------------------------------------------------------
 
         const adjustmentNotes =
           [
@@ -1150,11 +1128,9 @@ export class InventoryMovementsService {
             .filter(Boolean)
             .join(' | ');
 
-        /*
-         * --------------------------------------------------
-         * CREAR MOVIMIENTO
-         * --------------------------------------------------
-         */
+        // ------------------------------------------------------
+        // CREAR MOVIMIENTO
+        // ------------------------------------------------------
 
         return tx.inventoryMovement.create({
           data: {
@@ -1169,13 +1145,6 @@ export class InventoryMovementsService {
 
             movementType:
               InventoryMovementType.ADJUSTMENT,
-
-            /*
-             * Puede ser positivo o negativo.
-             *
-             * +10 = aumentó inventario
-             * -10 = disminuyó inventario
-             */
 
             quantity:
               difference,
@@ -1216,6 +1185,10 @@ export class InventoryMovementsService {
     );
   }
 
+  // ============================================================
+  // LISTAR MOVIMIENTOS
+  // ============================================================
+
   async findAll() {
     return this.prisma.inventoryMovement.findMany({
       include: {
@@ -1226,6 +1199,14 @@ export class InventoryMovementsService {
             name: true,
           },
         },
+
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
       },
 
       orderBy: {
@@ -1234,11 +1215,9 @@ export class InventoryMovementsService {
     });
   }
 
-  /*
-   * --------------------------------------------------
-   * BALANCE Y VALORACIÓN DE INVENTARIO
-   * --------------------------------------------------
-   */
+  // ============================================================
+  // BALANCE Y VALORACIÓN
+  // ============================================================
 
   async getStockBalance() {
     const products =
@@ -1279,7 +1258,6 @@ export class InventoryMovementsService {
       });
 
     let totalStock = 0;
-
     let totalInventoryValue = 0;
 
     const productBalances =
@@ -1329,12 +1307,9 @@ export class InventoryMovementsService {
           );
 
         /*
-         * Si existen sucursales,
-         * la valoración se obtiene
-         * desde BranchProductStock.
-         *
-         * Si no existen sucursales,
-         * utilizamos el costo del producto.
+         * Cuando existen sucursales,
+         * la valoración se toma desde
+         * BranchProductStock.
          */
 
         if (
@@ -1388,6 +1363,10 @@ export class InventoryMovementsService {
     };
   }
 
+  // ============================================================
+  // BUSCAR MOVIMIENTO
+  // ============================================================
+
   async findOne(id: string) {
     const movement =
       await this.prisma.inventoryMovement.findUnique({
@@ -1403,6 +1382,14 @@ export class InventoryMovementsService {
               name: true,
             },
           },
+
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
         },
       });
 
@@ -1414,6 +1401,10 @@ export class InventoryMovementsService {
 
     return movement;
   }
+
+  // ============================================================
+  // KARDEX POR PRODUCTO
+  // ============================================================
 
   async findByProduct(
     productId: string,
@@ -1456,6 +1447,7 @@ export class InventoryMovementsService {
             movement.movementType
           ) {
             case InventoryMovementType.INITIAL_STOCK:
+
               balance =
                 quantity;
 
@@ -1465,6 +1457,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.PURCHASE:
+
               balance +=
                 quantity;
 
@@ -1474,6 +1467,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.SALE:
+
               balance -=
                 quantity;
 
@@ -1483,6 +1477,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.PURCHASE_RETURN:
+
               balance -=
                 quantity;
 
@@ -1492,6 +1487,17 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.SALE_RETURN:
+
+              balance +=
+                quantity;
+
+              entry =
+                quantity;
+
+              break;
+
+            case InventoryMovementType.CUSTOMER_RETURN:
+
               balance +=
                 quantity;
 
@@ -1501,6 +1507,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.TRANSFER_IN:
+
               balance +=
                 quantity;
 
@@ -1510,6 +1517,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.TRANSFER_OUT:
+
               balance -=
                 quantity;
 
@@ -1519,6 +1527,7 @@ export class InventoryMovementsService {
               break;
 
             case InventoryMovementType.ADJUSTMENT:
+
               balance +=
                 quantity;
 
@@ -1656,6 +1665,10 @@ export class InventoryMovementsService {
     };
   }
 
+  // ============================================================
+  // ORGANIZACIÓN
+  // ============================================================
+
   private async getOrganizationOrThrow(
     id: string,
   ) {
@@ -1680,6 +1693,10 @@ export class InventoryMovementsService {
 
     return organization;
   }
+
+  // ============================================================
+  // PRODUCTO
+  // ============================================================
 
   private async getProductOrThrow(
     id: string,
@@ -1717,6 +1734,10 @@ export class InventoryMovementsService {
     return product;
   }
 
+  // ============================================================
+  // NOMBRE DEL MOVIMIENTO
+  // ============================================================
+
   private getMovementName(
     movementType: InventoryMovementType,
   ): string {
@@ -1737,6 +1758,9 @@ export class InventoryMovementsService {
 
       case InventoryMovementType.SALE_RETURN:
         return 'Sale Return';
+
+      case InventoryMovementType.CUSTOMER_RETURN:
+        return 'Customer Return';
 
       case InventoryMovementType.TRANSFER_IN:
         return 'Transfer In';

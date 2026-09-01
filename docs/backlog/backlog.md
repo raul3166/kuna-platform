@@ -302,3 +302,10 @@ IDHistoria de UsuarioPrioridadAlcanceObjetivo Técnico en KUNAKNA-075Thermal Pri
 | ------- | --------------------------------- | :----: | -------- |
 | KNA-079 | Customers Directory Grid          |   ⏳   | Frontend |
 | KNA-080 | Customer Creation & Upsert Form   |   ⏳   | Frontend |
+
+
+Sprint 15 — Sales Analytics, Reports & Executive DashboardObjetivo: Proveer visibilidad estratégica sobre las operaciones comerciales, hábitos de compra y movimiento de stock consolidado por sucursal.IDHistoriaEstadoAlcanceKNA-081Executive KPI Dashboard (Ventas, Ticket Promedio, Margen Bruto)⏳Frontend/BackendKNA-082Sales & Performance Reports (Por Sucursal, Canal y Medio de Pago)⏳Frontend/BackendKNA-083Top Sellers & Inventory Turnover Analytics⏳Frontend/BackendKNA-084Executive Data Export Engine (Formatos CSV / Excel / PDF)⏳Frontend/Backend
+
+Sprint 16 — Restaurant Module & Table Management (Módulo Vertical)Objetivo: Desarrollar el primer módulo de industria de KUNA para operaciones gastronómicas, integrado nativamente con el motor de POS, inventarios y caja.IDHistoriaEstadoAlcanceKNA-085Room & Table Layout Engine (Salones y Mesas)⏳Frontend/BackendKNA-086Order Taking & Waiter Interface (Comandero)⏳Frontend/BackendKNA-087Kitchen Display System — KDS (Pantalla de Cocina)⏳Frontend/BackendKNA-088Table Checkout & POS Session Integration⏳Frontend/Backend
+
+Sprint 17 — Accounting, Tax Localization & CxC / CxP CoreObjetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y control de cuentas pendientes comerciales y operativas.IDHistoriaEstadoAlcanceKNA-089Latam Tax Engine & Rules (IVA, INC, Retenciones)⏳Frontend/BackendKNA-090Sales & Purchase Auxiliary Ledger (Libros Fiscales)⏳Frontend/BackendKNA-091Accounts Receivable — CxC (Crédito a Clientes CRM)⏳Frontend/BackendKNA-092Accounts Payable — CxP (Obligaciones con Proveedores)⏳Frontend/Backend

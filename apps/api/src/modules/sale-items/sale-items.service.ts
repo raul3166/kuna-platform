@@ -1,121 +1,441 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
 import { PrismaService } from '../../core/prisma/prisma.service';
+
 import { CreateSaleItemDto } from './dto/create-sale-item.dto';
 import { UpdateSaleItemDto } from './dto/update-sale-item.dto';
 
 @Injectable()
 export class SaleItemsService {
-  // Inyectamos únicamente PrismaService, tal como en tus otros módulos de items
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
+
+  // ============================================================
+  // CREAR ITEM
+  // ============================================================
 
   async create(dto: CreateSaleItemDto) {
-    const sale = await this.prisma.sale.findUnique({ where: { id: dto.saleId } });
-    if (!sale) throw new NotFoundException('Sale header not found');
-    if (sale.status !== 'DRAFT') throw new ConflictException('Only DRAFT sales can be modified');
+    const sale =
+      await this.prisma.sale.findUnique({
+        where: {
+          id: dto.saleId,
+        },
+      });
 
-    const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!sale) {
+      throw new NotFoundException(
+        'Sale header not found',
+      );
+    }
 
-    const discountApplied = dto.discount || 0;
-    const baseSubtotal = dto.quantity * dto.unitPrice;
-    const subtotalNeto = baseSubtotal - discountApplied;
+    if (sale.status !== 'DRAFT') {
+      throw new ConflictException(
+        'Only DRAFT sales can be modified',
+      );
+    }
 
-    // 1. Crear el ítem en la base de datos
-        // Dentro de sale-items.service.ts -> async create(dto: CreateSaleItemDto)
-    // 1. Crear el ítem en la base de datos con la relación profunda
-    const newItem = await this.prisma.saleItem.create({
-      data: {
-        saleId: dto.saleId,
-        productId: dto.productId,
-        quantity: dto.quantity,
-        unitPrice: dto.unitPrice,
-        discount: discountApplied,
-        subtotal: subtotalNeto,
-        total: subtotalNeto,
-        description: dto.description || undefined,
-      },
-      // CORREGIDO: Mandatorio incluir la relación para que el nombre no se pierda al persistirse
-      include: {
-        product: true
-      }
-    });
+    /*
+     * Validar cantidad
+     */
 
-    // 2. Recalcular y actualizar la cabecera directamente con Prisma (KNA-055)
-    await this.recalculateTotalsDirect(dto.saleId);
+    const quantity =
+      Number(dto.quantity);
+
+    if (
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ) {
+      throw new ConflictException(
+        'Quantity must be greater than zero',
+      );
+    }
+
+    /*
+     * Validar precio
+     */
+
+    const unitPrice =
+      Number(dto.unitPrice);
+
+    if (
+      !Number.isFinite(unitPrice) ||
+      unitPrice < 0
+    ) {
+      throw new ConflictException(
+        'Unit price must be a valid non-negative number',
+      );
+    }
+
+    /*
+     * Validar descuento
+     */
+
+    const discount =
+      dto.discount !== undefined
+        ? Number(dto.discount)
+        : 0;
+
+    if (
+      !Number.isFinite(discount) ||
+      discount < 0
+    ) {
+      throw new ConflictException(
+        'Discount must be a valid non-negative number',
+      );
+    }
+
+    const baseSubtotal =
+      quantity * unitPrice;
+
+    if (discount > baseSubtotal) {
+      throw new ConflictException(
+        'Discount cannot exceed item subtotal',
+      );
+    }
+
+    const subtotalNeto =
+      baseSubtotal - discount;
+
+    /*
+     * Producto
+     */
+
+    const product =
+      await this.prisma.product.findUnique({
+        where: {
+          id: dto.productId,
+        },
+      });
+
+    if (!product) {
+      throw new NotFoundException(
+        'Product not found',
+      );
+    }
+
+    if (
+      product.organizationId !==
+      sale.organizationId
+    ) {
+      throw new ConflictException(
+        'Product does not belong to sale organization',
+      );
+    }
+
+    if (!product.isActive) {
+      throw new ConflictException(
+        'Product is inactive',
+      );
+    }
+
+    /*
+     * Crear item
+     */
+
+    const newItem =
+      await this.prisma.saleItem.create({
+        data: {
+          saleId:
+            dto.saleId,
+
+          productId:
+            dto.productId,
+
+          quantity,
+
+          unitPrice,
+
+          discount,
+
+          subtotal:
+            subtotalNeto,
+
+          total:
+            subtotalNeto,
+
+          description:
+            dto.description ||
+            undefined,
+        },
+
+        include: {
+          product: true,
+        },
+      });
+
+    /*
+     * Recalcular cabecera
+     */
+
+    await this.recalculateTotalsDirect(
+      dto.saleId,
+    );
 
     return newItem;
-
   }
 
-  // Métodos complementarios para el estándar del controlador
+  // ============================================================
+  // LISTAR
+  // ============================================================
+
   async findAll() {
-    return this.prisma.saleItem.findMany();
+    return this.prisma.saleItem.findMany({
+      include: {
+        product: true,
+      },
+    });
   }
+
+  // ============================================================
+  // CONSULTAR
+  // ============================================================
 
   async findOne(id: string) {
-    const item = await this.prisma.saleItem.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException('Sale item not found');
+    const item =
+      await this.prisma.saleItem.findUnique({
+        where: {
+          id,
+        },
+
+        include: {
+          product: true,
+        },
+      });
+
+    if (!item) {
+      throw new NotFoundException(
+        'Sale item not found',
+      );
+    }
+
     return item;
   }
 
-  async update(id: string, dto: UpdateSaleItemDto) {
-    const item = await this.prisma.saleItem.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException('Sale item not found');
+  // ============================================================
+  // ACTUALIZAR
+  // ============================================================
 
-    const sale = await this.prisma.sale.findUnique({ where: { id: item.saleId } });
-    if (sale?.status !== 'DRAFT') throw new ConflictException('Only DRAFT sales can be modified');
+  async update(
+    id: string,
+    dto: UpdateSaleItemDto,
+  ) {
+    const item =
+      await this.prisma.saleItem.findUnique({
+        where: {
+          id,
+        },
+      });
 
-    const quantity = dto.quantity !== undefined ? dto.quantity : item.quantity;
-    const unitPrice = dto.unitPrice !== undefined ? dto.unitPrice : Number(item.unitPrice);
-    const discount = dto.discount !== undefined ? dto.discount : Number(item.discount);
+    if (!item) {
+      throw new NotFoundException(
+        'Sale item not found',
+      );
+    }
 
-    const baseSubtotal = quantity * unitPrice;
-    const subtotalNeto = baseSubtotal - discount;
+    const sale =
+      await this.prisma.sale.findUnique({
+        where: {
+          id: item.saleId,
+        },
+      });
 
-    const updatedItem = await this.prisma.saleItem.update({
-      where: { id },
-      data: {
-        quantity,
-        unitPrice,
-        discount,
-        subtotal: subtotalNeto,
-        total: subtotalNeto,
-        description: dto.description || undefined,
-      },
-    });
+    if (!sale) {
+      throw new NotFoundException(
+        'Sale header not found',
+      );
+    }
 
-    // Recalcular cabecera
-    await this.recalculateTotalsDirect(item.saleId);
+    if (sale.status !== 'DRAFT') {
+      throw new ConflictException(
+        'Only DRAFT sales can be modified',
+      );
+    }
+
+    const quantity =
+      dto.quantity !== undefined
+        ? Number(dto.quantity)
+        : Number(item.quantity);
+
+    const unitPrice =
+      dto.unitPrice !== undefined
+        ? Number(dto.unitPrice)
+        : Number(item.unitPrice);
+
+    const discount =
+      dto.discount !== undefined
+        ? Number(dto.discount)
+        : Number(item.discount);
+
+    if (
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ) {
+      throw new ConflictException(
+        'Quantity must be greater than zero',
+      );
+    }
+
+    if (
+      !Number.isFinite(unitPrice) ||
+      unitPrice < 0
+    ) {
+      throw new ConflictException(
+        'Unit price must be valid',
+      );
+    }
+
+    if (
+      !Number.isFinite(discount) ||
+      discount < 0
+    ) {
+      throw new ConflictException(
+        'Discount must be valid',
+      );
+    }
+
+    const baseSubtotal =
+      quantity * unitPrice;
+
+    if (discount > baseSubtotal) {
+      throw new ConflictException(
+        'Discount cannot exceed item subtotal',
+      );
+    }
+
+    const subtotalNeto =
+      baseSubtotal - discount;
+
+    const updatedItem =
+      await this.prisma.saleItem.update({
+        where: {
+          id,
+        },
+
+        data: {
+          quantity,
+          unitPrice,
+          discount,
+
+          subtotal:
+            subtotalNeto,
+
+          total:
+            subtotalNeto,
+
+          description:
+            dto.description !== undefined
+              ? dto.description
+              : item.description,
+        },
+
+        include: {
+          product: true,
+        },
+      });
+
+    await this.recalculateTotalsDirect(
+      item.saleId,
+    );
+
     return updatedItem;
   }
 
+  // ============================================================
+  // ELIMINAR
+  // ============================================================
+
   async remove(id: string) {
-    const item = await this.prisma.saleItem.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException('Sale item not found');
+    const item =
+      await this.prisma.saleItem.findUnique({
+        where: {
+          id,
+        },
+      });
 
-    const sale = await this.prisma.sale.findUnique({ where: { id: item.saleId } });
-    if (sale?.status !== 'DRAFT') throw new ConflictException('Only DRAFT sales can be modified');
+    if (!item) {
+      throw new NotFoundException(
+        'Sale item not found',
+      );
+    }
 
-    await this.prisma.saleItem.delete({ where: { id } });
+    const sale =
+      await this.prisma.sale.findUnique({
+        where: {
+          id: item.saleId,
+        },
+      });
 
-    // Recalcular cabecera
-    await this.recalculateTotalsDirect(item.saleId);
+    if (!sale) {
+      throw new NotFoundException(
+        'Sale header not found',
+      );
+    }
 
-    return { message: 'Item removed successfully from the checkout list.' };
-  }
+    if (sale.status !== 'DRAFT') {
+      throw new ConflictException(
+        'Only DRAFT sales can be modified',
+      );
+    }
 
-  // Función matemática local para no depender de llamadas de otras carpetas
-  private async recalculateTotalsDirect(saleId: string) {
-    const items = await this.prisma.saleItem.findMany({
-      where: { saleId },
+    await this.prisma.saleItem.delete({
+      where: {
+        id,
+      },
     });
 
-    const subtotalBase = items.reduce((acc, item) => acc + (item.quantity * Number(item.unitPrice)), 0);
-    const totalDiscount = items.reduce((acc, item) => acc + Number(item.discount), 0);
-    const totalNeto = subtotalBase - totalDiscount;
+    await this.recalculateTotalsDirect(
+      item.saleId,
+    );
+
+    return {
+      message:
+        'Item removed successfully from the checkout list.',
+    };
+  }
+
+  // ============================================================
+  // RECALCULAR
+  // ============================================================
+
+  private async recalculateTotalsDirect(
+    saleId: string,
+  ) {
+    const items =
+      await this.prisma.saleItem.findMany({
+        where: {
+          saleId,
+        },
+      });
+
+    const subtotalBase =
+      items.reduce(
+        (acc, item) =>
+          acc +
+          item.quantity *
+            Number(item.unitPrice),
+        0,
+      );
+
+    const totalDiscount =
+      items.reduce(
+        (acc, item) =>
+          acc + Number(item.discount),
+        0,
+      );
+
+    const totalNeto =
+      subtotalBase - totalDiscount;
 
     await this.prisma.sale.update({
-      where: { id: saleId },
+      where: {
+        id: saleId,
+      },
+
       data: {
         subtotal: subtotalBase,
         discount: totalDiscount,

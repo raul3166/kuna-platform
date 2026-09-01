@@ -133,10 +133,10 @@ Desarrollar el motor transaccional de ventas en NestJS, permitiendo emitir factu
 
 | ID      | Historia                          | Estado | Alcance  |
 | ------- | --------------------------------- | :----: | -------- |
-| KNA-063 | POS Terminal / Sales Interface    |   ⏳   | Frontend |
-| KNA-064 | Customer Checkout Link            |   ⏳   | Frontend |
-| KNA-065 | Inventory Depletion UI Trigger    |   ⏳   | Frontend |
-| KNA-066 | Sales Ledger & Invoicing History  |   ⏳   | Frontend |
+| KNA-063 | POS Terminal / Sales Interface    |   ✅   | Frontend |
+| KNA-064 | Customer Checkout Link            |   ✅   | Frontend |
+| KNA-065 | Inventory Depletion UI Trigger    |   ✅   | Frontend |
+| KNA-066 | Sales Ledger & Invoicing History  |   ✅   | Frontend |
 
 # Sprint 11 — Cash Control & POS Treasury (Turn Engine)
 
@@ -175,5 +175,5 @@ Desarrollar el motor transaccional de ventas en NestJS, permitiendo emitir factu
 
 | ID      | Historia                          | Estado | Alcance  |
 | ------- | --------------------------------- | :----: | -------- |
-| KNA-079 | Customers Directory Grid          |   ⏳   | Frontend |
-| KNA-080 | Customer Creation & Upsert Form   |   ⏳   | Frontend |
+| KNA-079 | Customers Directory Grid          |   ✅   | Frontend |
+| KNA-080 | Customer Creation & Upsert Form   |   ✅   | Frontend |

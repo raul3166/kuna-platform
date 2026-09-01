@@ -10,6 +10,7 @@ function handleLogout() {
   router.push('/login')
 }
 </script>
+
 <template>
   <div class="flex h-screen bg-slate-50 font-sans overflow-hidden">
     <!-- SIDEBAR LATERAL -->
@@ -20,7 +21,7 @@ function handleLogout() {
         <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
       </div>
 
-      <!-- Menú de Navegación Estructurado Sprint 8 -->
+      <!-- Menú de Navegación Estructurado -->
       <nav class="flex-1 space-y-7 px-4 py-6 overflow-y-auto">
         <!-- Grupo 1: Core Corporativo -->
         <div>
@@ -35,25 +36,34 @@ function handleLogout() {
           </div>
         </div>
 
-        <!-- ¡NUEVO! Grupo 2: Catálogo Comercial / CRM (KNA-050) -->
-       <div>
-  <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
-  <div class="mt-2 space-y-1">
-    <router-link to="/pos" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-      🎛️ Terminal Punto de Venta (POS)
-    </router-link>
-    <router-link to="/sales" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-      📊 Historial de Ventas
-    </router-link>
-    <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-      👥 Clientes (CRM)
-    </router-link>
-    <router-link to="/sale-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-  ↩️ Devoluciones de Clientes
+        <!-- Grupo 2: Catálogo Comercial / CRM (KNA-050) -->
+        <div>
+          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
+          <div class="mt-2 space-y-1">
+            <router-link to="/executive-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              📈 Dashboard Ejecutivo
+            </router-link>
+            <router-link
+  to="/sales-performance"
+  class="flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-slate-300 hover:bg-slate-800"
+  active-class="bg-blue-600 text-white font-semibold"
+>
+  📈 Reporte de Rendimiento
 </router-link>
-  </div>
-</div>
-
+            <router-link to="/pos" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              🎛️ Terminal Punto de Venta (POS)
+            </router-link>
+            <router-link to="/sales" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              📊 Historial de Ventas
+            </router-link>
+            <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              👥 Clientes (CRM)
+            </router-link>
+            <router-link to="/sale-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              ↩️ Devoluciones de Clientes
+            </router-link>
+          </div>
+        </div>
 
         <!-- Grupo 3: Inventarios -->
         <div>
@@ -62,7 +72,7 @@ function handleLogout() {
             <router-link to="/products" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               📦 Productos y Catálogos
             </router-link>
-            <router-link bro to="/inventory-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+            <router-link to="/inventory-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               📊 Panel Analítico Stock
             </router-link>
             <router-link to="/inventory-movements" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
@@ -99,7 +109,7 @@ function handleLogout() {
           </div>
         </div>
 
-        <!-- ¡NUEVO! Grupo 5: Ajustes del Sistema y Seguridad (Al fondo) -->
+        <!-- Grupo 5: Configuración -->
         <div>
           <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Configuración</p>
           <div class="mt-2 space-y-1">
@@ -109,7 +119,6 @@ function handleLogout() {
             <router-link to="/security-settings" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               🛡️ Roles y Permisos (RBAC)
             </router-link>
-
           </div>
         </div>
       </nav>

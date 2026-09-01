@@ -96,3 +96,11 @@
 * Advanced Sale Returns manager enforcing historical purchase caps to block double-refund fraud.
 * Embedded 80mm thermal receipt generator using native browser print pipeline overrides.
 * Interactive post-sale checkout success workflows and real-time ledger re-printing drivers.
+
+## v1.1.0-rc1
+
+* Full Customers CRM UI Module (KNA-079 & KNA-080).
+* Reactive Customer Directory DataGrid with active status filters and contact channels.
+* Dynamic Customer Upsert Wizard with structural DTO payload parsing.
+* Tax Identification Type selectors tailored for Latam localization (CEDULA, NIT, PASAPORTE, RUT).
+* Logical deletion and soft-deactivation trigger integrated with core CRM service.
