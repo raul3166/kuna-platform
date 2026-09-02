@@ -17,12 +17,12 @@ export class SalesService {
   // ============================================================
   // CREAR VENTA
   // ============================================================
-
-  async create(createSaleDto: CreateSaleDto) {
+async create(createSaleDto: CreateSaleDto) {
     const {
       organizationId,
       branchId,
       customerId,
+      tableId, // <--- extraemos tableId
       notes,
     } = createSaleDto;
 
@@ -168,43 +168,45 @@ export class SalesService {
          * Crear cabecera
          */
 
-        return tx.sale.create({
+        const newSale = await tx.sale.create({
           data: {
             organizationId,
             branchId,
             customerId,
-            saleNumber:
-              assignedSaleNumber,
+            tableId, // <--- asigna la mesa si viene en el DTO
+            saleNumber: assignedSaleNumber,
             notes,
-
             subtotal: 0,
             discount: 0,
             tax: 0,
             total: 0,
           },
-
           include: {
             branch: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-              },
+              select: { id: true, name: true, code: true },
             },
-
             customer: true,
-
+            table: true, // <--- opcional: incluir datos de la mesa
             items: {
-              include: {
-                product: true,
-              },
+              include: { product: true },
             },
           },
         });
+
+        // Si viene vinculada a una mesa, actualizar la mesa
+        if (tableId) {
+          await tx.restaurantTable.update({
+            where: { id: tableId },
+            data: {
+              status: 'OCCUPIED',
+            },
+          });
+        }
+
+        return newSale;
       },
     );
   }
-
   // ============================================================
   // LISTAR VENTAS
   // ============================================================
@@ -515,240 +517,191 @@ export class SalesService {
   // ============================================================
 
   async confirm(id: string) {
-    const sale =
-      await this.prisma.sale.findUnique({
-        where: {
-          id,
-        },
-
+  const sale = await this.prisma.sale.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      items: {
         include: {
-          items: {
-            include: {
-              product: true,
-            },
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!sale) {
+    throw new NotFoundException('Sale not found');
+  }
+
+  if (sale.status !== 'DRAFT') {
+    throw new ConflictException('Only DRAFT sales can be confirmed');
+  }
+
+  if (!sale.items || sale.items.length === 0) {
+    throw new ConflictException('Cannot confirm a sale with empty items');
+  }
+
+  /*
+   * Confirmación + inventario + kardex
+   * deben ser UNA sola operación.
+   */
+  return this.prisma.$transaction(async (tx) => {
+    /*
+     * ------------------------------------------------------
+     * PROCESAR CADA PRODUCTO
+     * ------------------------------------------------------
+     */
+    for (const item of sale.items) {
+      const quantity = Number(item.quantity);
+
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        throw new ConflictException(
+          `Invalid quantity for product [${item.product.name}]`,
+        );
+      }
+
+      /*
+       * Buscar stock de la sucursal
+       */
+      const stockRecord = await tx.branchProductStock.findUnique({
+        where: {
+          branchId_productId: {
+            branchId: sale.branchId,
+            productId: item.productId,
           },
         },
       });
 
-    if (!sale) {
-      throw new NotFoundException(
-        'Sale not found',
-      );
-    }
+      if (!stockRecord) {
+        throw new ConflictException(
+          `No inventory record found for product [${item.product.name}] in this branch`,
+        );
+      }
 
-    if (sale.status !== 'DRAFT') {
-      throw new ConflictException(
-        'Only DRAFT sales can be confirmed',
-      );
-    }
+      const currentStock = Number(stockRecord.stock);
 
-    if (
-      !sale.items ||
-      sale.items.length === 0
-    ) {
-      throw new ConflictException(
-        'Cannot confirm a sale with empty items',
-      );
+      if (!Number.isFinite(currentStock)) {
+        throw new ConflictException(
+          `Invalid stock for product [${item.product.name}]`,
+        );
+      }
+
+      if (currentStock < quantity) {
+        throw new ConflictException(
+          `Insufficient stock for product [${item.product.name}]. Available: ${currentStock}, Required: ${quantity}`,
+        );
+      }
+
+      /*
+       * Descontar sucursal
+       */
+      await tx.branchProductStock.update({
+        where: {
+          id: stockRecord.id,
+        },
+        data: {
+          stock: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      /*
+       * Descontar stock global
+       */
+      const product = await tx.product.findUnique({
+        where: {
+          id: item.productId,
+        },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+
+      const globalStock = Number(product.stock);
+
+      if (globalStock < quantity) {
+        throw new ConflictException(
+          `Insufficient global stock for product [${product.name}]`,
+        );
+      }
+
+      await tx.product.update({
+        where: {
+          id: item.productId,
+        },
+        data: {
+          stock: {
+            decrement: quantity,
+          },
+        },
+      });
+
+      /*
+       * Kardex
+       *
+       * SALE se guarda positivo.
+       * InventoryMovementsService interpreta
+       * SALE como salida.
+       */
+      await tx.inventoryMovement.create({
+        data: {
+          organizationId: sale.organizationId,
+          branchId: sale.branchId,
+          productId: item.productId,
+          movementType: 'SALE',
+          quantity,
+          unitCost: Number(stockRecord.averageCost),
+          totalCost: quantity * Number(stockRecord.averageCost),
+          reference: `VENTA-${sale.saleNumber}`,
+          notes:
+            item.description ||
+            'Salida automática por concepto de venta POS.',
+        },
+      });
     }
 
     /*
-     * Confirmación + inventario + kardex
-     * deben ser UNA sola operación.
+     * ------------------------------------------------------
+     * LIBERAR MESA SI CORRESPONDE
+     * ------------------------------------------------------
      */
+    if (sale.tableId) {
+      await tx.restaurantTable.update({
+        where: { id: sale.tableId },
+        data: {
+          status: 'AVAILABLE',
+          currentSaleId: null, // Limpia el puntero a la venta activa
+        },
+      });
+    }
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        /*
-         * ------------------------------------------------------
-         * PROCESAR CADA PRODUCTO
-         * ------------------------------------------------------
-         */
-
-        for (const item of sale.items) {
-          const quantity =
-            Number(item.quantity);
-
-          if (
-            !Number.isFinite(quantity) ||
-            quantity <= 0
-          ) {
-            throw new ConflictException(
-              `Invalid quantity for product [${item.product.name}]`,
-            );
-          }
-
-          /*
-           * Buscar stock de la sucursal
-           */
-
-          const stockRecord =
-            await tx.branchProductStock.findUnique({
-              where: {
-                branchId_productId: {
-                  branchId:
-                    sale.branchId,
-
-                  productId:
-                    item.productId,
-                },
-              },
-            });
-
-          if (!stockRecord) {
-            throw new ConflictException(
-              `No inventory record found for product [${item.product.name}] in this branch`,
-            );
-          }
-
-          const currentStock =
-            Number(stockRecord.stock);
-
-          if (
-            !Number.isFinite(currentStock)
-          ) {
-            throw new ConflictException(
-              `Invalid stock for product [${item.product.name}]`,
-            );
-          }
-
-          if (
-            currentStock < quantity
-          ) {
-            throw new ConflictException(
-              `Insufficient stock for product [${item.product.name}]. Available: ${currentStock}, Required: ${quantity}`,
-            );
-          }
-
-          /*
-           * Descontar sucursal
-           */
-
-          await tx.branchProductStock.update({
-            where: {
-              id: stockRecord.id,
-            },
-
-            data: {
-              stock: {
-                decrement: quantity,
-              },
-            },
-          });
-
-          /*
-           * Descontar stock global
-           */
-
-          const product =
-            await tx.product.findUnique({
-              where: {
-                id: item.productId,
-              },
-            });
-
-          if (!product) {
-            throw new NotFoundException(
-              'Product not found',
-            );
-          }
-
-          const globalStock =
-            Number(product.stock);
-
-          if (
-            globalStock < quantity
-          ) {
-            throw new ConflictException(
-              `Insufficient global stock for product [${product.name}]`,
-            );
-          }
-
-          await tx.product.update({
-            where: {
-              id: item.productId,
-            },
-
-            data: {
-              stock: {
-                decrement: quantity,
-              },
-            },
-          });
-
-          /*
-           * Kardex
-           *
-           * SALE se guarda positivo.
-           * InventoryMovementsService interpreta
-           * SALE como salida.
-           */
-
-          await tx.inventoryMovement.create({
-            data: {
-              organizationId:
-                sale.organizationId,
-
-              branchId:
-                sale.branchId,
-
-              productId:
-                item.productId,
-
-              movementType:
-                'SALE',
-
-              quantity,
-
-              unitCost:
-                Number(
-                  stockRecord.averageCost,
-                ),
-
-              totalCost:
-                quantity *
-                Number(
-                  stockRecord.averageCost,
-                ),
-
-              reference:
-                `VENTA-${sale.saleNumber}`,
-
-              notes:
-                item.description ||
-                'Salida automática por concepto de venta POS.',
-            },
-          });
-        }
-
-        /*
-         * ------------------------------------------------------
-         * SELLAR VENTA
-         * ------------------------------------------------------
-         */
-
-        return tx.sale.update({
-          where: {
-            id,
-          },
-
-          data: {
-            status: 'CONFIRMED',
-          },
-
-          include: {
-            branch: true,
-            customer: true,
-
-            items: {
-              include: {
-                product: true,
-              },
-            },
-          },
-        });
+    /*
+     * ------------------------------------------------------
+     * SELLAR VENTA
+     * ------------------------------------------------------
+     */
+    return tx.sale.update({
+      where: {
+        id,
       },
-    );
-  }
+      data: {
+        status: 'CONFIRMED',
+      },
+      include: {
+        branch: true,
+        customer: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+  });
+}
 
   // ============================================================
   // CANCELAR VENTA

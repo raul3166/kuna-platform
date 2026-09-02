@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
 interface Product { id: string; name: string; sku: string; salePrice: number; barcode?: string }
 interface Customer { id: string; firstName: string; lastName: string; email?: string }
@@ -15,7 +18,10 @@ interface CartItem {
   discount: number
 }
 
-// Control de Caja (Sprint 11)
+// Integración de Mesas
+const tableId = ref<string | null>(null)
+
+// Control de Caja
 const hasActiveCashSession = ref(false)
 const currentCashSessionId = ref<string | null>(null)
 const openingBalanceInput = ref(200000)
@@ -26,7 +32,7 @@ const searchQuery = ref('')
 const selectedCustomerId = ref('')
 const notes = ref('')
 
-// El Carrito de compras ahora opera 100% EN MEMORAL LOCAL
+// Carrito local
 const cart = ref<CartItem[]>([])
 
 const isLoading = ref(true)
@@ -34,7 +40,7 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// Modal de Cierre de Caja / Pago
+// Modales
 const showPaymentModal = ref(false)
 const showCloseBoxModal = ref(false)
 const actualBalanceInput = ref(0)
@@ -42,21 +48,21 @@ const closeNotes = ref('')
 const paymentMethod = ref<'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'TRANSFER'>('CASH')
 const amountPaid = ref(0)
 
-// Consultar sesión de caja activa
-// --- CORRECCIÓN INTEGRAL DE FLUJO DE CAJA (KNA-069) ---
+// Impresión
+const showInvoiceSuccessModal = ref(false)
+const lastPrintedInvoice = ref<any>(null)
+
 async function checkCashSessionStatus() {
   isLoading.value = true
   errorMessage.value = ''
   try {
     const userId = authStore.user?.id || ''
-    // Consultamos si el cajero ya cuenta con un turno OPEN en la base de datos
     const res = await api.get(`/cash-sessions/active?userId=${userId}`)
 
-    // CORREGIDO: Validamos con total precisión si el registro existe físicamente
     if (res.data && res.data.id) {
       hasActiveCashSession.value = true
       currentCashSessionId.value = res.data.id
-      await loadPosData() // Cargamos el catálogo automáticamente
+      await loadPosData()
     } else {
       hasActiveCashSession.value = false
       currentCashSessionId.value = null
@@ -68,8 +74,6 @@ async function checkCashSessionStatus() {
   }
 }
 
-
-// Registrar apertura de caja
 async function handleOpenCashRegister() {
   isSubmitting.value = true
   try {
@@ -91,7 +95,6 @@ async function handleOpenCashRegister() {
   }
 }
 
-// Cargar catálogo maestro
 async function loadPosData() {
   try {
     const [prodRes, custRes] = await Promise.all([
@@ -111,13 +114,11 @@ const filteredProducts = computed(() => {
   return products.value.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query))
 })
 
-// Totales locales reactivos ultrarápidos
 const cartSubtotal = computed(() => cart.value.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0))
 const cartDiscount = computed(() => cart.value.reduce((acc, item) => acc + Number(item.discount), 0))
 const cartTotal = computed(() => cartSubtotal.value - cartDiscount.value)
 const cashChange = computed(() => Math.max(0, amountPaid.value - cartTotal.value))
 
-// AGREGAR AL CARRITO LOCALMENTE (No toca la base de datos)
 function addToCart(product: Product) {
   const existing = cart.value.find(item => item.product.id === product.id)
   if (existing) {
@@ -127,29 +128,20 @@ function addToCart(product: Product) {
   }
 }
 
-// MODIFICAR DESCUENTO LOCALMENTE
 function updateLineDiscount(item: CartItem, discountValue: string) {
   item.discount = Number(discountValue) || 0
 }
 
-// REMOVER DEL CARRITO LOCALMENTE
 function removeLineItem(index: number) {
   cart.value.splice(index, 1)
 }
 
-// PROCESAR COBRO: SE CONSOLIDA Y PERSISTE EN LA DB TODO EN UN SOLO CLIC
-// --- INYECCIÓN SPRINT 13: METADATOS DE IMPRESIÓN TÉRMICA ---
-const showInvoiceSuccessModal = ref(false)
-const lastPrintedInvoice = ref<any>(null) // Almacena el JSON de la última factura confirmada
-
-// Driver nativo del navegador para lanzar el cuadro de diálogo de impresión de la tirilla
 function triggerNativePrint() {
   setTimeout(() => {
     window.print()
   }, 300)
 }
 
-// NUEVA COMPLEMENTADA: Modificaremos handleFinalizeSale para que capture los datos del ticket antes de limpiar el carro
 async function handleFinalizeSale() {
   if (amountPaid.value < cartTotal.value && paymentMethod.value === 'CASH') {
     alert('El dinero recibido no cubre el monto neto total de la compra.')
@@ -158,17 +150,18 @@ async function handleFinalizeSale() {
 
   isSubmitting.value = true
   try {
-    // 1. Persistir Cabecera
+    // 1. Persistir Cabecera (Se incluye tableId si existe)
     const salePayload = {
       organizationId: authStore.user?.organizationId || '',
       branchId: authStore.user?.branchId || '',
       customerId: selectedCustomerId.value || undefined,
-      notes: notes.value || undefined
+      notes: notes.value || undefined,
+      tableId: tableId.value || undefined
     }
     const saleRes = await api.post('/sales', salePayload)
     const saleId = saleRes.data.id
 
-    // 2. Persistir Ítems de forma síncrona encadenada
+    // 2. Persistir Ítems
     for (const item of cart.value) {
       await api.post('/sale-items', {
         saleId,
@@ -187,13 +180,21 @@ async function handleFinalizeSale() {
       amount: cartTotal.value
     })
 
-    // 4. Confirmar y Sellar (Esto genera los totales finales en el backend)
-    const confirmRes = await api.patch(`/sales/${saleId}/confirm`)
+    // 4. Confirmar Venta
+    await api.patch(`/sales/${saleId}/confirm`)
 
-    // 5. CAPTURA CRÍTICA: Traemos la factura completa procesada con sus relaciones profundas para el ticket
+    // 5. Liberar Mesa en backend si fue una venta ligada a mesa
+    if (tableId.value) {
+      try {
+        await api.patch(`/restaurants/tables/${tableId.value}/release`)
+      } catch (err) {
+        console.warn('No se pudo desocupar la mesa automáticamente:', err)
+      }
+    }
+
+    // 6. Obtener Factura Detallada para Ticket
     const invoiceDetail = await api.get(`/sales/${saleId}`)
 
-    // Almacenamos el JSON enriquecido listo para el render térmico
     lastPrintedInvoice.value = {
       ...invoiceDetail.data,
       paymentMethod: paymentMethod.value,
@@ -202,15 +203,15 @@ async function handleFinalizeSale() {
       cashierName: `${authStore.user?.firstName || 'Operador'} ${authStore.user?.lastName || ''}`
     }
 
-    // Levantamos la ventana de éxito de facturación
     showInvoiceSuccessModal.value = true
 
-    // Resetear el carro de compras local de forma segura para la siguiente venta
+    // Resetear formulario
     cart.value = []
     selectedCustomerId.value = ''
     notes.value = ''
     showPaymentModal.value = false
     amountPaid.value = 0
+    tableId.value = null
   } catch (error: any) {
     alert(error.response?.data?.message || 'Error crítico procesando la transacción de venta.')
   } finally {
@@ -218,8 +219,6 @@ async function handleFinalizeSale() {
   }
 }
 
-
-// Arqueo y Cierre de caja
 async function handleCloseCashRegister() {
   if (!currentCashSessionId.value) return
   isSubmitting.value = true
@@ -241,25 +240,67 @@ async function handleCloseCashRegister() {
   }
 }
 
+function handleCloseInvoiceModal() {
+  showInvoiceSuccessModal.value = false
+  // Si venía de la pantalla de mesas, redirigir de vuelta
+  if (route.query.tableId) {
+    router.push('/rooms')
+  }
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value)
 }
 
-onMounted(() => { checkCashSessionStatus() })
+// Función para traer el pedido activo de la mesa
+async function loadTableItems(id: string) {
+  try {
+    // Usamos el endpoint correcto de la ruta de órdenes de restaurante
+    const res = await api.get(`/restaurant-orders/tables/${id}/current`)
+
+    if (res.data && res.data.items) {
+      // Mapeamos correctamente al tipo CartItem que usa tu POS
+      cart.value = res.data.items.map((item: any) => ({
+        product: item.product || { id: item.productId, name: item.name, sku: '', salePrice: Number(item.unitPrice) },
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        discount: Number(item.discount || 0)
+      }))
+
+      // Guardamos el ID de la orden/venta actual para actualizarla si se añaden más ítems
+      currentSaleId.value = res.data.id
+
+      // Si la orden tiene cliente o notas asociadas, las rellenamos
+      if (res.data.customerId) selectedCustomerId.value = res.data.customerId
+      if (res.data.notes) notes.value = res.data.notes
+    }
+  } catch (error) {
+    console.error('Error al cargar la orden de la mesa en el POS:', error)
+  }
+}
+
+
+onMounted(async () => {
+  if (route.query.tableId) {
+    tableId.value = route.query.tableId as string
+    await loadTableItems(tableId.value)
+  }
+  checkCashSessionStatus()
+})
+
+
 </script>
+
 <template>
   <AppLayout>
-    <!-- Alertas Flotantes Globales -->
     <div v-if="errorMessage" class="mb-4 bg-red-50 text-red-700 p-4 border border-red-200 rounded-xl text-sm">⚠️ {{ errorMessage }}</div>
     <div v-if="successMessage" class="mb-4 bg-green-50 text-green-700 p-4 border border-green-200 rounded-xl text-sm">🎉 {{ successMessage }}</div>
 
-    <!-- CARGA DE DATOS -->
     <div v-if="isLoading" class="p-8 text-center text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl animate-pulse">
       Validando estado de turnos y tesorería en KUNA...
     </div>
 
     <div v-else>
-      <!-- INTERFAZ CON CANDADO DE CAJA CERRADA -->
       <div v-if="!hasActiveCashSession" class="max-w-md mx-auto bg-white border border-slate-200 p-6 rounded-2xl shadow-xl mt-12 border-t-4 border-t-amber-500">
         <div class="text-center mb-6">
           <span class="text-4xl">🔒</span>
@@ -278,9 +319,8 @@ onMounted(() => { checkCashSessionStatus() })
         </form>
       </div>
 
-      <!-- INTERFAZ DE PUNTO DE VENTA LIBERADA -->
       <div v-else class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-10rem)]">
-        <!-- Panel del Catálogo de Productos (Izquierda) -->
+        <!-- Panel Catálogo -->
         <div class="lg:col-span-2 flex flex-col bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
           <div class="mb-4 flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-3">
             <div class="flex items-center space-x-2">
@@ -311,12 +351,23 @@ onMounted(() => { checkCashSessionStatus() })
             </div>
           </div>
         </div>
-        <!-- Panel Lateral del Carrito de Compras (Derecha) -->
+
+        <!-- Panel Carrito -->
         <div class="bg-slate-900 text-white rounded-2xl p-4 flex flex-col justify-between shadow-lg border border-slate-950">
           <div class="space-y-4">
             <div class="border-b border-slate-800 pb-3">
               <h3 class="text-sm font-black tracking-wide text-slate-200">Carrito de Cobro POS</h3>
               <p class="text-[10px] text-slate-400 mt-0.5">Agrega productos e indexa los metadatos comerciales.</p>
+            </div>
+
+            <!-- Banner indicador de Mesa Vinculada -->
+            <div v-if="tableId" class="p-2.5 bg-blue-900/40 border border-blue-500/50 rounded-xl text-xs flex justify-between items-center text-blue-200">
+              <span class="flex items-center gap-1.5 font-bold">
+                <span>🍽️</span> Orden Ligada a Mesa Operativa
+              </span>
+              <button @click="tableId = null" type="button" class="text-blue-400 hover:text-white font-bold text-xs bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800">
+                ✕ Disociar
+              </button>
             </div>
 
             <div class="space-y-2 text-slate-900">
@@ -367,7 +418,8 @@ onMounted(() => { checkCashSessionStatus() })
         </div>
       </div>
     </div>
-    <!-- MODAL DE PASARELA DE PAGO -->
+
+    <!-- MODAL PAGO -->
     <div v-if="showPaymentModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
@@ -407,7 +459,7 @@ onMounted(() => { checkCashSessionStatus() })
       </div>
     </div>
 
-    <!-- MODAL DE ÉXITO DE VENTA E IMPRESIÓN -->
+    <!-- MODAL ÉXITO IMPRESIÓN -->
     <div v-if="showInvoiceSuccessModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
         <span class="text-4xl">🎉</span>
@@ -418,14 +470,14 @@ onMounted(() => { checkCashSessionStatus() })
           <button @click="triggerNativePrint" type="button" class="w-full bg-green-500 hover:bg-green-600 text-slate-950 font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
             🖨️ Imprimir Recibo Térmico (80mm)
           </button>
-          <button @click="showInvoiceSuccessModal = false" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
-            ✕ Cerrar y Nueva Venta
+          <button @click="handleCloseInvoiceModal" type="button" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">
+            ✕ Cerrar y Volver
           </button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL DE ARQUEO Y CIERRE DE CAJA -->
+    <!-- MODAL CIERRE CAJA -->
     <div v-if="showCloseBoxModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl border p-6 max-w-md w-full shadow-2xl space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
@@ -448,7 +500,8 @@ onMounted(() => { checkCashSessionStatus() })
         </form>
       </div>
     </div>
-    <!-- LAYOUT DE LA TIRILLA TÉRMICA LEGAL (OCULTO EN PANTALLA) -->
+
+    <!-- TIRILLA TÉRMICA LEGAL -->
     <div v-if="lastPrintedInvoice" class="print-ticket-area font-mono text-black">
       <div style="text-align: center; margin-bottom: 4mm;">
         <div style="font-size: 16px; font-weight: bold;">*** KUNA ERP ***</div>
@@ -501,5 +554,4 @@ onMounted(() => { checkCashSessionStatus() })
       </div>
     </div>
   </AppLayout>
-
 </template>

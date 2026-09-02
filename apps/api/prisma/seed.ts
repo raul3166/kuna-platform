@@ -35,7 +35,25 @@ async function main() {
 { module: 'cash-sessions', code: 'cash-sessions.read', name: 'Read cash sessions', description: 'Allows auditing cash turn logs and arqueos' },
 { module: 'cash-sessions', code: 'cash-sessions.update', name: 'Update cash session', description: 'Allows closing and balancing cash sessions' },
 
-{ module: 'analytics', code: 'analytics.read', name: 'Read executive KPIs', description: 'Allows viewing executive dashboard metrics, revenue, profit margins, and sales KPIs'}
+{ module: 'analytics', code: 'analytics.read', name: 'Read executive KPIs', description: 'Allows viewing executive dashboard metrics, revenue, profit margins, and sales KPIs'},
+{
+    module: 'restaurant',
+    code: 'restaurant.read',
+    name: 'Read restaurant layout and tables',
+    description: 'Allows viewing room layouts, table statuses, and live map',
+  },
+  {
+    module: 'restaurant',
+    code: 'restaurant.create',
+    name: 'Create rooms and tables',
+    description: 'Allows creating and setting up room layouts and new tables',
+  },
+  {
+    module: 'restaurant',
+    code: 'restaurant.update',
+    name: 'Update restaurant tables',
+    description: 'Allows updating table details and changing table statuses',
+  },
     ],
     skipDuplicates: true,
   });

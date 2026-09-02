@@ -68,6 +68,14 @@ enum CashSessionStatus {
   CLOSED
 }
 
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  BILL_PRINTED
+  RESERVED
+}
+
+
 model Organization {
   id                 String              @id @default(cuid())
   name               String
@@ -93,6 +101,7 @@ model Organization {
   payments Payment[]
   billingResolutions BillingResolution[]
   cashSessions CashSession[]
+  rooms Room[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -125,6 +134,7 @@ model Branch {
   saleReturns SaleReturn[]
   billingResolutions BillingResolution[]
   cashSessions CashSession[]
+  rooms Room[]
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -585,38 +595,41 @@ model InventoryTransfer {
   @@index([sourceBranchId])
   @@index([destinationBranchId])
 }
-
 model Sale {
-  id             String       @id @default(cuid())
+  id             String      @id @default(cuid())
   organizationId String
   branchId       String
   customerId     String?
+  tableId        String?     // <--- Vínculo opcional con la mesa
 
   saleNumber     String
-  status         SaleStatus   @default(DRAFT)
+  status         SaleStatus  @default(DRAFT)
 
-  subtotal       Decimal      @default(0) @db.Decimal(12, 2)
-  discount       Decimal      @default(0) @db.Decimal(12, 2)
-  tax            Decimal      @default(0) @db.Decimal(12, 2)
-  total          Decimal      @default(0) @db.Decimal(12, 2)
+  subtotal       Decimal     @default(0) @db.Decimal(12, 2)
+  discount       Decimal     @default(0) @db.Decimal(12, 2)
+  tax            Decimal     @default(0) @db.Decimal(12, 2)
+  total          Decimal     @default(0) @db.Decimal(12, 2)
 
   notes          String?
-  items SaleItem[]
-  saleReturns SaleReturn[]
-  payments Payment[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  items          SaleItem[]
+  saleReturns    SaleReturn[]
+  payments       Payment[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   organization   Organization @relation(fields: [organizationId], references: [id])
   branch         Branch       @relation(fields: [branchId], references: [id])
   customer       Customer?    @relation(fields: [customerId], references: [id])
+  table          RestaurantTable?       @relation(fields: [tableId], references: [id]) // <--- Relación
 
   @@unique([organizationId, saleNumber])
   @@index([organizationId])
   @@index([branchId])
   @@index([customerId])
+  @@index([tableId])        // <--- Índice recomendado
   @@index([status])
 }
+
 
 model SaleItem {
   id        String   @id @default(cuid())
@@ -769,6 +782,38 @@ model CashSession {
   @@index([userId])
 }
 
+model Room {
+  id             String   @id @default(cuid())
+  organizationId String
+  branchId       String
+  name           String
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tables       RestaurantTable[]
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  branch       Branch            @relation(fields: [branchId], references: [id])
+
+  @@index([organizationId])
+  @@index([branchId])
+}
+
+model RestaurantTable {
+  id            String      @id @default(cuid())
+  roomId        String
+  tableNumber   String      // Se mantiene como String
+  capacity      Int
+  status        TableStatus @default(AVAILABLE)
+  currentSaleId String?     // Se mantiene
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  room          Room        @relation(fields: [roomId], references: [id])
+  sales         Sale[]
+  @@index([roomId])
+}
 
 model UserRole {
   id String @id @default(cuid())

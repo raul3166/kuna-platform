@@ -109,6 +109,19 @@ function handleLogout() {
           </div>
         </div>
 
+        <!-- Grupo Gastronomía / Restaurante (KNA-085) -->
+        <div>
+          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Restaurante</p>
+          <div class="mt-2 space-y-1">
+            <router-link to="/rooms" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              🍽️ Salones y Mesas
+            </router-link>
+            <router-link to="/restaurant-orders" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              📝 Toma de Pedidos
+            </router-link>
+          </div>
+        </div>
+
         <!-- Grupo 5: Configuración -->
         <div>
           <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Configuración</p>

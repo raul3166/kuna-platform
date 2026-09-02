@@ -33,6 +33,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { BillingResolutionsModule } from './modules/billing-resolutions/billing-resolutions.module';
 import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { RestaurantsModule } from './modules/restaurants/restaurants.module';
+import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-orders.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     BillingResolutionsModule,
     CashSessionsModule,
     AnalyticsModule,
+    RestaurantsModule,
+    RestaurantOrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -146,6 +146,18 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/SalesPerformanceReportView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/rooms',
+  name: 'restaurant-rooms',
+  component: () => import('../views/RoomLayoutView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/restaurant-orders',
+  name: 'restaurant-orders',
+  component: () => import('../views/RestaurantOrderView.vue'),
+    meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
