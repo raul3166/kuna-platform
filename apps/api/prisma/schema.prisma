@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// ENUMS
+// ============================================================
+
 enum InventoryMovementType {
   INITIAL_STOCK
   PURCHASE
@@ -83,6 +87,10 @@ enum KitchenStatus {
   CANCELLED
 }
 
+// ============================================================
+// ESTRUCTURA ORGANIZACIONAL
+// ============================================================
+
 model Organization {
   id                 String              @id @default(cuid())
   name               String
@@ -103,116 +111,97 @@ model Organization {
   purchaseInvoices   PurchaseInvoice[]
   purchaseReturns    PurchaseReturn[]
   inventoryTransfers InventoryTransfer[]
-  sales Sale[]
-  saleReturns SaleReturn[]
-  payments Payment[]
+  sales              Sale[]
+  saleReturns        SaleReturn[]
+  payments           Payment[]
   billingResolutions BillingResolution[]
-  cashSessions CashSession[]
-  rooms Room[]
+  cashSessions       CashSession[]
+  rooms              Room[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
 
 model Branch {
-  id String @id @default(cuid())
+  id                   String               @id @default(cuid())
+  organizationId       String
+  organization         Organization         @relation(fields: [organizationId], references: [id])
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  name                 String
+  code                 String
+  address              String
+  city                 String
+  country              String
+  phoneNumber          String?
+  timezone             String
 
-  name String
-  code String
+  users                User[]
+  productStocks        BranchProductStock[]
 
-  address String
-  city    String
-  country String
+  sourceTransfers      InventoryTransfer[]  @relation("TransferSourceBranch")
+  destinationTransfers InventoryTransfer[]  @relation("TransferDestinationBranch")
 
-  phoneNumber String?
-  timezone    String
-
-  users User[]
-
-  productStocks BranchProductStock[]
-
-  sourceTransfers      InventoryTransfer[] @relation("TransferSourceBranch")
-  destinationTransfers InventoryTransfer[] @relation("TransferDestinationBranch")
-
-  inventoryMovements InventoryMovement[]
-  sales Sale[]
-  saleReturns SaleReturn[]
-  billingResolutions BillingResolution[]
-  cashSessions CashSession[]
-  rooms Room[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  inventoryMovements   InventoryMovement[]
+  sales                Sale[]
+  saleReturns          SaleReturn[]
+  billingResolutions   BillingResolution[]
+  cashSessions         CashSession[]
+  rooms                Room[]
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   @@unique([organizationId, code])
 }
 
+// ============================================================
+// PROVEEDORES Y PRODUCTOS
+// ============================================================
+
 model Supplier {
-  id String @id @default(cuid())
+  id                   String            @id @default(cuid())
+  organizationId       String
 
-  organizationId String
-
-  companyName String
-
-  contactName String?
-
-  identificationType String
-
+  companyName          String
+  contactName          String?
+  identificationType   String
   identificationNumber String
+  email                String?
+  phoneNumber          String?
+  address              String?
+  city                 String?
+  state                String?
+  country              String?
+  notes                String?
 
-  email String?
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
-  phoneNumber String?
-
-  address String?
-
-  city String?
-
-  state String?
-
-  country String?
-
-  notes String?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  products         Product[]
-  purchaseOrders   PurchaseOrder[]
-  purchaseInvoices PurchaseInvoice[]
-  purchaseReturns  PurchaseReturn[]
-  organization     Organization      @relation(fields: [organizationId], references: [id])
+  products             Product[]
+  purchaseOrders       PurchaseOrder[]
+  purchaseInvoices     PurchaseInvoice[]
+  purchaseReturns      PurchaseReturn[]
+  organization         Organization      @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, identificationNumber])
 }
 
 model Product {
-  id String @id @default(cuid())
+  id                   String                 @id @default(cuid())
+  organizationId       String
 
-  organizationId String
+  sku                  String
+  name                 String
+  description          String?
+  barcode              String?
 
-  sku String
+  salePrice            Decimal                @db.Decimal(12, 2)
+  costPrice            Decimal                @db.Decimal(12, 2)
+  stock                Decimal                @default(0) @db.Decimal(12, 3)
 
-  name String
-
-  description String?
-
-  barcode String?
-
-  salePrice Decimal @db.Decimal(12, 2)
-
-  costPrice Decimal @db.Decimal(12, 2)
-
-  stock Decimal @default(0) @db.Decimal(12, 3)
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
 
   categoryId           String?
   supplierId           String?
@@ -223,12 +212,13 @@ model Product {
   purchaseReturnItems  PurchaseReturnItem[]
   branchStocks         BranchProductStock[]
   inventoryTransfers   InventoryTransfer[]
-  items SaleItem[]
+  items                SaleItem[]
   returnItems          SaleReturnItem[]
-  category             ProductCategory?      @relation(fields: [categoryId], references: [id])
-  supplier             Supplier?             @relation(fields: [supplierId], references: [id])
+  restaurantOrderItems RestaurantOrderItem[]  // <--- NUEVA RELACIÓN
+  category             ProductCategory?       @relation(fields: [categoryId], references: [id])
+  supplier             Supplier?              @relation(fields: [supplierId], references: [id])
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization         Organization           @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, sku])
   @@index([categoryId])
@@ -236,51 +226,40 @@ model Product {
 }
 
 model ProductCategory {
-  id String @id @default(cuid())
-
+  id             String       @id @default(cuid())
   organizationId String
+  name           String
+  description    String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  name String
-
-  description String?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  products     Product[]
-  organization Organization @relation(fields: [organizationId], references: [id])
+  products       Product[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, name])
 }
 
-model InventoryMovement {
-  id String @id @default(cuid())
+// ============================================================
+// INVENTARIOS Y COMPRAS
+// ============================================================
 
+model InventoryMovement {
+  id             String                @id @default(cuid())
   organizationId String
   productId      String
   branchId       String?
+  movementType   InventoryMovementType
+  quantity       Decimal               @db.Decimal(12, 3)
+  unitCost       Decimal?              @db.Decimal(12, 2)
+  totalCost      Decimal?              @db.Decimal(14, 2)
+  reference      String?
+  notes          String?
+  createdAt      DateTime              @default(now())
 
-  movementType InventoryMovementType
-
-  quantity Decimal @db.Decimal(12, 3)
-
-  unitCost Decimal? @db.Decimal(12, 2)
-
-  totalCost Decimal? @db.Decimal(14, 2)
-
-  reference String?
-
-  notes String?
-
-  createdAt DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
-
-  branch Branch? @relation(fields: [branchId], references: [id])
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  product        Product               @relation(fields: [productId], references: [id])
+  branch         Branch?               @relation(fields: [branchId], references: [id])
 
   @@index([organizationId])
   @@index([productId])
@@ -288,37 +267,28 @@ model InventoryMovement {
 }
 
 model PurchaseOrder {
-  id String @id @default(cuid())
-
+  id             String              @id @default(cuid())
   organizationId String
   supplierId     String
+  number         String
+  status         PurchaseOrderStatus @default(DRAFT)
+  orderDate      DateTime
+  expectedDate   DateTime?
+  notes          String?
 
-  number String
+  subtotal       Decimal             @default(0) @db.Decimal(12, 2)
+  tax            Decimal             @default(0) @db.Decimal(12, 2)
+  total          Decimal             @default(0) @db.Decimal(12, 2)
 
-  status PurchaseOrderStatus @default(DRAFT)
-
-  orderDate DateTime
-
-  expectedDate DateTime?
-
-  notes String?
-
-  subtotal Decimal @default(0) @db.Decimal(12, 2)
-
-  tax Decimal @default(0) @db.Decimal(12, 2)
-
-  total Decimal @default(0) @db.Decimal(12, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   items            PurchaseOrderItem[]
   goodsReceipts    GoodsReceipt[]
   purchaseInvoices PurchaseInvoice[]
   purchaseReturns  PurchaseReturn[]
   organization     Organization        @relation(fields: [organizationId], references: [id])
-
-  supplier Supplier @relation(fields: [supplierId], references: [id])
+  supplier         Supplier            @relation(fields: [supplierId], references: [id])
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -326,25 +296,20 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id String @id @default(cuid())
-
+  id              String      @id @default(cuid())
   purchaseOrderId String
   productId       String
+  quantity        Decimal     @db.Decimal(18, 4)
+  unitCost        Decimal     @db.Decimal(18, 4)
+  subtotal        Decimal     @db.Decimal(18, 4)
+  notes           String?
 
-  quantity Decimal @db.Decimal(18, 4)
-  unitCost Decimal @db.Decimal(18, 4)
-
-  subtotal Decimal @db.Decimal(18, 4)
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   goodsReceiptItems GoodsReceiptItem[]
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  product       Product       @relation(fields: [productId], references: [id])
+  purchaseOrder     PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  product           Product            @relation(fields: [productId], references: [id])
 
   @@unique([purchaseOrderId, productId])
   @@index([purchaseOrderId])
@@ -352,29 +317,20 @@ model PurchaseOrderItem {
 }
 
 model GoodsReceipt {
-  id String @id @default(cuid())
-
+  id              String   @id @default(cuid())
   organizationId  String
   purchaseOrderId String
+  number          String
+  receivedDate    DateTime
+  receivedById    String?
+  notes           String?
 
-  number String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  receivedDate DateTime
-
-  // Nuevo
-  receivedById String?
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-
-  // Nuevo
-  receivedBy User? @relation(fields: [receivedById], references: [id])
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  purchaseOrder    PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  receivedBy       User?              @relation(fields: [receivedById], references: [id])
 
   items            GoodsReceiptItem[]
   purchaseInvoices PurchaseInvoice[]
@@ -387,68 +343,50 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptItem {
-  id String @id @default(cuid())
-
-  goodsReceiptId String
-
+  id                  String   @id @default(cuid())
+  goodsReceiptId      String
   purchaseOrderItemId String
+  productId           String
+  quantityReceived    Decimal  @db.Decimal(18, 4)
+  notes               String?
 
-  productId String
-
-  quantityReceived Decimal @db.Decimal(18, 4)
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   purchaseReturnItems PurchaseReturnItem[]
-
-  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id])
-
-  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
+  goodsReceipt        GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id])
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+  product             Product           @relation(fields: [productId], references: [id])
 
   @@index([goodsReceiptId])
   @@index([productId])
 }
 
 model PurchaseInvoice {
-  id String @id @default(cuid())
-
-  organizationId String
-  supplierId     String
-
+  id              String                @id @default(cuid())
+  organizationId  String
+  supplierId      String
   purchaseOrderId String?
   goodsReceiptId  String?
+  number          String
+  invoiceNumber   String
+  invoiceDate     DateTime
+  dueDate         DateTime?
+  status          PurchaseInvoiceStatus @default(DRAFT)
 
-  number        String
-  invoiceNumber String
+  subtotal        Decimal               @default(0) @db.Decimal(12, 2)
+  tax             Decimal               @default(0) @db.Decimal(12, 2)
+  total           Decimal               @default(0) @db.Decimal(12, 2)
+  notes           String?
 
-  invoiceDate DateTime
-  dueDate     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
-  status PurchaseInvoiceStatus @default(DRAFT)
-
-  subtotal Decimal @default(0) @db.Decimal(12, 2)
-  tax      Decimal @default(0) @db.Decimal(12, 2)
-  total    Decimal @default(0) @db.Decimal(12, 2)
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  supplier Supplier @relation(fields: [supplierId], references: [id])
-
-  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-
-  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
-
-  items PurchaseInvoiceItem[]
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  purchaseOrder PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  goodsReceipt  GoodsReceipt?       @relation(fields: [goodsReceiptId], references: [id])
+  items         PurchaseInvoiceItem[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -458,63 +396,49 @@ model PurchaseInvoice {
 }
 
 model PurchaseInvoiceItem {
-  id String @id @default(cuid())
-
+  id                String          @id @default(cuid())
   purchaseInvoiceId String
   productId         String
+  quantity          Decimal         @db.Decimal(18, 4)
+  unitCost          Decimal         @db.Decimal(18, 4)
+  taxRate           Decimal         @default(0) @db.Decimal(5, 2)
+  subtotal          Decimal         @db.Decimal(18, 4)
+  total             Decimal         @db.Decimal(18, 4)
 
-  quantity Decimal @db.Decimal(18, 4)
-  unitCost Decimal @db.Decimal(18, 4)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  taxRate Decimal @default(0) @db.Decimal(5, 2)
-
-  subtotal Decimal @db.Decimal(18, 4)
-  total    Decimal @db.Decimal(18, 4)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
+  product           Product         @relation(fields: [productId], references: [id])
 
   @@index([purchaseInvoiceId])
   @@index([productId])
 }
 
 model PurchaseReturn {
-  id String @id @default(cuid())
-
+  id              String               @id @default(cuid())
   organizationId  String
   supplierId      String
   purchaseOrderId String
   goodsReceiptId  String?
+  number          String
+  returnDate      DateTime
+  status          PurchaseReturnStatus @default(DRAFT)
+  reason          String?
+  notes           String?
 
-  number String
+  subtotal        Decimal              @default(0) @db.Decimal(12, 2)
+  tax             Decimal              @default(0) @db.Decimal(12, 2)
+  total           Decimal              @default(0) @db.Decimal(12, 2)
 
-  returnDate DateTime
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
-  status PurchaseReturnStatus @default(DRAFT)
-
-  reason String?
-  notes  String?
-
-  subtotal Decimal @default(0) @db.Decimal(12, 2)
-  tax      Decimal @default(0) @db.Decimal(12, 2)
-  total    Decimal @default(0) @db.Decimal(12, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  supplier Supplier @relation(fields: [supplierId], references: [id])
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-
-  goodsReceipt GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
-
-  items PurchaseReturnItem[]
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  supplier       Supplier             @relation(fields: [supplierId], references: [id])
+  purchaseOrder  PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
+  goodsReceipt   GoodsReceipt?        @relation(fields: [goodsReceiptId], references: [id])
+  items          PurchaseReturnItem[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -524,27 +448,21 @@ model PurchaseReturn {
 }
 
 model PurchaseReturnItem {
-  id String @id @default(cuid())
-
+  id                 String           @id @default(cuid())
   purchaseReturnId   String
   goodsReceiptItemId String
   productId          String
+  quantity           Decimal          @db.Decimal(18, 4)
+  unitCost           Decimal          @db.Decimal(18, 4)
+  subtotal           Decimal          @db.Decimal(18, 4)
+  notes              String?
 
-  quantity Decimal @db.Decimal(18, 4)
-  unitCost Decimal @db.Decimal(18, 4)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  subtotal Decimal @db.Decimal(18, 4)
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
-
+  purchaseReturn   PurchaseReturn   @relation(fields: [purchaseReturnId], references: [id])
   goodsReceiptItem GoodsReceiptItem @relation(fields: [goodsReceiptItemId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
+  product          Product          @relation(fields: [productId], references: [id])
 
   @@index([purchaseReturnId])
   @@index([goodsReceiptItemId])
@@ -552,19 +470,17 @@ model PurchaseReturnItem {
 }
 
 model BranchProductStock {
-  id String @id @default(cuid())
+  id          String   @id @default(cuid())
+  branchId    String
+  productId   String
+  stock       Decimal  @default(0) @db.Decimal(12, 3)
+  averageCost Decimal  @default(0) @db.Decimal(12, 2)
 
-  branchId  String
-  productId String
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
 
-  stock Decimal @default(0) @db.Decimal(12, 3)
-  averageCost Decimal @default(0) @db.Decimal(12, 2)
-
-  branch  Branch  @relation(fields: [branchId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([branchId, productId])
   @@index([branchId])
@@ -572,29 +488,22 @@ model BranchProductStock {
 }
 
 model InventoryTransfer {
-  id String @id @default(cuid())
-
-  organizationId String
-  productId      String
-
+  id                  String       @id @default(cuid())
+  organizationId      String
+  productId           String
   sourceBranchId      String
   destinationBranchId String
+  quantity            Decimal      @db.Decimal(12, 3)
+  reference           String
+  notes               String?
 
-  quantity Decimal @db.Decimal(12, 3)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
-  reference String
-  notes     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  product Product @relation(fields: [productId], references: [id])
-
-  sourceBranch Branch @relation("TransferSourceBranch", fields: [sourceBranchId], references: [id])
-
-  destinationBranch Branch @relation("TransferDestinationBranch", fields: [destinationBranchId], references: [id])
+  organization      Organization @relation(fields: [organizationId], references: [id])
+  product           Product      @relation(fields: [productId], references: [id])
+  sourceBranch      Branch       @relation("TransferSourceBranch", fields: [sourceBranchId], references: [id])
+  destinationBranch Branch       @relation("TransferDestinationBranch", fields: [destinationBranchId], references: [id])
 
   @@unique([organizationId, reference])
   @@index([organizationId])
@@ -602,33 +511,121 @@ model InventoryTransfer {
   @@index([sourceBranchId])
   @@index([destinationBranchId])
 }
+
+// ============================================================
+// MÓDULO RESTAURANTE (AMBIENTES, MESAS Y COMANDAS)
+// ============================================================
+
+model Room {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String
+  name           String
+  description    String?
+  isActive       Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  tables         RestaurantTable[]
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  branch         Branch            @relation(fields: [branchId], references: [id])
+
+  @@index([organizationId])
+  @@index([branchId])
+}
+
+model RestaurantTable {
+  id             String            @id @default(cuid())
+  roomId         String
+  tableNumber    String
+  capacity       Int
+  status         TableStatus       @default(AVAILABLE)
+  currentOrderId String?           // Vincula la comanda/orden activa de cocina
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  room           Room              @relation(fields: [roomId], references: [id])
+  currentOrder   RestaurantOrder?  @relation("ActiveTableOrder", fields: [currentOrderId], references: [id])
+  orders         RestaurantOrder[] @relation("TableOrderHistory")
+  sales          Sale[]            @relation("TableSales")
+
+  @@index([roomId])
+  @@index([currentOrderId])
+}
+
+model RestaurantOrder {
+  id            String                @id @default(cuid())
+  organizationId String
+  branchId       String
+  tableId       String
+  status        KitchenStatus         @default(PENDING)
+  notes         String?
+
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  // Vinculación opcional con la venta al momento de cobrar la mesa
+  saleId        String?               @unique
+  sale          Sale?                 @relation(fields: [saleId], references: [id])
+
+  table         RestaurantTable       @relation("TableOrderHistory", fields: [tableId], references: [id])
+  activeOnTable RestaurantTable[]     @relation("ActiveTableOrder")
+  items         RestaurantOrderItem[]
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([tableId])
+  @@index([status])
+}
+
+model RestaurantOrderItem {
+  id                String          @id @default(cuid())
+  restaurantOrderId String
+  restaurantOrder   RestaurantOrder @relation(fields: [restaurantOrderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Int
+  unitPrice         Decimal         @db.Decimal(12, 2)
+  notes             String?         @db.VarChar(255)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([restaurantOrderId])
+  @@index([productId])
+}
+
+// ============================================================
+// VENTAS Y FACTURACIÓN (NÚCLEO FINANCIERO GENÉRICO)
+// ============================================================
+
 model Sale {
-  id             String         @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
   branchId       String
   customerId     String?
-  tableId        String?
-
+  tableId        String?          // Opcional para guardar referencia histórica de la mesa
+  orderId        String?          @unique
   saleNumber     String
-  status         SaleStatus     @default(DRAFT)
-  kitchenStatus  KitchenStatus? @default(PENDING) // <--- NUEVO CAMPO PARA KDS
+  status         SaleStatus       @default(DRAFT)
 
-  subtotal       Decimal        @default(0) @db.Decimal(12, 2)
-  discount       Decimal        @default(0) @db.Decimal(12, 2)
-  tax            Decimal        @default(0) @db.Decimal(12, 2)
-  total          Decimal        @default(0) @db.Decimal(12, 2)
+  subtotal       Decimal          @default(0) @db.Decimal(12, 2)
+  discount       Decimal          @default(0) @db.Decimal(12, 2)
+  tax            Decimal          @default(0) @db.Decimal(12, 2)
+  total          Decimal          @default(0) @db.Decimal(12, 2)
 
   notes          String?
   items          SaleItem[]
   saleReturns    SaleReturn[]
   payments       Payment[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  branch         Branch          @relation(fields: [branchId], references: [id])
-  customer       Customer?       @relation(fields: [customerId], references: [id])
-  table          RestaurantTable? @relation(fields: [tableId], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  table           RestaurantTable? @relation("TableSales", fields: [tableId], references: [id])
+  restaurantOrder RestaurantOrder? // Relación inversa opcional con la orden de cocina
 
   @@unique([organizationId, saleNumber])
   @@index([organizationId])
@@ -636,60 +633,55 @@ model Sale {
   @@index([customerId])
   @@index([tableId])
   @@index([status])
-  @@index([kitchenStatus]) // <--- Recomendado para agilizar consultas KDS
 }
 
-
 model SaleItem {
-  id        String   @id @default(cuid())
-  saleId    String
-  productId String
+  id          String           @id @default(cuid())
+  saleId      String
+  productId   String
+  quantity    Int
+  unitPrice   Decimal          @db.Decimal(12, 2)
+  discount    Decimal          @default(0) @db.Decimal(12, 2)
+  subtotal    Decimal          @default(0) @db.Decimal(12, 2)
+  total       Decimal          @default(0) @db.Decimal(12, 2)
+  description String?          @db.VarChar(255)
 
-  quantity  Int      // Cantidad de unidades vendidas
-  unitPrice Decimal  @db.Decimal(12, 2) // Precio de venta base
-  discount  Decimal  @default(0) @db.Decimal(12, 2) // Descuento en dinero aplicado a la línea
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  // Calculados automáticamente en el service
-  subtotal  Decimal  @default(0) @db.Decimal(12, 2) // (quantity * unitPrice) - discount
-  total     Decimal  @default(0) @db.Decimal(12, 2) // Igual al subtotal neto si no manejas IVA por ítem
-
-  description String?  @db.VarChar(255)
-  items          SaleReturnItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id])
+  items       SaleReturnItem[]
+  sale        Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product          @relation(fields: [productId], references: [id])
 
   @@index([saleId])
   @@index([productId])
 }
 
 model SaleReturn {
-  id             String       @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
   branchId       String
-  saleId         String       // Factura original que se está devolviendo
+  saleId         String
   customerId     String?
 
   returnNumber   String
   status         SaleReturnStatus @default(DRAFT)
   returnDate     DateTime
 
-  subtotal       Decimal      @default(0) @db.Decimal(12, 2)
-  discount       Decimal      @default(0) @db.Decimal(12, 2)
-  total          Decimal      @default(0) @db.Decimal(12, 2)
+  subtotal       Decimal          @default(0) @db.Decimal(12, 2)
+  discount       Decimal          @default(0) @db.Decimal(12, 2)
+  total          Decimal          @default(0) @db.Decimal(12, 2)
 
-  reason         String?      @db.VarChar(255)
+  reason         String?          @db.VarChar(255)
   notes          String?
 
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  branch         Branch       @relation(fields: [branchId], references: [id])
-  sale           Sale         @relation(fields: [saleId], references: [id])
-  customer       Customer?    @relation(fields: [customerId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  branch         Branch           @relation(fields: [branchId], references: [id])
+  sale           Sale             @relation(fields: [saleId], references: [id])
+  customer       Customer?        @relation(fields: [customerId], references: [id])
   items          SaleReturnItem[]
 
   @@unique([organizationId, returnNumber])
@@ -699,21 +691,20 @@ model SaleReturn {
 }
 
 model SaleReturnItem {
-  id                 String     @id @default(cuid())
-  saleReturnId       String
-  saleItemId         String     // Línea de la factura original para validar cantidades
-  productId          String
+  id           String     @id @default(cuid())
+  saleReturnId String
+  saleItemId   String
+  productId    String
+  quantity     Int
+  unitCost     Decimal    @db.Decimal(12, 2)
+  notes        String?    @db.VarChar(255)
 
-  quantity           Int        // Cantidad física devuelta por el cliente
-  unitCost           Decimal    @db.Decimal(12, 2) // Costo recuperado de la mercancía
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  notes              String?    @db.VarChar(255)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-
-  saleReturn         SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
-  saleItem           SaleItem   @relation(fields: [saleItemId], references: [id])
-  product            Product    @relation(fields: [productId], references: [id])
+  saleReturn   SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
+  saleItem     SaleItem   @relation(fields: [saleItemId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id])
 
   @@index([saleReturnId])
   @@index([saleItemId])
@@ -723,11 +714,11 @@ model SaleReturnItem {
 model Payment {
   id             String        @id @default(cuid())
   organizationId String
-  saleId         String        // Factura de venta que se está pagando
+  saleId         String
 
   method         PaymentMethod @default(CASH)
-  amount         Decimal       @db.Decimal(12, 2) // Dinero recibido
-  reference      String?       @db.VarChar(100)   // N° de voucher o código de aprobación
+  amount         Decimal       @db.Decimal(12, 2)
+  reference      String?       @db.VarChar(100)
   paymentDate    DateTime      @default(now())
   notes          String?       @db.VarChar(255)
 
@@ -742,114 +733,81 @@ model Payment {
 }
 
 model BillingResolution {
-  id             String   @id @default(cuid())
-  organizationId String
-  branchId       String   @unique // Una resolución activa por sucursal
+  id               String   @id @default(cuid())
+  organizationId   String
+  branchId         String   @unique
 
-  prefix         String   @db.VarChar(15)  // Ej: "OC" o "VEN"
-  resolutionNumber String @db.VarChar(50)  // Número oficial de la entidad fiscal
-  fromNumber     Int      // Folio inicial autorizado
-  toNumber       Int      // Folio límite autorizado
-  currentNumber  Int      // Consecutivo actual en el que va la sede
-  expiryDate     DateTime // Fecha de vencimiento legal
+  prefix           String   @db.VarChar(15)
+  resolutionNumber String   @db.VarChar(50)
+  fromNumber       Int
+  toNumber         Int
+  currentNumber    Int
+  expiryDate       DateTime
 
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  branch         Branch       @relation(fields: [branchId], references: [id])
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  branch           Branch       @relation(fields: [branchId], references: [id])
 
   @@index([organizationId])
 }
 
 model CashSession {
-  id             String            @id @default(cuid())
-  organizationId String
-  branchId       String
-  userId         String            // Cajero responsable del turno
+  id              String            @id @default(cuid())
+  organizationId  String
+  branchId        String
+  userId          String
 
-  status         CashSessionStatus @default(OPEN)
-  openingDate    DateTime          @default(now())
-  closingDate    DateTime?
+  status          CashSessionStatus @default(OPEN)
+  openingDate     DateTime          @default(now())
+  closingDate     DateTime?
 
-  openingBalance Decimal           @db.Decimal(12, 2) // Dinero con el que inicia caja
-  expectedBalance Decimal          @default(0) @db.Decimal(12, 2) // openingBalance + ventas en CASH
-  actualBalance   Decimal?         @db.Decimal(12, 2) // Dinero físico real que contó el cajero
-  difference      Decimal?         @db.Decimal(12, 2) // Descuadre (Faltante / Sobrante)
+  openingBalance  Decimal           @db.Decimal(12, 2)
+  expectedBalance Decimal           @default(0) @db.Decimal(12, 2)
+  actualBalance   Decimal?          @db.Decimal(12, 2)
+  difference      Decimal?          @db.Decimal(12, 2)
 
-  notes          String?           @db.VarChar(255)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  notes           String?           @db.VarChar(255)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  organization   Organization      @relation(fields: [organizationId], references: [id])
-  branch         Branch            @relation(fields: [branchId], references: [id])
-  user           User              @relation(fields: [userId], references: [id])
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  branch          Branch            @relation(fields: [branchId], references: [id])
+  user            User              @relation(fields: [userId], references: [id])
 
   @@index([organizationId])
   @@index([branchId])
   @@index([userId])
 }
 
-model Room {
-  id             String   @id @default(cuid())
-  organizationId String
-  branchId       String
-  name           String
-  description    String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  tables       RestaurantTable[]
-  organization Organization      @relation(fields: [organizationId], references: [id])
-  branch       Branch            @relation(fields: [branchId], references: [id])
-
-  @@index([organizationId])
-  @@index([branchId])
-}
-
-model RestaurantTable {
-  id            String      @id @default(cuid())
-  roomId        String
-  tableNumber   String      // Se mantiene como String
-  capacity      Int
-  status        TableStatus @default(AVAILABLE)
-  currentSaleId String?     // Se mantiene
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  room          Room        @relation(fields: [roomId], references: [id])
-  sales         Sale[]
-  @@index([roomId])
-}
+// ============================================================
+// USUARIOS Y SEGURIDAD
+// ============================================================
 
 model UserRole {
-  id String @id @default(cuid())
-
-  userId String
-  roleId String
-
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
 }
 
 model Permission {
-  id String @id @default(cuid())
-
+  id          String           @id @default(cuid())
   module      String
-  code        String  @unique
+  code        String           @unique
   name        String
   description String?
+  isActive    Boolean          @default(true)
 
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   rolePermissions RolePermission[]
 
@@ -857,15 +815,14 @@ model Permission {
 }
 
 model RolePermission {
-  id String @id @default(cuid())
-
+  id           String     @id @default(cuid())
   roleId       String
   permissionId String
 
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
 
-  createdAt DateTime @default(now())
+  createdAt    DateTime   @default(now())
 
   @@unique([roleId, permissionId])
   @@index([roleId])
@@ -873,21 +830,17 @@ model RolePermission {
 }
 
 model Role {
-  id String @id @default(cuid())
-
+  id             String           @id @default(cuid())
   organizationId String
+  name           String
+  code           String
+  description    String?
+  isActive       Boolean          @default(true)
 
-  name        String
-  code        String
-  description String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
+  organization    Organization     @relation(fields: [organizationId], references: [id])
   userRoles       UserRole[]
   rolePermissions RolePermission[]
 
@@ -895,62 +848,52 @@ model Role {
 }
 
 model User {
-  id String @id @default(cuid())
-
+  id             String         @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
 
-  branchId      String
-  branch        Branch         @relation(fields: [branchId], references: [id])
-  userRoles     UserRole[]
-  goodsReceipts GoodsReceipt[]
-  cashSessions CashSession[]
-  firstName     String
-  lastName      String
+  branchId       String
+  branch         Branch         @relation(fields: [branchId], references: [id])
+  userRoles      UserRole[]
+  goodsReceipts  GoodsReceipt[]
+  cashSessions   CashSession[]
 
-  email String @unique
+  firstName      String
+  lastName       String
+  email          String         @unique
+  passwordHash   String
+  phoneNumber    String?
+  isActive       Boolean        @default(true)
 
-  passwordHash String
-
-  phoneNumber String?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Customer {
-  id String @id @default(cuid())
+  id                   String       @id @default(cuid())
+  organizationId       String
 
-  organizationId String
-
-  firstName String
-  lastName  String?
-
-  companyName String?
-
+  firstName            String
+  lastName             String?
+  companyName          String?
   identificationType   String?
   identificationNumber String?
 
-  email       String?
-  phoneNumber String?
+  email                String?
+  phoneNumber          String?
+  address              String?
+  city                 String?
+  state                String?
+  country              String?
+  notes                String?
+  isActive             Boolean      @default(true)
 
-  address String?
+  sales                Sale[]
+  saleReturns          SaleReturn[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
-  city    String?
-  state   String?
-  country String?
-
-  notes String?
-
-  isActive Boolean @default(true)
-  sales Sale[]
-  saleReturns SaleReturn[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization         Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([identificationNumber])

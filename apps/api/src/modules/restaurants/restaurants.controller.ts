@@ -7,7 +7,6 @@ import { UpdateRoomDto, UpdateTableDto } from './dto/update-restaurant.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
-
 import { TableStatus } from '@prisma/client';
 
 @ApiTags('Restaurant')
@@ -47,13 +46,10 @@ export class RestaurantsController {
   async updateTableStatus(
     @Param('id') id: string,
     @Body('status') status: TableStatus,
-    @Body('currentSaleId') currentSaleId?: string,
+    @Body('currentOrderId') currentOrderId?: string,
   ) {
-    return this.restaurantsService.updateTableStatus(id, status);
+    return this.restaurantsService.updateTableStatus(id, status, currentOrderId);
   }
-
-
-// ... dentro de class RestaurantsController
 
   @ApiOperation({ summary: 'Editar configuración de un salón' })
   @Permissions('restaurant.update')
@@ -74,9 +70,9 @@ export class RestaurantsController {
   @Patch('tables/:id/open')
   async openTable(
     @Param('id') id: string,
-    @Body('saleId') saleId?: string,
+    @Body('orderId') orderId?: string,
   ) {
-    return this.restaurantsService.updateTableStatus(id, TableStatus.OCCUPIED);
+    return this.restaurantsService.updateTableStatus(id, TableStatus.OCCUPIED, orderId);
   }
 
   @ApiOperation({ summary: 'Solicitar o imprimir pre-cuenta' })
@@ -90,10 +86,10 @@ export class RestaurantsController {
   @Permissions('restaurant.update')
   @Patch('tables/:id/release')
   async releaseTable(@Param('id') id: string) {
-return this.restaurantsService.updateTableStatus(id, TableStatus.AVAILABLE, null);
-}
+    return this.restaurantsService.updateTableStatus(id, TableStatus.AVAILABLE, null);
+  }
 
-@ApiOperation({ summary: 'Obtener todas las mesas de una sucursal' })
+  @ApiOperation({ summary: 'Obtener todas las mesas de una sucursal' })
   @Permissions('restaurant.read')
   @Get('tables')
   async getAllTables(
@@ -107,6 +103,6 @@ return this.restaurantsService.updateTableStatus(id, TableStatus.AVAILABLE, null
   @Permissions('restaurant.read')
   @Get('tables/:id')
   async getTableById(@Param('id') id: string) {
-    return this.restaurantsService.getTableById(id); // (Asegúrate de tener este método en tu service o implementarlo buscando en Prisma)
+    return this.restaurantsService.getTableById(id);
   }
 }

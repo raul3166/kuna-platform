@@ -23,27 +23,23 @@ interface Table {
   tableNumber: string
   capacity: number
   status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'BILL_PRINTED'
+  currentOrderId?: string
 }
 
-interface SaleItem {
+interface OrderItem {
   id: string
   productId: string
   quantity: number
   unitPrice: number
-  subtotal: number
-  total: number
-  description?: string
+  notes?: string
   product?: Product
 }
 
-interface Sale {
+interface RestaurantOrder {
   id: string
-  saleNumber: string
+  orderNumber: string
   status: string
-  subtotal: number
-  discount: number
-  total: number
-  items: SaleItem[]
+  items: OrderItem[]
   table?: Table
 }
 
@@ -62,7 +58,7 @@ const authStore = useAuthStore()
 // ESTADOS PRINCIPALES
 const tableId = ref<string>((route.query.tableId as string) || '')
 const currentTable = ref<Table | null>(null)
-const currentOrder = ref<Sale | null>(null)
+const currentOrder = ref<RestaurantOrder | null>(null)
 
 const tables = ref<Table[]>([])
 const categories = ref<Category[]>([])
@@ -86,9 +82,12 @@ const cartTotal = computed(() => {
   return cart.value.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0)
 })
 
+const savedItemsTotal = computed(() => {
+  return savedItems.value.reduce((acc, item) => acc + Number(item.unitPrice) * item.quantity, 0)
+})
+
 const grandTotal = computed(() => {
-  const savedTotal = Number(currentOrder.value?.total || 0)
-  return savedTotal + cartTotal.value
+  return savedItemsTotal.value + cartTotal.value
 })
 
 // REACCIONAR A CAMBIOS DE URL
@@ -138,19 +137,15 @@ async function loadData() {
 async function fetchTableAndOrder() {
   if (!tableId.value) return
 
-  // Limpiamos el carrito local al cambiar de mesa para evitar arrastrar productos previos
   cart.value = []
 
   try {
     const [tableRes, orderRes] = await Promise.all([
       api.get<Table>(`/restaurants/tables/${tableId.value}`),
-      api.get<Sale>(`/restaurant-orders/tables/${tableId.value}/current`).catch(() => ({ data: null }))
+      api.get<RestaurantOrder>(`/restaurant-orders/tables/${tableId.value}/current`).catch(() => ({ data: null }))
     ])
 
     currentTable.value = tableRes.data
-
-    // Validamos si la orden devuelta realmente está abierta o activa
-    // (Si tu backend devuelve órdenes cerradas, aquí puedes filtrar por su status, ej: orderRes.data?.status === 'OPEN')
     currentOrder.value = orderRes.data
   } catch (err: any) {
     console.error('Error al cargar detalle de mesa u orden:', err)
@@ -217,10 +212,9 @@ async function submitOrder() {
       }))
     }
 
-    const res = await api.post<Sale>(`/restaurant-orders/tables/${tableId.value}`, payload)
+    const res = await api.post<RestaurantOrder>(`/restaurant-orders/tables/${tableId.value}`, payload)
     currentOrder.value = res.data
 
-    // Actualiza el estado en el objeto local y dentro del arreglo 'tables'
     if (currentTable.value) {
       currentTable.value.status = 'OCCUPIED'
     }
@@ -241,7 +235,7 @@ async function removeSavedItem(itemId: string) {
   if (!confirm('¿Deseas eliminar este ítem de la comanda?')) return
 
   try {
-    const res = await api.delete<Sale>(`/restaurant-orders/items/${itemId}`)
+    const res = await api.delete<RestaurantOrder>(`/restaurant-orders/items/${itemId}`)
     currentOrder.value = res.data
   } catch (err: any) {
     alert(err.response?.data?.message || 'Error al eliminar ítem')
@@ -299,7 +293,7 @@ onMounted(() => {
 
         <div v-if="currentOrder" class="text-right">
           <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">
-            Orden {{ currentOrder.saleNumber }}
+            Comanda #{{ currentOrder.orderNumber || currentOrder.id.slice(0, 8) }}
           </span>
         </div>
       </div>
@@ -392,7 +386,7 @@ onMounted(() => {
             </span>
           </div>
 
-          <!-- LISTA DE ÍTEMS (GUARDADOS Y NUEVOS) -->
+          <!-- LISTA DE ÍTEMS -->
           <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
 
             <!-- Guardados previamente -->
@@ -411,12 +405,12 @@ onMounted(() => {
                     <p class="text-[11px] text-slate-500">
                       {{ item.quantity }} x {{ formatCurrency(item.unitPrice) }}
                     </p>
-                    <p v-if="item.description" class="text-[10px] italic text-amber-600 mt-0.5">
-                      Nota: {{ item.description }}
+                    <p v-if="item.notes" class="text-[10px] italic text-amber-600 mt-0.5">
+                      Nota: {{ item.notes }}
                     </p>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="font-extrabold text-slate-800">{{ formatCurrency(item.total) }}</span>
+                    <span class="font-extrabold text-slate-800">{{ formatCurrency(item.quantity * item.unitPrice) }}</span>
                     <button
                       @click="removeSavedItem(item.id)"
                       class="text-rose-500 hover:text-rose-700 font-bold text-xs"

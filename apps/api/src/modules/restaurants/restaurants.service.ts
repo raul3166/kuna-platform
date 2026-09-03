@@ -27,7 +27,7 @@ export class RestaurantsService {
       },
       include: {
         tables: {
-          orderBy: { tableNumber: 'asc' }, // Usamos tableNumber
+          orderBy: { tableNumber: 'asc' },
         },
       },
     });
@@ -43,7 +43,7 @@ export class RestaurantsService {
   async createTable(dto: CreateTableDto) {
     return this.prisma.restaurantTable.create({
       data: {
-        tableNumber: dto.tableNumber, // Sin conversiones, directamente string
+        tableNumber: dto.tableNumber,
         capacity: dto.capacity,
         roomId: dto.roomId,
         ...(dto.status && { status: dto.status }),
@@ -58,68 +58,73 @@ export class RestaurantsService {
     });
   }
 
-  async updateTableStatus(tableId: string, status: TableStatus, currentSaleId?: string | null) {
+  async updateTableStatus(tableId: string, status: TableStatus, currentOrderId?: string | null) {
     return this.prisma.restaurantTable.update({
       where: { id: tableId },
       data: {
         status,
-        ...(currentSaleId !== undefined && { currentSaleId }),
+        ...(currentOrderId !== undefined && { currentOrderId }),
       },
     });
   }
 
-  // src/modules/restaurants/restaurants.service.ts
+  async setBillPrinted(tableId: string) {
+    const table = await this.prisma.restaurantTable.findUnique({
+      where: { id: tableId },
+    });
 
-async setBillPrinted(tableId: string) {
-  const table = await this.prisma.restaurantTable.findUnique({
-    where: { id: tableId },
-  });
+    if (!table) {
+      throw new NotFoundException('La mesa no existe');
+    }
 
-  if (!table) {
-    throw new NotFoundException('La mesa no existe');
+    if (table.status !== TableStatus.OCCUPIED) {
+      throw new BadRequestException(
+        `No se puede imprimir la precuenta de una mesa en estado ${table.status}`,
+      );
+    }
+
+    return this.prisma.restaurantTable.update({
+      where: { id: tableId },
+      data: { status: TableStatus.BILL_PRINTED },
+    });
   }
 
-  if (table.status !== TableStatus.OCCUPIED) {
-    throw new BadRequestException(
-      `No se puede imprimir la precuenta de una mesa en estado ${table.status}`,
-    );
-  }
-
-  return this.prisma.restaurantTable.update({
-    where: { id: tableId },
-    data: { status: TableStatus.BILL_PRINTED },
-  });
-}
-// En src/modules/restaurants/restaurants.service.ts
-
-async getAllTables(organizationId?: string, branchId?: string) {
-  return this.prisma.restaurantTable.findMany({
-    where: {
-      room: {
-        ...(branchId && { branchId }),
-        ...(organizationId && { organizationId }),
+  async getAllTables(organizationId?: string, branchId?: string) {
+    return this.prisma.restaurantTable.findMany({
+      where: {
+        room: {
+          ...(branchId && { branchId }),
+          ...(organizationId && { organizationId }),
+        },
       },
-    },
-    include: {
-      room: true,
-    },
-    orderBy: {
-      tableNumber: 'asc',
-    },
-  });
-}
-
-// En src/modules/restaurants/restaurants.service.ts
-
-async getTableById(id: string) {
-  const table = await this.prisma.restaurantTable.findUnique({
-    where: { id },
-  });
-
-  if (!table) {
-    throw new NotFoundException('Table not found');
+      include: {
+        room: true,
+      },
+      orderBy: {
+        tableNumber: 'asc',
+      },
+    });
   }
 
-  return table;
-}
+  async getTableById(id: string) {
+    const table = await this.prisma.restaurantTable.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        currentOrder: {
+          include: {
+            items: {
+              include: { product: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!table) {
+      throw new NotFoundException('Table not found');
+    }
+
+    return table;
+  }
 }

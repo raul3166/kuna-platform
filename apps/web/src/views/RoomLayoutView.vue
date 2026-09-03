@@ -11,7 +11,7 @@ interface Table {
   tableNumber: string
   capacity: number
   status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'BILL_PRINTED'
-  currentSaleId?: string
+  currentOrderId?: string
 }
 
 interface Room {

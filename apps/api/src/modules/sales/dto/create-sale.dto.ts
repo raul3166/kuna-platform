@@ -41,6 +41,15 @@ export class CreateSaleDto {
   tableId?: string;
 
   @ApiPropertyOptional({
+    example: 'cmorder00000000000000001',
+    description: 'Restaurant order identifier',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  orderId?: string;
+
+  @ApiPropertyOptional({
     example: 'VEN-000001',
     description: 'Sale number unique within the organization',
   })

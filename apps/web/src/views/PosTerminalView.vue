@@ -9,8 +9,21 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-interface Product { id: string; name: string; sku: string; salePrice: number; barcode?: string }
-interface Customer { id: string; firstName: string; lastName: string; email?: string }
+interface Product {
+  id: string
+  name: string
+  sku: string
+  salePrice: number
+  barcode?: string
+}
+
+interface Customer {
+  id: string
+  firstName: string
+  lastName: string
+  email?: string
+}
+
 interface CartItem {
   product: Product
   quantity: number
@@ -18,8 +31,9 @@ interface CartItem {
   discount: number
 }
 
-// Integración de Mesas
+// Integración de Mesas y Comandas
 const tableId = ref<string | null>(null)
+const currentOrderId = ref<string | null>(null)
 
 // Control de Caja
 const hasActiveCashSession = ref(false)
@@ -79,7 +93,7 @@ async function handleOpenCashRegister() {
   try {
     const payload = {
       organizationId: authStore.user?.organizationId || '',
-      branchId: authStore.user?.branchId || '',
+      branchId: authStore.currentBranch?.id || authStore.user?.branchId || '',
       userId: authStore.user?.id || '',
       openingBalance: Number(openingBalanceInput.value)
     }
@@ -96,13 +110,16 @@ async function handleOpenCashRegister() {
 }
 
 async function loadPosData() {
+  const orgId = authStore.user?.organizationId
+  const branchId = authStore.currentBranch?.id || authStore.user?.branchId
+
   try {
     const [prodRes, custRes] = await Promise.all([
-      api.get<Product[]>('/products'),
-      api.get<Customer[]>('/customers')
+      api.get<Product[]>('/products', { params: { organizationId: orgId, branchId } }),
+      api.get<Customer[]>('/customers', { params: { organizationId: orgId } })
     ])
-    products.value = prodRes.data
-    customers.value = custRes.data
+    products.value = prodRes.data || []
+    customers.value = custRes.data || []
   } catch (error) {
     errorMessage.value = 'Error al sincronizar el catálogo comercial.'
   }
@@ -142,6 +159,31 @@ function triggerNativePrint() {
   }, 300)
 }
 
+// Cargar la comanda de cocina ligada a una mesa
+async function loadTableItems(id: string) {
+  try {
+    const res = await api.get(`/restaurant-orders/tables/${id}/current`)
+
+    if (res.data && res.data.items) {
+      currentOrderId.value = res.data.id
+
+      cart.value = res.data.items.map((item: any) => ({
+        product: item.product || {
+          id: item.productId,
+          name: item.productName || 'Producto',
+          sku: '',
+          salePrice: Number(item.unitPrice)
+        },
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        discount: 0
+      }))
+    }
+  } catch (error) {
+    console.error('Error al cargar la comanda de la mesa en el POS:', error)
+  }
+}
+
 async function handleFinalizeSale() {
   if (amountPaid.value < cartTotal.value && paymentMethod.value === 'CASH') {
     alert('El dinero recibido no cubre el monto neto total de la compra.')
@@ -150,18 +192,22 @@ async function handleFinalizeSale() {
 
   isSubmitting.value = true
   try {
-    // 1. Persistir Cabecera (Se incluye tableId si existe)
+    const orgId = authStore.user?.organizationId || ''
+    const branchId = authStore.currentBranch?.id || authStore.user?.branchId || ''
+
+    // 1. Crear Venta Definitiva (Header)
     const salePayload = {
-      organizationId: authStore.user?.organizationId || '',
-      branchId: authStore.user?.branchId || '',
+      organizationId: orgId,
+      branchId,
       customerId: selectedCustomerId.value || undefined,
       notes: notes.value || undefined,
-      tableId: tableId.value || undefined
+      tableId: tableId.value || undefined,
+      orderId: currentOrderId.value || undefined
     }
     const saleRes = await api.post('/sales', salePayload)
     const saleId = saleRes.data.id
 
-    // 2. Persistir Ítems
+    // 2. Persistir Ítems de la Venta
     for (const item of cart.value) {
       await api.post('/sale-items', {
         saleId,
@@ -172,18 +218,18 @@ async function handleFinalizeSale() {
       })
     }
 
-    // 3. Persistir Pago
+    // 3. Registrar Pago
     await api.post('/payments', {
-      organizationId: authStore.user?.organizationId || '',
+      organizationId: orgId,
       saleId,
       method: paymentMethod.value,
       amount: cartTotal.value
     })
 
-    // 4. Confirmar Venta
+    // 4. Confirmar Venta (Afecta Stock e Ingresos)
     await api.patch(`/sales/${saleId}/confirm`)
 
-    // 5. Liberar Mesa en backend si fue una venta ligada a mesa
+    // 5. Liberar Mesa en el backend si aplicaba
     if (tableId.value) {
       try {
         await api.patch(`/restaurants/tables/${tableId.value}/release`)
@@ -192,7 +238,7 @@ async function handleFinalizeSale() {
       }
     }
 
-    // 6. Obtener Factura Detallada para Ticket
+    // 6. Cargar detalle formateado para el ticket
     const invoiceDetail = await api.get(`/sales/${saleId}`)
 
     lastPrintedInvoice.value = {
@@ -205,13 +251,14 @@ async function handleFinalizeSale() {
 
     showInvoiceSuccessModal.value = true
 
-    // Resetear formulario
+    // Resetear formulario del POS
     cart.value = []
     selectedCustomerId.value = ''
     notes.value = ''
     showPaymentModal.value = false
     amountPaid.value = 0
     tableId.value = null
+    currentOrderId.value = null
   } catch (error: any) {
     alert(error.response?.data?.message || 'Error crítico procesando la transacción de venta.')
   } finally {
@@ -227,7 +274,7 @@ async function handleCloseCashRegister() {
       actualBalance: Number(actualBalanceInput.value),
       notes: closeNotes.value || undefined
     })
-    const diff = Number(res.data.difference)
+    const diff = Number(res.data.difference || 0)
     alert(diff === 0 ? '¡Caja cerrada! Turno cuadrado perfectamente.' : `Caja cerrada. Descuadre: ${formatCurrency(diff)}`)
     hasActiveCashSession.value = false
     currentCashSessionId.value = null
@@ -242,43 +289,20 @@ async function handleCloseCashRegister() {
 
 function handleCloseInvoiceModal() {
   showInvoiceSuccessModal.value = false
-  // Si venía de la pantalla de mesas, redirigir de vuelta
   if (route.query.tableId) {
     router.push('/rooms')
   }
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value)
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value || 0)
 }
 
-// Función para traer el pedido activo de la mesa
-async function loadTableItems(id: string) {
-  try {
-    // Usamos el endpoint correcto de la ruta de órdenes de restaurante
-    const res = await api.get(`/restaurant-orders/tables/${id}/current`)
-
-    if (res.data && res.data.items) {
-      // Mapeamos correctamente al tipo CartItem que usa tu POS
-      cart.value = res.data.items.map((item: any) => ({
-        product: item.product || { id: item.productId, name: item.name, sku: '', salePrice: Number(item.unitPrice) },
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-        discount: Number(item.discount || 0)
-      }))
-
-      // Guardamos el ID de la orden/venta actual para actualizarla si se añaden más ítems
-      currentSaleId.value = res.data.id
-
-      // Si la orden tiene cliente o notas asociadas, las rellenamos
-      if (res.data.customerId) selectedCustomerId.value = res.data.customerId
-      if (res.data.notes) notes.value = res.data.notes
-    }
-  } catch (error) {
-    console.error('Error al cargar la orden de la mesa en el POS:', error)
-  }
+function unlinkTable() {
+  tableId.value = null
+  currentOrderId.value = null
+  cart.value = []
 }
-
 
 onMounted(async () => {
   if (route.query.tableId) {
@@ -287,8 +311,6 @@ onMounted(async () => {
   }
   checkCashSessionStatus()
 })
-
-
 </script>
 
 <template>
@@ -301,6 +323,7 @@ onMounted(async () => {
     </div>
 
     <div v-else>
+      <!-- CAJA BLOQUEADA -->
       <div v-if="!hasActiveCashSession" class="max-w-md mx-auto bg-white border border-slate-200 p-6 rounded-2xl shadow-xl mt-12 border-t-4 border-t-amber-500">
         <div class="text-center mb-6">
           <span class="text-4xl">🔒</span>
@@ -319,6 +342,7 @@ onMounted(async () => {
         </form>
       </div>
 
+      <!-- POS ACTIVO -->
       <div v-else class="grid gap-6 lg:grid-cols-3 h-[calc(100vh-10rem)]">
         <!-- Panel Catálogo -->
         <div class="lg:col-span-2 flex flex-col bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
@@ -365,7 +389,7 @@ onMounted(async () => {
               <span class="flex items-center gap-1.5 font-bold">
                 <span>🍽️</span> Orden Ligada a Mesa Operativa
               </span>
-              <button @click="tableId = null" type="button" class="text-blue-400 hover:text-white font-bold text-xs bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800">
+              <button @click="unlinkTable" type="button" class="text-blue-400 hover:text-white font-bold text-xs bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800">
                 ✕ Disociar
               </button>
             </div>
@@ -375,11 +399,11 @@ onMounted(async () => {
                 <option value="">👤 Venta de Mostrador / Cliente Anónimo</option>
                 <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.firstName }} {{ c.lastName || '' }}</option>
               </select>
-              <input v-model="notes" type="text" placeholder="📝 Notas de factura (Ej: Mesa 3, Para llevar...)" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none placeholder-slate-500" />
+              <input v-model="notes" type="text" placeholder="📝 Notas de factura (Ej: Para llevar...)" class="w-full border border-slate-700 rounded-xl p-2 text-xs bg-slate-800 text-slate-200 focus:outline-none placeholder-slate-500" />
             </div>
 
             <div class="mt-4 space-y-2 overflow-y-auto max-h-[calc(100vh-28rem)] pr-1">
-              <div v-for="(item, index) in cart" :key="index" class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+              <div v-for="(item, index) in cart" :key="index" class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
                 <div class="flex justify-between items-start">
                   <div>
                     <div class="text-xs font-bold text-slate-100">{{ item.product.name }}</div>

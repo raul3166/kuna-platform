@@ -8,10 +8,10 @@ interface Product {
   name: string
 }
 
-interface SaleItem {
+interface OrderItem {
   id: string
   quantity: number
-  description?: string
+  notes?: string
   product?: Product
 }
 
@@ -22,12 +22,11 @@ interface Table {
 
 interface KitchenOrder {
   id: string
-  saleNumber: string
-  status: string          // Estado comercial ('DRAFT')
-  kitchenStatus?: string  // Estado KDS ('PENDING', 'IN_PREPARATION', 'READY')
+  orderNumber?: string
+  status: 'PENDING' | 'IN_PREPARATION' | 'READY' | 'DELIVERED' | 'CANCELLED'
   createdAt: string
   table?: Table
-  items: SaleItem[]
+  items: OrderItem[]
 }
 
 const orders = ref<KitchenOrder[]>([])
@@ -128,7 +127,7 @@ onUnmounted(() => {
             <div class="p-3 bg-slate-900 text-white flex justify-between items-center">
               <div>
                 <span class="font-extrabold text-sm block">Mesa {{ order.table?.tableNumber || 'S/N' }}</span>
-                <span class="text-[10px] text-slate-400">Orden #{{ order.saleNumber }}</span>
+                <span class="text-[10px] text-slate-400">Comanda #{{ order.orderNumber || order.id.slice(0, 8) }}</span>
               </div>
 
               <div class="text-right">
@@ -158,8 +157,8 @@ onUnmounted(() => {
                 </div>
 
                 <!-- NOTA/OBSERVACIÓN -->
-                <p v-if="item.description" class="text-xs font-semibold text-amber-700 bg-amber-50 p-1.5 rounded mt-1 border border-amber-200">
-                  📌 {{ item.description }}
+                <p v-if="item.notes" class="text-xs font-semibold text-amber-700 bg-amber-50 p-1.5 rounded mt-1 border border-amber-200">
+                  📌 {{ item.notes }}
                 </p>
               </div>
             </div>
@@ -169,7 +168,7 @@ onUnmounted(() => {
           <div class="p-3 bg-slate-50 border-t border-slate-200 space-y-2">
             <!-- Botón PENDING -> IN_PREPARATION -->
             <button
-              v-if="!order.kitchenStatus || order.kitchenStatus === 'PENDING'"
+              v-if="order.status === 'PENDING'"
               @click="changeOrderStatus(order.id, 'IN_PREPARATION')"
               class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
             >
@@ -178,7 +177,7 @@ onUnmounted(() => {
 
             <!-- Botón IN_PREPARATION -> READY -->
             <button
-              v-else-if="order.kitchenStatus === 'IN_PREPARATION'"
+              v-else-if="order.status === 'IN_PREPARATION'"
               @click="changeOrderStatus(order.id, 'READY')"
               class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
             >
