@@ -104,3 +104,10 @@
 * Dynamic Customer Upsert Wizard with structural DTO payload parsing.
 * Tax Identification Type selectors tailored for Latam localization (CEDULA, NIT, PASAPORTE, RUT).
 * Logical deletion and soft-deactivation trigger integrated with core CRM service.
+
+## v1.2.0-rc1
+
+* **Room & Table Layout Engine:** Mapa de salones e interactividad de mesas en vivo (`AVAILABLE`, `OCCUPIED`).
+* **Order Taking & Waiter Interface:** Sistema de comandero conectado a mesas activas con historial por sesión.
+* **Kitchen Display System (KDS):** Monitor de cocina en tiempo real con control de tiempos de espera, alertas de demora y visualización de notas de preparación por ítem.
+* **Table Checkout & POS Integration:** Integración fluida entre facturación POS, consumo de inventario atómico (ACID), cobro y liberación automática de mesa.

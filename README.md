@@ -318,3 +318,32 @@ Todos los derechos reservados.
 ## 👨‍💻 Proyecto
 
 Desarrollado como una plataforma modular orientada a empresas de Latinoamérica, con visión de expansión internacional.
+
+## 🚀 Estado del proyecto
+
+KUNA cuenta con un núcleo comercial, logístico, gastronómico y de fidelización completamente operativo:
+
+* **Core & Security:** Autenticación JWT, RBAC multi-inquilino, permisos por rol y asignación dinámica.
+* **Supply Chain & Inventory:** Registro de compras, recepción de mercancía, devoluciones a proveedores, Kardex analítico en tiempo real y valoración de stock por costo promedio.
+* **POS & Commercial Engine:** Punto de venta de alta disponibilidad, aperturas y cierres de caja con arqueo, emisión de comprobantes, devoluciones con notas de crédito e impresión térmica nativa de 80mm.
+* **Restaurant & Gastronomic Module (KDS):** Gestión de salones y mesas, comanderas para meseros, monitor de cocina KDS con semáforos de tiempo y facturación directa con liberación automática de mesas.
+* **CRM & Accounts:** Directorio unificado de clientes con motor de actualización atómica (Upsert), soporte para personas naturales y empresas, y segmentación por sucursal/organización.
+
+## 📦 Versión actual
+
+v1.2.0-rc1
+
+## 📋 Sprints completados
+
+✅ Sprint 1 a Sprint 8 (Base Core, Inventarios y Seguridad)
+✅ Sprint 9 (Sales Backend Engine)
+✅ Sprint 10 (POS Frontend Interface)
+✅ Sprint 11 (Cash Control & POS Treasury)
+✅ Sprint 12 (Sales Returns & Credit Notes UI)
+✅ Sprint 13 (POS Receipt Thermal Printing)
+✅ Sprint 14 (Customers & CRM Module UI)
+✅ Sprint 16 (Restaurant Module & Table Management / KDS)
+
+## 🎯 Próximo Módulo (Current Module)
+
+Sprint 17 — Accounting, Tax Localization & CxC / CxP Core

@@ -177,3 +177,29 @@ Desarrollar el motor transaccional de ventas en NestJS, permitiendo emitir factu
 | ------- | --------------------------------- | :----: | -------- |
 | KNA-079 | Customers Directory Grid          |   ✅   | Frontend |
 | KNA-080 | Customer Creation & Upsert Form   |   ✅   | Frontend |
+
+# Sprint 16 — Restaurant Module & Table Management (Módulo Vertical)
+
+Objetivo: Desarrollar el primer módulo de industria de KUNA para operaciones gastronómicas, integrado nativamente con el motor de POS, inventarios y caja.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-085 | Room & Table Layout Engine (Salones y Mesas) | ✅ | Frontend/Backend |
+| KNA-086 | Order Taking & Waiter Interface (Comandero) | ✅ | Frontend/Backend |
+| KNA-087 | Kitchen Display System — KDS (Pantalla de Cocina) | ✅ | Frontend/Backend |
+| KNA-088 | Table Checkout & POS Session Integration | ✅ | Frontend/Backend |
+
+**Sprint 16 completado al 100%.**
+
+---
+
+# Sprint 17 — Accounting, Tax Localization & CxC / CxP Core
+
+Objetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y control de cuentas pendientes comerciales y operativas.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-089 | Latam Tax Engine & Rules (IVA, INC, Retenciones) | ⏳ | Frontend/Backend |
+| KNA-090 | Sales & Purchase Auxiliary Ledger (Libros Fiscales) | ⏳ | Frontend/Backend |
+| KNA-091 | Accounts Receivable — CxC (Crédito a Clientes CRM) | ⏳ | Frontend/Backend |
+| KNA-092 | Accounts Payable — CxP (Obligaciones con Proveedores) | ⏳ | Frontend/Backend |
