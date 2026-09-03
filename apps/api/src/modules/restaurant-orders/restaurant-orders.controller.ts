@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -19,6 +20,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 
 import { CreateRestaurantOrderDto } from './dto/create-restaurant-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RestaurantOrdersService } from './restaurant-orders.service';
 
 @ApiTags('Restaurant Orders')
@@ -58,5 +60,25 @@ export class RestaurantOrdersController {
   @ApiResponse({ status: 404, description: 'Order item not found.' })
   async removeItem(@Param('itemId') itemId: string) {
     return this.restaurantOrdersService.removeItem(itemId);
+  }
+
+  @Get('kitchen')
+  @Permissions('sales.read')
+  @ApiOperation({ summary: 'Get all active orders for kitchen display system (KDS)' })
+  @ApiResponse({ status: 200, description: 'Active kitchen orders retrieved successfully.' })
+  async getKitchenOrders() {
+    return this.restaurantOrdersService.getKitchenOrders();
+  }
+
+  @Patch(':orderId/status')
+  @Permissions('sales.update')
+  @ApiOperation({ summary: 'Update kitchen order status' })
+  @ApiResponse({ status: 200, description: 'Order status updated successfully.' })
+  @ApiResponse({ status: 404, description: 'Order not found.' })
+  async updateOrderStatus(
+    @Param('orderId') orderId: string,
+    @Body() dto: UpdateOrderStatusDto,
+  ) {
+    return this.restaurantOrdersService.updateOrderStatus(orderId, dto);
   }
 }

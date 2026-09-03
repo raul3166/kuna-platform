@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SaleStatus, TableStatus } from '@prisma/client';
+import { KitchenStatus, SaleStatus, TableStatus } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateRestaurantOrderDto } from './dto/create-restaurant-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class RestaurantOrdersService {
@@ -19,36 +20,18 @@ export class RestaurantOrdersService {
   async addItemsToTable(tableId: string, dto: CreateRestaurantOrderDto) {
     const { organizationId, branchId, items } = dto;
 
-    /*
-     * ----------------------------------------------------------
-     * VALIDAR MESA
-     * ----------------------------------------------------------
-     */
-
     const table = await this.prisma.restaurantTable.findUnique({
-      where: {
-        id: tableId,
-      },
+      where: { id: tableId },
     });
 
     if (!table) {
       throw new NotFoundException('Table not found');
     }
 
-    /*
-     * ----------------------------------------------------------
-     * PROCESAR COMANDA EN TRANSACCIÓN
-     * ----------------------------------------------------------
-     */
-
     return this.prisma.$transaction(async (tx) => {
       let saleId = table.currentSaleId;
 
-      // Si no hay orden activa vinculada o la mesa está marcada como libre
       if (!saleId || table.status === TableStatus.AVAILABLE) {
-        /*
-         * Validar resolución de facturación activa para asignar consecutivo DRAFT
-         */
         const resolution = await tx.billingResolution.findFirst({
           where: {
             branchId,
@@ -77,22 +60,15 @@ export class RestaurantOrdersService {
 
         const assignedSaleNumber = `${resolution.prefix}-${resolution.currentNumber}`;
 
-        /*
-         * Avanzar consecutivo de facturación
-         */
         await tx.billingResolution.update({
-          where: {
-            id: resolution.id,
-          },
+          where: { id: resolution.id },
           data: {
-            currentNumber: {
-              increment: 1,
-            },
+            currentNumber: { increment: 1 },
           },
         });
 
         /*
-         * Crear cabecera DRAFT para la comanda de restaurante
+         * Se asigna DRAFT a status y PENDING a kitchenStatus
          */
         const newSale = await tx.sale.create({
           data: {
@@ -101,6 +77,7 @@ export class RestaurantOrdersService {
             tableId,
             saleNumber: assignedSaleNumber,
             status: SaleStatus.DRAFT,
+            kitchenStatus: KitchenStatus.PENDING, // Initial KDS status
             subtotal: 0,
             discount: 0,
             tax: 0,
@@ -110,37 +87,23 @@ export class RestaurantOrdersService {
 
         saleId = newSale.id;
 
-        /*
-         * Actualizar la mesa vinculando el saleId activo y marcar como ocupada
-         */
         await tx.restaurantTable.update({
-          where: {
-            id: tableId,
-          },
+          where: { id: tableId },
           data: {
             currentSaleId: saleId,
             status: TableStatus.OCCUPIED,
           },
         });
       } else if (table.status === TableStatus.BILL_PRINTED) {
-        // Si se agregan nuevos ítems tras haber impreso la precuenta, vuelve a estado OCCUPIED
         await tx.restaurantTable.update({
           where: { id: tableId },
           data: { status: TableStatus.OCCUPIED },
         });
       }
 
-      /*
-       * ----------------------------------------------------------
-       * REGISTRAR CADA ÍTEM EN SALE_ITEM
-       * ----------------------------------------------------------
-       */
-
       for (const item of items) {
         const product = await tx.product.findUnique({
-          where: {
-            id: item.productId,
-          },
+          where: { id: item.productId },
         });
 
         if (!product) {
@@ -165,16 +128,8 @@ export class RestaurantOrdersService {
         });
       }
 
-      /*
-       * ----------------------------------------------------------
-       * RECALCULAR Y ACTUALIZAR TOTALES DE LA COMANDA
-       * ----------------------------------------------------------
-       */
-
       const allItems = await tx.saleItem.findMany({
-        where: {
-          saleId: saleId!,
-        },
+        where: { saleId: saleId! },
       });
 
       const subtotalBase = allItems.reduce(
@@ -190,9 +145,7 @@ export class RestaurantOrdersService {
       const totalNeto = subtotalBase - totalDiscount;
 
       return tx.sale.update({
-        where: {
-          id: saleId!,
-        },
+        where: { id: saleId! },
         data: {
           subtotal: subtotalBase,
           discount: totalDiscount,
@@ -200,18 +153,12 @@ export class RestaurantOrdersService {
         },
         include: {
           branch: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
+            select: { id: true, name: true, code: true },
           },
           customer: true,
           table: true,
-          items: {     // <-- Esto es clave para que el frontend reciba los productos
-            include: {
-              product: true,
-            },
+          items: {
+            include: { product: true },
           },
         },
       });
@@ -245,7 +192,6 @@ export class RestaurantOrdersService {
       },
     });
 
-    // Permitir la comanda si está en DRAFT o CONFIRMED, solo rechazar si está CANCELLED
     if (!sale || sale.status === SaleStatus.CANCELLED) {
       return null;
     }
@@ -259,9 +205,7 @@ export class RestaurantOrdersService {
 
   async removeItem(itemId: string) {
     const existingItem = await this.prisma.saleItem.findUnique({
-      where: {
-        id: itemId,
-      },
+      where: { id: itemId },
     });
 
     if (!existingItem) {
@@ -270,18 +214,11 @@ export class RestaurantOrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       const deletedItem = await tx.saleItem.delete({
-        where: {
-          id: itemId,
-        },
+        where: { id: itemId },
       });
 
-      /*
-       * Recalcular totales tras eliminar el ítem
-       */
       const remainingItems = await tx.saleItem.findMany({
-        where: {
-          saleId: deletedItem.saleId,
-        },
+        where: { saleId: deletedItem.saleId },
       });
 
       const subtotalBase = remainingItems.reduce(
@@ -297,9 +234,7 @@ export class RestaurantOrdersService {
       const totalNeto = subtotalBase - totalDiscount;
 
       return tx.sale.update({
-        where: {
-          id: deletedItem.saleId,
-        },
+        where: { id: deletedItem.saleId },
         data: {
           subtotal: subtotalBase,
           discount: totalDiscount,
@@ -307,21 +242,68 @@ export class RestaurantOrdersService {
         },
         include: {
           branch: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
+            select: { id: true, name: true, code: true },
           },
           customer: true,
           table: true,
           items: {
-            include: {
-              product: true,
-            },
+            include: { product: true },
           },
         },
       });
+    });
+  }
+
+  // ============================================================
+  // OBTENER COMANDAS ACTIVAS PARA COCINA (KDS)
+  // ============================================================
+
+  async getKitchenOrders() {
+    return this.prisma.sale.findMany({
+      where: {
+        tableId: { not: null },
+        kitchenStatus: {
+          in: [KitchenStatus.PENDING, KitchenStatus.IN_PREPARATION],
+        },
+      },
+      include: {
+        table: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
+  // ============================================================
+  // ACTUALIZAR ESTADO DE COMANDA EN COCINA
+  // ============================================================
+
+  async updateOrderStatus(orderId: string, dto: UpdateOrderStatusDto) {
+    const sale = await this.prisma.sale.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!sale) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    return this.prisma.sale.update({
+      where: { id: orderId },
+      data: {
+        kitchenStatus: dto.status, // <--- Se actualiza kitchenStatus en lugar de status
+      },
+      include: {
+        table: true,
+        items: {
+          include: { product: true },
+        },
+      },
     });
   }
 }

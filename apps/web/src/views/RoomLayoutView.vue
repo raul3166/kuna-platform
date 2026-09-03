@@ -138,11 +138,10 @@ function goToPos(tableId: string) {
   router.push({ path: '/pos', query: { tableId } })
 }
 
-/*
-function goToPos(tableId: string) {
+function goToOrder(tableId: string) {
   router.push({ path: '/restaurant-orders', query: { tableId } })
 }
-*/
+
 onMounted(() => {
   fetchRooms()
 })
@@ -255,7 +254,13 @@ onMounted(() => {
             >
               🔓 Ocupar Mesa
             </button>
-
+            <button
+              v-if="selectedTable.status === 'OCCUPIED'"
+              @click="goToOrder(selectedTable.id)"
+              class="w-full py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+            >
+              📝 Tomar Pedido / Ver Pedido
+            </button>
             <button
               v-if="selectedTable.status === 'OCCUPIED'"
               @click="goToPos(selectedTable.id)"

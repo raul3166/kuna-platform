@@ -158,6 +158,13 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/RestaurantOrderView.vue'),
     meta: { requiresAuth: true }
 },
+,
+{
+  path: '/kitchen',
+  name: 'kitchen',
+  component: () => import('../views/KitchenView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

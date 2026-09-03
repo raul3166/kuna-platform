@@ -36,20 +36,16 @@ function handleLogout() {
           </div>
         </div>
 
-        <!-- Grupo 2: Catálogo Comercial / CRM (KNA-050) -->
+        <!-- Grupo 2: Catálogo Comercial / CRM -->
         <div>
           <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
           <div class="mt-2 space-y-1">
             <router-link to="/executive-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               📈 Dashboard Ejecutivo
             </router-link>
-            <router-link
-  to="/sales-performance"
-  class="flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-slate-300 hover:bg-slate-800"
-  active-class="bg-blue-600 text-white font-semibold"
->
-  📈 Reporte de Rendimiento
-</router-link>
+            <router-link to="/sales-performance" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-slate-300 hover:bg-slate-800" active-class="bg-blue-600 text-white font-semibold">
+              📈 Reporte de Rendimiento
+            </router-link>
             <router-link to="/pos" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               🎛️ Terminal Punto de Venta (POS)
             </router-link>
@@ -119,6 +115,9 @@ function handleLogout() {
             <router-link to="/restaurant-orders" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               📝 Toma de Pedidos
             </router-link>
+            <router-link to="/kitchen" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              👨‍🍳 Monitor de Cocina
+            </router-link>
           </div>
         </div>
 
@@ -146,7 +145,6 @@ function handleLogout() {
     <div class="flex flex-1 flex-col overflow-hidden">
       <!-- TOPBAR SUPERIOR -->
       <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm z-10">
-        <!-- Información contextual -->
         <div class="flex items-center space-x-2">
           <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 border border-slate-200">
             📍 {{ authStore.currentBranch?.name || 'Sucursal Activa' }}
@@ -155,7 +153,6 @@ function handleLogout() {
           <span class="text-sm font-semibold text-slate-600">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
         </div>
 
-        <!-- Perfil -->
         <div class="flex items-center space-x-4">
           <div class="text-right hidden sm:block">
             <p class="text-sm font-semibold text-slate-700">
@@ -170,7 +167,7 @@ function handleLogout() {
         </div>
       </header>
 
-      <!-- VISTA ENRUTADA (SLOT DINÁMICO) -->
+      <!-- VISTA ENRUTADA -->
       <main class="flex-1 overflow-y-auto p-6 lg:p-8">
         <slot />
       </main>
