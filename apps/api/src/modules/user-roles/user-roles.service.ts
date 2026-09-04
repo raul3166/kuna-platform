@@ -5,7 +5,7 @@ import {
 
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { AssignUserRolesDto } from './dto/assign-user-roles.dto';
-
+import { userSelect } from '../../common/prisma/selects';
 @Injectable()
 export class UserRolesService {
   constructor(
@@ -74,29 +74,21 @@ async getUserRoles(userId: string) {
   await this.getUserOrThrow(userId);
 
   return this.prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
+      where: {
+        id: userId,
+      },
 
-    select: {
-      id: true,
-      organizationId: true,
-      branchId: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phoneNumber: true,
-      isActive: true,
-      createdAt: true,
-      updatedAt: true,
+      // 2. USAR OPERADOR SPREAD (...)
+      select: {
+        ...userSelect,
 
-      userRoles: {
-        include: {
-          role: true,
+        userRoles: {
+          include: {
+            role: true,
+          },
         },
       },
-    },
-  });
+    });
 }
 
 async removeRole(

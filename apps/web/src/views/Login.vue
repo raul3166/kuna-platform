@@ -57,11 +57,18 @@ async function handleLogin() {
     }
 
     // Guardamos la sesión completa de forma segura
+    // ✅ Pasamos los nombres reales mapeados desde la API
     authStore.setSession(
       accessToken,
       user,
-      { id: user.organizationId, name: 'Organización Activa' },
-      { id: user.branchId, name: 'Sucursal Activa' }
+      {
+        id: dbUserData.organizationId,
+        name: dbUserData.organization?.name || dbUserData.organizationName || 'Sin Organización'
+      },
+      {
+        id: dbUserData.branchId,
+        name: dbUserData.branch?.name || dbUserData.branchName || 'Sin Sucursal'
+      }
     )
 
     // 5. Redirección al área de trabajo

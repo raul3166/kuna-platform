@@ -13,6 +13,19 @@ export const userSelect = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
+  // ➕ INCLUIR LAS RELACIONES
+  organization: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  branch: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
 } as const;
 
 export const customerSelect = {
