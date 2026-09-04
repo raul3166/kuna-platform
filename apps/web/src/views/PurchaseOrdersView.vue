@@ -107,6 +107,7 @@ async function handleCreateHeader() {
   try {
     const payload = {
       organizationId: authStore.user?.organizationId || '',
+      branchId: authStore.user?.branchId || '', // <--- AGREGAR ESTA LÍNEA
       supplierId: formOrder.value.supplierId,
       number: formOrder.value.number,
       orderDate: new Date(formOrder.value.orderDate).toISOString(),

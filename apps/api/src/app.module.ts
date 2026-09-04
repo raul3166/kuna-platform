@@ -35,6 +35,7 @@ import { CashSessionsModule } from './modules/cash-sessions/cash-sessions.module
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
 import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-orders.module';
+import { TaxesModule } from './modules/taxes/taxes.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-o
     AnalyticsModule,
     RestaurantsModule,
     RestaurantOrdersModule,
+    TaxesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

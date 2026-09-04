@@ -125,6 +125,9 @@ function handleLogout() {
         <div>
           <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Configuración</p>
           <div class="mt-2 space-y-1">
+            <router-link to="/taxes" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
+              🏛️ Impuestos y Fiscal
+            </router-link>
             <router-link to="/users" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
               👥 Personal / Usuarios
             </router-link>

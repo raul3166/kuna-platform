@@ -9,6 +9,9 @@ export class CreatePurchaseOrderDto {
   organizationId: string;
 
   @IsString()
+  branchId: string;
+
+  @IsString()
   supplierId: string;
 
   @IsString()

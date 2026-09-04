@@ -87,6 +87,42 @@ enum KitchenStatus {
   CANCELLED
 }
 
+enum TaxType {
+  VAT          // IVA
+  CONSUMPTION  // INC (Impuesto Nacional al Consumo)
+  WITHHOLDING  // Retenciones (ReteFuente, ReteIVA, ReteICA)
+}
+
+enum GoodsReceiptStatus {
+  DRAFT
+  PROCESSED
+  CANCELLED
+}
+
+// ============================================================
+// ESTRUCTURA IMPUESTOS
+// ============================================================
+
+model TaxRule {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String       // Ej: "IVA General 19%", "INC 8%", "ReteFuente Compras 2.5%"
+  code           String       // Ej: "IVA_19", "INC_8", "RET_25"
+  type           TaxType
+  percentage     Decimal      @db.Decimal(5, 2)
+  isRetention    Boolean      @default(false)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  products       Product[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([type])
+
+}
+
 // ============================================================
 // ESTRUCTURA ORGANIZACIONAL
 // ============================================================
@@ -117,6 +153,7 @@ model Organization {
   billingResolutions BillingResolution[]
   cashSessions       CashSession[]
   rooms              Room[]
+  taxes              TaxRule[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -146,13 +183,13 @@ model Branch {
   billingResolutions   BillingResolution[]
   cashSessions         CashSession[]
   rooms                Room[]
+  purchaseOrders PurchaseOrder[]
   isActive             Boolean              @default(true)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
   @@unique([organizationId, code])
 }
-
 // ============================================================
 // PROVEEDORES Y PRODUCTOS
 // ============================================================
@@ -205,6 +242,8 @@ model Product {
 
   categoryId           String?
   supplierId           String?
+  taxRuleId String?
+
   inventoryMovements   InventoryMovement[]
   purchaseOrderItems   PurchaseOrderItem[]
   goodsReceiptItems    GoodsReceiptItem[]
@@ -219,10 +258,11 @@ model Product {
   supplier             Supplier?              @relation(fields: [supplierId], references: [id])
 
   organization         Organization           @relation(fields: [organizationId], references: [id])
-
+  taxRule              TaxRule? @relation(fields: [taxRuleId], references: [id])
   @@unique([organizationId, sku])
   @@index([categoryId])
   @@index([supplierId])
+  @@index([taxRuleId])
 }
 
 model ProductCategory {
@@ -267,31 +307,33 @@ model InventoryMovement {
 }
 
 model PurchaseOrder {
-  id             String              @id @default(cuid())
+  id             String             @id @default(cuid())
   organizationId String
+  branchId       String
   supplierId     String
   number         String
   status         PurchaseOrderStatus @default(DRAFT)
   orderDate      DateTime
   expectedDate   DateTime?
   notes          String?
-
-  subtotal       Decimal             @default(0) @db.Decimal(12, 2)
-  tax            Decimal             @default(0) @db.Decimal(12, 2)
-  total          Decimal             @default(0) @db.Decimal(12, 2)
-
+  subtotal       Decimal            @default(0) @db.Decimal(12, 2)
+  tax            Decimal            @default(0) @db.Decimal(12, 2)
+  total          Decimal            @default(0) @db.Decimal(12, 2)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
-  items            PurchaseOrderItem[]
-  goodsReceipts    GoodsReceipt[]
+  items           PurchaseOrderItem[]
+  goodsReceipts   GoodsReceipt[]
   purchaseInvoices PurchaseInvoice[]
-  purchaseReturns  PurchaseReturn[]
-  organization     Organization        @relation(fields: [organizationId], references: [id])
-  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  purchaseReturns PurchaseReturn[]
+
+  organization    Organization       @relation(fields: [organizationId], references: [id])
+  branch          Branch              @relation(fields: [branchId], references: [id])
+  supplier        Supplier            @relation(fields: [supplierId], references: [id])
 
   @@unique([organizationId, number])
   @@index([organizationId])
+  @@index([branchId])
   @@index([supplierId])
 }
 
@@ -323,6 +365,8 @@ model GoodsReceipt {
   number          String
   receivedDate    DateTime
   receivedById    String?
+  status          GoodsReceiptStatus @default(DRAFT)
+
   notes           String?
 
   createdAt       DateTime @default(now())
@@ -645,7 +689,8 @@ model SaleItem {
   subtotal    Decimal          @default(0) @db.Decimal(12, 2)
   total       Decimal          @default(0) @db.Decimal(12, 2)
   description String?          @db.VarChar(255)
-
+  taxPercentage Decimal        @default(0) @db.Decimal(5, 2)
+  taxAmount     Decimal        @default(0) @db.Decimal(12, 2)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 

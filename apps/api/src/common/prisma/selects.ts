@@ -1,5 +1,7 @@
 // apps/api/src/common/prisma/selects.ts
 
+
+
 export const userSelect = {
   id: true,
   organizationId: true,
@@ -44,6 +46,24 @@ export const productSelect = {
   costPrice: true,
   stock: true,
   isActive: true,
+  categoryId: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+    },
+  },
+  taxRuleId: true,
+  taxRule: {
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      type: true,
+      percentage: true,
+    },
+  },
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -51,6 +71,7 @@ export const productSelect = {
 export const purchaseOrderSelect = {
   id: true,
   organizationId: true,
+  branchId: true,
   supplierId: true,
   number: true,
   status: true,
@@ -98,6 +119,7 @@ export const goodsReceiptSelect = {
   purchaseOrderId: true,
 
   number: true,
+  status: true,
   receivedDate: true,
 
   receivedById: true,

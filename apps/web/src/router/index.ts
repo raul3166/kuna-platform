@@ -165,6 +165,12 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/KitchenView.vue'),
   meta: { requiresAuth: true }
 },
+{
+      path: '/taxes',
+      name: 'taxes',
+      component: () => import('../views/TaxesView.vue'),
+      meta: { requiresAuth: true }
+    },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

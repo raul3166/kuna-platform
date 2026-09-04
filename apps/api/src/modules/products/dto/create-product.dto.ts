@@ -31,4 +31,12 @@ export class CreateProductDto {
 
   @IsNumber()
   costPrice: number;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  taxRuleId?: string;
 }

@@ -124,7 +124,11 @@ export class SalesService {
           table: true,
           restaurantOrder: true,
           items: {
-            include: { product: true },
+            include: {
+              product: {
+                include: { taxRule: true },
+              },
+            },
           },
         },
       });
@@ -134,127 +138,145 @@ export class SalesService {
   // ============================================================
   // CREAR VENTA A PARTIR DE LA COMANDA ACTIVA DE UNA MESA
   // ============================================================
-  // ============================================================
-// CREAR VENTA A PARTIR DE LA COMANDA ACTIVA DE UNA MESA
-// ============================================================
-// ============================================================
-// CREAR VENTA A PARTIR DE LA COMANDA ACTIVA DE UNA MESA
-// ============================================================
-async createFromTableOrder(
-  tableId: string,
-  customerId?: string,
-  notes?: string,
-) {
-  const table = await this.prisma.restaurantTable.findUnique({
-    where: { id: tableId },
-    include: {
-      currentOrder: {
-        include: {
-          items: {
-            include: { product: true },
+  async createFromTableOrder(
+    tableId: string,
+    customerId?: string,
+    notes?: string,
+  ) {
+    const table = await this.prisma.restaurantTable.findUnique({
+      where: { id: tableId },
+      include: {
+        currentOrder: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: { taxRule: true },
+                },
+              },
+            },
           },
         },
       },
-    },
-  });
-
-  if (!table) {
-    throw new NotFoundException('Table not found');
-  }
-
-  // Guardamos en constante para asegurar el tipado (evita 'possibly null')
-  const activeOrder = table.currentOrder;
-
-  if (!activeOrder || activeOrder.items.length === 0) {
-    throw new BadRequestException('Table has no active order or items to bill');
-  }
-
-  const { organizationId, branchId, id: orderId } = activeOrder;
-
-  return this.prisma.$transaction(async (tx) => {
-    // 1. Obtención y validación de resolución de facturación
-    const resolution = await tx.billingResolution.findFirst({
-      where: { branchId, organizationId, isActive: true },
     });
 
-    if (!resolution) {
-      throw new ConflictException(
-        'No active billing resolution found for this branch. Cannot issue sales.',
-      );
+    if (!table) {
+      throw new NotFoundException('Table not found');
     }
 
-    if (resolution.currentNumber > resolution.toNumber) {
-      throw new ConflictException(
-        'The billing resolution has run out of authorized invoice numbers.',
-      );
+    const activeOrder = table.currentOrder;
+
+    if (!activeOrder || activeOrder.items.length === 0) {
+      throw new BadRequestException('Table has no active order or items to bill');
     }
 
-    if (new Date() > new Date(resolution.expiryDate)) {
-      throw new ConflictException(
-        'The branch billing resolution has expired.',
-      );
-    }
+    const { organizationId, branchId, id: orderId } = activeOrder;
 
-    const assignedSaleNumber = `${resolution.prefix}-${resolution.currentNumber}`;
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Obtención y validación de resolución de facturación
+      const resolution = await tx.billingResolution.findFirst({
+        where: { branchId, organizationId, isActive: true },
+      });
 
-    await tx.billingResolution.update({
-      where: { id: resolution.id },
-      data: { currentNumber: { increment: 1 } },
-    });
+      if (!resolution) {
+        throw new ConflictException(
+          'No active billing resolution found for this branch. Cannot issue sales.',
+        );
+      }
 
-    // 2. Creación de la venta borrador
-    const newSale = await tx.sale.create({
-      data: {
-        organizationId,
-        branchId,
-        customerId: customerId || null,
-        tableId,
-        orderId,
-        saleNumber: assignedSaleNumber,
-        notes,
-        status: SaleStatus.DRAFT,
-        subtotal: 0,
-        discount: 0,
-        tax: 0,
-        total: 0,
-      },
-    });
+      if (resolution.currentNumber > resolution.toNumber) {
+        throw new ConflictException(
+          'The billing resolution has run out of authorized invoice numbers.',
+        );
+      }
 
-    // 3. Iteración sobre items usando activeOrder
-    let subtotal = 0;
-    for (const item of activeOrder.items) {
-      const itemSubtotal = Number(item.unitPrice) * item.quantity;
-      subtotal += itemSubtotal;
+      if (new Date() > new Date(resolution.expiryDate)) {
+        throw new ConflictException(
+          'The branch billing resolution has expired.',
+        );
+      }
 
-      await tx.saleItem.create({
+      const assignedSaleNumber = `${resolution.prefix}-${resolution.currentNumber}`;
+
+      await tx.billingResolution.update({
+        where: { id: resolution.id },
+        data: { currentNumber: { increment: 1 } },
+      });
+
+      // 2. Creación de la venta borrador
+      const newSale = await tx.sale.create({
         data: {
-          saleId: newSale.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: itemSubtotal,
-          total: itemSubtotal,
-          description: item.notes,
+          organizationId,
+          branchId,
+          customerId: customerId || null,
+          tableId,
+          orderId,
+          saleNumber: assignedSaleNumber,
+          notes,
+          status: SaleStatus.DRAFT,
+          subtotal: 0,
+          discount: 0,
+          tax: 0,
+          total: 0,
         },
       });
-    }
 
-    return tx.sale.update({
-      where: { id: newSale.id },
-      data: {
-        subtotal,
-        total: subtotal,
-      },
-      include: {
-        branch: true,
-        customer: true,
-        table: true,
-        restaurantOrder: true,
-        items: { include: { product: true } },
-      },
+      // 3. Iteración sobre items acumulando impuestos
+      let accumulatedSubtotal = 0;
+      let accumulatedTax = 0;
+
+      for (const item of activeOrder.items) {
+        const itemSubtotal = Number(item.unitPrice) * item.quantity;
+        const taxPercentage = item.product?.taxRule
+          ? Number(item.product.taxRule.percentage)
+          : 0;
+
+        const itemTaxAmount = itemSubtotal * (taxPercentage / 100);
+        const itemTotal = itemSubtotal + itemTaxAmount;
+
+        accumulatedSubtotal += itemSubtotal;
+        accumulatedTax += itemTaxAmount;
+
+        await tx.saleItem.create({
+          data: {
+            saleId: newSale.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: itemSubtotal,
+            taxPercentage,
+            taxAmount: itemTaxAmount,
+            total: itemTotal,
+            description: item.notes,
+          },
+        });
+      }
+
+      const grandTotal = accumulatedSubtotal + accumulatedTax;
+
+      return tx.sale.update({
+        where: { id: newSale.id },
+        data: {
+          subtotal: accumulatedSubtotal,
+          tax: accumulatedTax,
+          total: grandTotal,
+        },
+        include: {
+          branch: true,
+          customer: true,
+          table: true,
+          restaurantOrder: true,
+          items: {
+            include: {
+              product: {
+                include: { taxRule: true },
+              },
+            },
+          },
+        },
+      });
     });
-  });
-}
+  }
 
   // ============================================================
   // LISTAR VENTAS
@@ -277,7 +299,9 @@ async createFromTableOrder(
         table: true,
         items: {
           include: {
-            product: true,
+            product: {
+              include: { taxRule: true },
+            },
           },
         },
       },
@@ -305,7 +329,9 @@ async createFromTableOrder(
         table: true,
         items: {
           include: {
-            product: true,
+            product: {
+              include: { taxRule: true },
+            },
           },
         },
       },
@@ -397,7 +423,9 @@ async createFromTableOrder(
         customer: true,
         items: {
           include: {
-            product: true,
+            product: {
+              include: { taxRule: true },
+            },
           },
         },
       },
@@ -451,14 +479,20 @@ async createFromTableOrder(
       0,
     );
 
-    const totalNeto = subtotalBase - totalDiscount;
+    const totalTax = items.reduce(
+      (acc, item) => acc + Number(item.taxAmount),
+      0,
+    );
+
+    const grandTotal = subtotalBase - totalDiscount + totalTax;
 
     return this.prisma.sale.update({
       where: { id: saleId },
       data: {
         subtotal: subtotalBase,
         discount: totalDiscount,
-        total: totalNeto,
+        tax: totalTax,
+        total: grandTotal,
       },
     });
   }
@@ -580,11 +614,12 @@ async createFromTableOrder(
        * LIBERAR MESA Y MARCAR COMANDA COMO ENTREGADA
        */
       if (sale.orderId) {
-  await tx.restaurantOrder.update({
-    where: { id: sale.orderId },
-    data: { status: KitchenStatus.DELIVERED },
-  });
-}
+        await tx.restaurantOrder.update({
+          where: { id: sale.orderId },
+          data: { status: KitchenStatus.DELIVERED },
+        });
+      }
+
       if (sale.tableId) {
         const table = await tx.restaurantTable.findUnique({
           where: { id: sale.tableId },
@@ -619,7 +654,9 @@ async createFromTableOrder(
           customer: true,
           items: {
             include: {
-              product: true,
+              product: {
+                include: { taxRule: true },
+              },
             },
           },
         },
