@@ -52,6 +52,7 @@ export const productSelect = {
       id: true,
       name: true,
       description: true,
+      trackStock: true, // <--- ÚNICO CAMBIO NECESARIO AQUÍ
     },
   },
   taxRuleId: true,

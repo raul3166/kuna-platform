@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 
 import {
@@ -70,9 +71,9 @@ export class ProductCategoriesController {
   @Permissions('product-categories.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Get()
-  findAll() {
-    return this.productCategoriesService.findAll();
-  }
+  findAll(@Query('organizationId') organizationId?: string) {
+  return this.productCategoriesService.findAll(organizationId);
+}
 
   @ApiOperation({
     summary: 'Get product category by id',

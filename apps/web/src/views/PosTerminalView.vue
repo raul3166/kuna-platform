@@ -14,7 +14,15 @@ interface Product {
   name: string
   sku: string
   salePrice: number
+  stock?: number // Propiedad añadida para evaluar existencias
   barcode?: string
+  category?: Category
+}
+
+interface Category {
+  id: string
+  name: string
+  trackStock: boolean
 }
 
 interface Customer {
@@ -138,6 +146,16 @@ const cashChange = computed(() => Math.max(0, amountPaid.value - cartTotal.value
 
 function addToCart(product: Product) {
   const existing = cart.value.find(item => item.product.id === product.id)
+  const currentQuantity = existing ? existing.quantity : 0
+
+  // Se evalúa trackStock de la categoría. Si no tiene categoría asignada, por defecto valida stock.
+  const requiresStock = product.category ? product.category.trackStock : true
+
+  if (requiresStock && (currentQuantity + 1) > (product.stock || 0)) {
+    alert(`Stock insuficiente para "${product.name}". Disponible: ${product.stock || 0}`)
+    return
+  }
+
   if (existing) {
     existing.quantity++
   } else {

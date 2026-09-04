@@ -68,6 +68,32 @@ export class SalesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Reutilizar venta borrador si la comanda ya tiene una creada
+      if (orderId) {
+        const existingSale = await tx.sale.findFirst({
+          where: { orderId },
+          include: {
+            branch: {
+              select: { id: true, name: true, code: true },
+            },
+            customer: true,
+            table: true,
+            restaurantOrder: true,
+            items: {
+              include: {
+                product: {
+                  include: { taxRule: true },
+                },
+              },
+            },
+          },
+        });
+
+        if (existingSale) {
+          return existingSale;
+        }
+      }
+
       const resolution = await tx.billingResolution.findFirst({
         where: {
           branchId,
@@ -497,43 +523,59 @@ export class SalesService {
     });
   }
 
-  // ============================================================
+// ============================================================
   // CONFIRMAR VENTA
   // ============================================================
-  async confirm(id: string) {
-    const sale = await this.prisma.sale.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: {
-            product: true,
+// ============================================================
+// CONFIRMAR VENTA
+// ============================================================
+async confirm(id: string) {
+  const sale = await this.prisma.sale.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: {
+          product: {
+            include: { category: true },
           },
         },
       },
-    });
+    },
+  });
 
-    if (!sale) {
-      throw new NotFoundException('Sale not found');
-    }
+  if (!sale) {
+    throw new NotFoundException('Sale not found');
+  }
 
-    if (sale.status !== SaleStatus.DRAFT) {
-      throw new ConflictException('Only DRAFT sales can be confirmed');
-    }
+  if (sale.status !== SaleStatus.DRAFT) {
+    throw new ConflictException('Only DRAFT sales can be confirmed');
+  }
 
-    if (!sale.items || sale.items.length === 0) {
-      throw new ConflictException('Cannot confirm a sale with empty items');
-    }
+  if (!sale.items || sale.items.length === 0) {
+    throw new ConflictException('Cannot confirm a sale with empty items');
+  }
 
-    return this.prisma.$transaction(async (tx) => {
-      for (const item of sale.items) {
-        const quantity = Number(item.quantity);
+  return this.prisma.$transaction(async (tx) => {
+    for (const item of sale.items) {
+      const quantity = Number(item.quantity);
 
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-          throw new ConflictException(
-            `Invalid quantity for product [${item.product.name}]`,
-          );
-        }
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        throw new ConflictException(
+          `Invalid quantity for product [${item.product.name}]`,
+        );
+      }
 
+      // ========================================================
+      // DETERMINAR SI EL PRODUCTO CONTROLA INVENTARIO
+      // ========================================================
+      const tracksStock = item.product.category?.trackStock ?? true;
+
+      let unitCost = 0;
+
+      // ========================================================
+      // PRODUCTO QUE SÍ CONTROLA INVENTARIO
+      // ========================================================
+      if (tracksStock) {
         const stockRecord = await tx.branchProductStock.findUnique({
           where: {
             branchId_productId: {
@@ -557,19 +599,18 @@ export class SalesService {
           );
         }
 
+        // --------------------------------------------------------
+        // VALIDAR STOCK DE LA SUCURSAL
+        // --------------------------------------------------------
         if (currentStock < quantity) {
           throw new ConflictException(
             `Insufficient stock for product [${item.product.name}]. Available: ${currentStock}, Required: ${quantity}`,
           );
         }
 
-        await tx.branchProductStock.update({
-          where: { id: stockRecord.id },
-          data: {
-            stock: { decrement: quantity },
-          },
-        });
-
+        // --------------------------------------------------------
+        // VALIDAR STOCK GLOBAL
+        // --------------------------------------------------------
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
@@ -580,12 +621,31 @@ export class SalesService {
 
         const globalStock = Number(product.stock);
 
-        if (globalStock < quantity) {
+        if (!Number.isFinite(globalStock)) {
           throw new ConflictException(
-            `Insufficient global stock for product [${product.name}]`,
+            `Invalid global stock for product [${item.product.name}]`,
           );
         }
 
+        if (globalStock < quantity) {
+          throw new ConflictException(
+            `Insufficient global stock for product [${item.product.name}]`,
+          );
+        }
+
+        // --------------------------------------------------------
+        // DESCONTAR STOCK DE LA SUCURSAL
+        // --------------------------------------------------------
+        await tx.branchProductStock.update({
+          where: { id: stockRecord.id },
+          data: {
+            stock: { decrement: quantity },
+          },
+        });
+
+        // --------------------------------------------------------
+        // DESCONTAR STOCK GLOBAL
+        // --------------------------------------------------------
         await tx.product.update({
           where: { id: item.productId },
           data: {
@@ -593,76 +653,105 @@ export class SalesService {
           },
         });
 
-        await tx.inventoryMovement.create({
-          data: {
-            organizationId: sale.organizationId,
-            branchId: sale.branchId,
-            productId: item.productId,
-            movementType: 'SALE',
-            quantity,
-            unitCost: Number(stockRecord.averageCost),
-            totalCost: quantity * Number(stockRecord.averageCost),
-            reference: `VENTA-${sale.saleNumber}`,
-            notes:
-              item.description ||
-              'Salida automática por concepto de venta POS.',
-          },
-        });
+        // --------------------------------------------------------
+        // COSTO PROMEDIO DEL INVENTARIO
+        // --------------------------------------------------------
+        unitCost = Number(stockRecord.averageCost || 0);
       }
 
-      /*
-       * LIBERAR MESA Y MARCAR COMANDA COMO ENTREGADA
-       */
-      if (sale.orderId) {
-        await tx.restaurantOrder.update({
-          where: { id: sale.orderId },
-          data: { status: KitchenStatus.DELIVERED },
-        });
-      }
-
-      if (sale.tableId) {
-        const table = await tx.restaurantTable.findUnique({
-          where: { id: sale.tableId },
-        });
-
-        if (table?.currentOrderId) {
-          await tx.restaurantOrder.update({
-            where: { id: table.currentOrderId },
-            data: { status: KitchenStatus.DELIVERED },
-          });
-        }
-
-        await tx.restaurantTable.update({
-          where: { id: sale.tableId },
-          data: {
-            status: TableStatus.AVAILABLE,
-            currentOrderId: null,
-          },
-        });
-      }
-
-      /*
-       * SELLAR VENTA
-       */
-      return tx.sale.update({
-        where: { id },
+      // ========================================================
+      // REGISTRAR SIEMPRE EL MOVIMIENTO EN EL KARDEX
+      // ========================================================
+      //
+      // IMPORTANTE:
+      //
+      // tracksStock = true
+      //   -> el movimiento representa una salida física
+      //   -> ya descontamos inventario
+      //
+      // tracksStock = false
+      //   -> no existe control de inventario
+      //   -> NO descontamos stock
+      //   -> pero SI registramos la venta en el Kardex
+      //
+      await tx.inventoryMovement.create({
         data: {
-          status: SaleStatus.CONFIRMED,
+          organizationId: sale.organizationId,
+          branchId: sale.branchId,
+          productId: item.productId,
+          movementType: 'SALE',
+          quantity,
+          unitCost,
+          totalCost: quantity * unitCost,
+          reference: `VENTA-${sale.saleNumber}`,
+          notes: tracksStock
+            ? item.description ||
+              'Salida automática por concepto de venta POS.'
+            : item.description ||
+              'Venta de producto sin control de inventario.',
         },
-        include: {
-          branch: true,
-          customer: true,
-          items: {
-            include: {
-              product: {
-                include: { taxRule: true },
+      });
+    }
+
+    // ==========================================================
+    // LIBERAR MESA Y MARCAR COMANDA COMO ENTREGADA
+    // ==========================================================
+    if (sale.orderId) {
+      await tx.restaurantOrder.update({
+        where: { id: sale.orderId },
+        data: {
+          status: KitchenStatus.DELIVERED,
+        },
+      });
+    }
+
+    if (sale.tableId) {
+      const table = await tx.restaurantTable.findUnique({
+        where: { id: sale.tableId },
+      });
+
+      if (table?.currentOrderId) {
+        await tx.restaurantOrder.update({
+          where: { id: table.currentOrderId },
+          data: {
+            status: KitchenStatus.DELIVERED,
+          },
+        });
+      }
+
+      await tx.restaurantTable.update({
+        where: { id: sale.tableId },
+        data: {
+          status: TableStatus.AVAILABLE,
+          currentOrderId: null,
+        },
+      });
+    }
+
+    // ==========================================================
+    // SELLAR VENTA
+    // ==========================================================
+    return tx.sale.update({
+      where: { id },
+      data: {
+        status: SaleStatus.CONFIRMED,
+      },
+      include: {
+        branch: true,
+        customer: true,
+        items: {
+          include: {
+            product: {
+              include: {
+                taxRule: true,
               },
             },
           },
         },
-      });
+      },
     });
-  }
+  });
+}
 
   // ============================================================
   // CANCELAR VENTA

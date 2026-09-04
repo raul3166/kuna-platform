@@ -144,11 +144,7 @@ onUnmounted(() => {
 
             <!-- PRODUCTOS / ÍTEMS -->
             <div class="p-3 divide-y divide-slate-100 max-h-72 overflow-y-auto">
-              <div
-                v-for="item in order.items"
-                :key="item.id"
-                class="py-2 first:pt-0 last:pb-0"
-              >
+              <div v-for="item in order.items" :key="item.id" class="py-2 first:pt-0 last:pb-0">
                 <div class="flex items-start justify-between gap-2">
                   <span class="font-bold text-sm text-slate-800">
                     <span class="text-blue-600 font-extrabold me-1">{{ item.quantity }}x</span>
@@ -156,7 +152,6 @@ onUnmounted(() => {
                   </span>
                 </div>
 
-                <!-- NOTA/OBSERVACIÓN -->
                 <p v-if="item.notes" class="text-xs font-semibold text-amber-700 bg-amber-50 p-1.5 rounded mt-1 border border-amber-200">
                   📌 {{ item.notes }}
                 </p>

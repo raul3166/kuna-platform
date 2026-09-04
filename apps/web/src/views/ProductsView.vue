@@ -17,6 +17,7 @@ interface Category {
   id: string
   name: string
   description?: string | null
+  trackStock: boolean
   isActive: boolean
 }
 
@@ -66,7 +67,8 @@ const productForm = ref({
 
 const categoryForm = ref({
   name: '',
-  description: ''
+  description: '',
+  trackStock: true
 })
 
 // Cargar datos principales
@@ -94,14 +96,14 @@ async function loadInventoryData() {
       throw productRes.reason
     }
   } catch (error: any) {
-    console.error(error)
+    console.error('Error al cargar inventario:', error, error?.stack)
     errorMessage.value = 'No tienes permisos o no fue posible conectar con el catálogo de productos.'
   } finally {
     isLoading.value = false
   }
 }
 
-// Productos filtrados según la búsqueda y categoría seleccionada
+// Productos filtrados
 const filteredProducts = computed(() => {
   return products.value.filter((product) => {
     const matchesSearch =
@@ -117,7 +119,7 @@ const filteredProducts = computed(() => {
   })
 })
 
-// Modal Producto (Crear / Editar)
+// Modal Producto
 function openCreateProductModal() {
   editingProductId.value = null
   productForm.value = {
@@ -182,7 +184,7 @@ async function handleSaveProduct() {
     closeProductModal()
     await loadInventoryData()
   } catch (error: any) {
-    console.error(error)
+    console.error('Error al guardar producto:', error, error?.stack)
     const msg = Array.isArray(error.response?.data?.message)
       ? error.response.data.message.join(', ')
       : error.response?.data?.message
@@ -192,7 +194,7 @@ async function handleSaveProduct() {
   }
 }
 
-// Inactivar / Desactivar Producto
+
 async function handleDeleteProduct(product: Product) {
   if (!confirm(`¿Estás seguro de desactivar el producto "${product.name}"?`)) return
 
@@ -200,14 +202,14 @@ async function handleDeleteProduct(product: Product) {
     await api.delete(`/products/${product.id}`)
     await loadInventoryData()
   } catch (error: any) {
-    console.error(error)
+    console.error('Error al desactivar producto:', error, error?.stack)
     alert('No se pudo desactivar el producto.')
   }
 }
 
 // Modal Categoría
 function openCategoryModal() {
-  categoryForm.value = { name: '', description: '' }
+  categoryForm.value = { name: '', description: '', trackStock: true }
   isCategoryModalOpen.value = true
 }
 
@@ -228,6 +230,7 @@ async function handleCreateCategory() {
   const payload = {
     name: categoryForm.value.name.trim(),
     description: categoryForm.value.description.trim() || undefined,
+    trackStock: categoryForm.value.trackStock,
     organizationId
   }
 
@@ -236,10 +239,22 @@ async function handleCreateCategory() {
     closeCategoryModal()
     await loadInventoryData()
   } catch (error: any) {
-    console.error(error)
+    // Registro completo en consola incluyendo stack trace del cliente y respuesta del backend
+    console.error('Error al crear categoría:', error)
+    const backendStack = error.response?.data?.stack
+    const clientStack = error.stack
+
+    if (backendStack) {
+      console.error('Backend Stack Trace:\n', backendStack)
+    }
+    if (clientStack) {
+      console.error('Client Stack Trace:\n', clientStack)
+    }
+
     const msg = Array.isArray(error.response?.data?.message)
       ? error.response.data.message.join(', ')
       : error.response?.data?.message
+
     alert(msg || 'Error al crear la categoría')
   } finally {
     isSubmitting.value = false
@@ -252,8 +267,8 @@ async function updateProductTax(product: Product, taxRuleId: string | null) {
     product.taxRuleId = taxRuleId
     const selected = taxRules.value.find((t) => t.id === taxRuleId)
     product.taxRule = selected || null
-  } catch (error) {
-    console.error(error)
+  } catch (error: any) {
+    console.error('Error al actualizar impuesto:', error, error?.stack)
     alert('No se pudo actualizar el impuesto asignado al producto.')
   }
 }
@@ -347,7 +362,7 @@ onMounted(() => {
       </nav>
     </div>
 
-    <!-- Filtros de Búsqueda y Categoría (Solo visibles en pestaña de Productos) -->
+    <!-- Filtros de Búsqueda -->
     <div v-if="activeTab === 'products'" class="mb-6 flex flex-col sm:flex-row gap-3">
       <div class="relative flex-1">
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
@@ -481,6 +496,7 @@ onMounted(() => {
               <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <th class="px-6 py-3">Nombre de Categoría</th>
                 <th class="px-6 py-3">Descripción</th>
+                <th class="px-6 py-3 text-center">Maneja Stock</th>
                 <th class="px-6 py-3 text-center">Estado</th>
               </tr>
             </thead>
@@ -488,6 +504,18 @@ onMounted(() => {
               <tr v-for="cat in categories" :key="cat.id" class="hover:bg-slate-50/50 transition-colors">
                 <td class="px-6 py-4 font-semibold text-slate-900">{{ cat.name }}</td>
                 <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ cat.description || '—' }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span
+                    :class="[
+                      cat.trackStock
+                        ? 'bg-blue-50 text-blue-700 ring-blue-600/20'
+                        : 'bg-slate-100 text-slate-600 ring-slate-500/10',
+                      'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset'
+                    ]"
+                  >
+                    {{ cat.trackStock ? 'Sí' : 'No' }}
+                  </span>
+                </td>
                 <td class="px-6 py-4 text-center">
                   <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
                     Activa
@@ -603,7 +631,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal Formulario de Categoría -->
+    <!-- Modal Formulario de Categoría con Checkbox de Stock -->
     <div v-if="isCategoryModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <h2 class="text-xl font-bold text-slate-900 mb-4">Nueva Categoría de Producto</h2>
@@ -628,6 +656,19 @@ onMounted(() => {
               placeholder="Breve detalle sobre la categoría..."
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             ></textarea>
+          </div>
+
+          <!-- Checkbox para Manejo de Stock -->
+          <div class="flex items-center space-x-3 pt-2">
+            <input
+              id="trackStock"
+              v-model="categoryForm.trackStock"
+              type="checkbox"
+              class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label for="trackStock" class="text-sm font-medium text-slate-700 cursor-pointer">
+              Maneja inventario / stock
+            </label>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">

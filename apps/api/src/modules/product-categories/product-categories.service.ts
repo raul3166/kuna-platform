@@ -43,17 +43,17 @@ export class ProductCategoriesService {
     });
   }
 
-  async findAll() {
-    return this.prisma.productCategory.findMany({
-      where: {
-        isActive: true,
-      },
-
-      orderBy: {
-        name: 'asc',
-      },
-    });
-  }
+  async findAll(organizationId?: string) {
+  return this.prisma.productCategory.findMany({
+    where: {
+      isActive: true,
+      ...(organizationId && { organizationId }),
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
 
   async findOne(id: string) {
     return this.getCategoryOrThrow(id);

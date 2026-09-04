@@ -1406,264 +1406,112 @@ export class InventoryMovementsService {
   // KARDEX POR PRODUCTO
   // ============================================================
 
-  async findByProduct(
-    productId: string,
-  ) {
-    const product =
-      await this.getProductOrThrow(
-        productId,
-      );
+ async findByProduct(productId: string) {
+  const product = await this.getProductOrThrow(productId);
 
-    const movements =
-      await this.prisma.inventoryMovement.findMany({
-        where: {
-          productId,
-        },
+  const movements = await this.prisma.inventoryMovement.findMany({
+    where: { productId },
+    orderBy: [
+      { createdAt: 'asc' },
+      { id: 'asc' },
+    ],
+  });
 
-        orderBy: [
-          {
-            createdAt: 'asc',
-          },
-          {
-            id: 'asc',
-          },
-        ],
-      });
+  const tracksStock = product.category?.trackStock ?? true;
+  let balance = 0;
 
-    let balance = 0;
+  const kardex = movements.map((movement) => {
+    const quantity = Number(movement.quantity);
+    let entry = 0;
+    let exit = 0;
 
-    const kardex =
-      movements.map(
-        (movement) => {
-          const quantity =
-            Number(
-              movement.quantity,
-            );
+    switch (movement.movementType) {
+      case InventoryMovementType.INITIAL_STOCK:
+      case InventoryMovementType.PURCHASE:
+      case InventoryMovementType.SALE_RETURN:
+      case InventoryMovementType.CUSTOMER_RETURN:
+      case InventoryMovementType.TRANSFER_IN:
+        balance += (movement.movementType === InventoryMovementType.INITIAL_STOCK)
+          ? quantity - balance
+          : quantity;
+        entry = quantity;
+        break;
 
-          let entry = 0;
-          let exit = 0;
+      case InventoryMovementType.SALE:
+        // Si la categoría no controla stock, la venta no altera el saldo acumulado del kardex
+        if (tracksStock) {
+          balance -= quantity;
+        }
+        exit = quantity;
+        break;
 
-          switch (
-            movement.movementType
-          ) {
-            case InventoryMovementType.INITIAL_STOCK:
+      case InventoryMovementType.PURCHASE_RETURN:
+      case InventoryMovementType.TRANSFER_OUT:
+        balance -= quantity;
+        exit = quantity;
+        break;
 
-              balance =
-                quantity;
+      case InventoryMovementType.ADJUSTMENT:
+        balance += quantity;
+        if (quantity > 0) entry = quantity;
+        else if (quantity < 0) exit = Math.abs(quantity);
+        break;
 
-              entry =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.PURCHASE:
-
-              balance +=
-                quantity;
-
-              entry =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.SALE:
-
-              balance -=
-                quantity;
-
-              exit =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.PURCHASE_RETURN:
-
-              balance -=
-                quantity;
-
-              exit =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.SALE_RETURN:
-
-              balance +=
-                quantity;
-
-              entry =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.CUSTOMER_RETURN:
-
-              balance +=
-                quantity;
-
-              entry =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.TRANSFER_IN:
-
-              balance +=
-                quantity;
-
-              entry =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.TRANSFER_OUT:
-
-              balance -=
-                quantity;
-
-              exit =
-                quantity;
-
-              break;
-
-            case InventoryMovementType.ADJUSTMENT:
-
-              balance +=
-                quantity;
-
-              if (
-                quantity > 0
-              ) {
-                entry =
-                  quantity;
-              } else if (
-                quantity < 0
-              ) {
-                exit =
-                  Math.abs(
-                    quantity,
-                  );
-              }
-
-              break;
-
-            default:
-              break;
-          }
-
-          return {
-            id:
-              movement.id,
-
-            date:
-              movement.createdAt,
-
-            movementType:
-              movement.movementType,
-
-            movementName:
-              this.getMovementName(
-                movement.movementType,
-              ),
-
-            reference:
-              movement.reference,
-
-            notes:
-              movement.notes,
-
-            branchId:
-              movement.branchId,
-
-            unitCost:
-              movement.unitCost !== null
-                ? Number(
-                    movement.unitCost,
-                  )
-                : null,
-
-            totalCost:
-              movement.totalCost !== null
-                ? Number(
-                    movement.totalCost,
-                  )
-                : null,
-
-            quantity,
-
-            entry,
-
-            exit,
-
-            balance,
-          };
-        },
-      );
-
-    const currentProductStock =
-      Number(product.stock);
-
-    const kardexCalculatedStock =
-      balance;
-
-    const stockDifference =
-      currentProductStock -
-      kardexCalculatedStock;
+      default:
+        break;
+    }
 
     return {
-      product: {
-        id:
-          product.id,
-
-        sku:
-          product.sku,
-
-        name:
-          product.name,
-
-        description:
-          product.description,
-
-        stock:
-          currentProductStock,
-
-        salePrice:
-          Number(
-            product.salePrice,
-          ),
-
-        costPrice:
-          Number(
-            product.costPrice,
-          ),
-
-        categoryId:
-          product.categoryId,
-
-        supplierId:
-          product.supplierId,
-      },
-
-      summary: {
-        totalMovements:
-          kardex.length,
-
-        currentStock:
-          currentProductStock,
-
-        kardexStock:
-          kardexCalculatedStock,
-
-        stockDifference,
-
-        isConsistent:
-          stockDifference === 0,
-      },
-
-      movements:
-        kardex,
+      id: movement.id,
+      date: movement.createdAt,
+      movementType: movement.movementType,
+      movementName: this.getMovementName(movement.movementType),
+      reference: movement.reference,
+      notes: movement.notes,
+      branchId: movement.branchId,
+      unitCost: movement.unitCost !== null ? Number(movement.unitCost) : null,
+      totalCost: movement.totalCost !== null ? Number(movement.totalCost) : null,
+      quantity,
+      entry,
+      exit,
+      balance: tracksStock ? balance : 0,
+      affectsStock: tracksStock ? movement.movementType !== InventoryMovementType.SALE : false,
     };
-  }
+  });
+
+  const currentProductStock = Number(product.stock);
+  const kardexCalculatedStock = balance;
+
+  // Si no maneja inventario, el desfase es cero y la auditoría es consistente.
+  const stockDifference = tracksStock ? currentProductStock - kardexCalculatedStock : 0;
+
+  return {
+    product: {
+      id: product.id,
+      sku: product.sku,
+      name: product.name,
+      description: product.description,
+      stock: currentProductStock,
+      salePrice: Number(product.salePrice),
+      costPrice: Number(product.costPrice),
+      categoryId: product.categoryId,
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        trackStock: product.category.trackStock,
+      } : null,
+      supplierId: product.supplierId,
+    },
+    summary: {
+      totalMovements: kardex.length,
+      currentStock: currentProductStock,
+      kardexStock: kardexCalculatedStock,
+      stockDifference,
+      isConsistent: stockDifference === 0,
+    },
+    movements: kardex,
+  };
+}
 
   // ============================================================
   // ORGANIZACIÓN
@@ -1707,6 +1555,9 @@ export class InventoryMovementsService {
         where: {
           id,
         },
+        include: {
+    category: true,
+  },
       });
 
     if (!product) {

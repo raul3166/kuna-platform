@@ -5,17 +5,21 @@ import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
 
+interface Category {
+  id: string
+  name: string
+  trackStock?: boolean
+}
+
 interface Product {
   id: string
   name: string
   description?: string
   salePrice: number
   categoryId?: string
-}
-
-interface Category {
-  id: string
-  name: string
+  stock?: number
+  trackStock?: boolean
+  category?: Category
 }
 
 interface Table {
@@ -49,6 +53,8 @@ interface CartItem {
   unitPrice: number
   quantity: number
   notes: string
+  stockAvailable?: number
+  tracksStock: boolean
 }
 
 const route = useRoute()
@@ -69,6 +75,16 @@ const cart = ref<CartItem[]>([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+
+// HELPER CONTROL DE STOCK
+function productTracksStock(product: Product): boolean {
+  return product.category?.trackStock ?? false
+}
+
+function isProductDisabled(product: Product): boolean {
+  if (!productTracksStock(product)) return false
+  return (product.stock ?? 0) <= 0
+}
 
 // COMPUTED
 const filteredProducts = computed(() => {
@@ -115,7 +131,7 @@ async function loadData() {
 
   try {
     const [categoriesRes, productsRes, tablesRes] = await Promise.all([
-      api.get<Category[]>('/categories', { params: { organizationId: orgId } }).catch(() => ({ data: [] })),
+      api.get<Category[]>('/product-categories', { params: { organizationId: orgId } }).catch(() => ({ data: [] })),
       api.get<Product[]>('/products', { params: { organizationId: orgId, branchId } }).catch(() => ({ data: [] })),
       api.get<Table[]>('/restaurants/tables', { params: { organizationId: orgId, branchId } }).catch(() => ({ data: [] }))
     ])
@@ -161,8 +177,17 @@ function addToCart(product: Product) {
     return
   }
 
+  if (isProductDisabled(product)) return
+
+  const tracks = productTracksStock(product)
+  const availableStock = product.stock ?? 0
   const existing = cart.value.find(item => item.productId === product.id)
+
   if (existing) {
+    if (tracks && existing.quantity >= availableStock) {
+      alert(`No hay suficiente stock disponible. Unidades en inventario: ${availableStock}`)
+      return
+    }
     existing.quantity++
   } else {
     cart.value.push({
@@ -170,13 +195,20 @@ function addToCart(product: Product) {
       productName: product.name,
       unitPrice: Number(product.salePrice),
       quantity: 1,
-      notes: ''
+      notes: '',
+      stockAvailable: availableStock,
+      tracksStock: tracks
     })
   }
 }
 
 function incrementQty(index: number) {
-  cart.value[index].quantity++
+  const item = cart.value[index]
+  if (item.tracksStock && item.stockAvailable !== undefined && item.quantity >= item.stockAvailable) {
+    alert(`Límite alcanzado. Solo hay ${item.stockAvailable} unidades disponibles.`)
+    return
+  }
+  item.quantity++
 }
 
 function decrementQty(index: number) {
@@ -224,6 +256,7 @@ async function submitOrder() {
     }
 
     cart.value = []
+    await loadData() // Recargar productos para refrescar inventario actualizado
   } catch (err: any) {
     alert(err.response?.data?.message || 'Error al enviar la comanda a cocina')
   } finally {
@@ -237,6 +270,7 @@ async function removeSavedItem(itemId: string) {
   try {
     const res = await api.delete<RestaurantOrder>(`/restaurant-orders/items/${itemId}`)
     currentOrder.value = res.data
+    await loadData()
   } catch (err: any) {
     alert(err.response?.data?.message || 'Error al eliminar ítem')
   }
@@ -348,10 +382,34 @@ onMounted(() => {
               v-for="product in filteredProducts"
               :key="product.id"
               @click="addToCart(product)"
-              class="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              :class="[
+                'bg-white p-3.5 rounded-xl border transition-all flex flex-col justify-between',
+                isProductDisabled(product)
+                  ? 'opacity-60 bg-slate-50 border-slate-200 cursor-not-allowed'
+                  : 'border-slate-200 hover:border-blue-500 hover:shadow-md cursor-pointer'
+              ]"
             >
               <div>
-                <h3 class="font-bold text-xs text-slate-800 line-clamp-2">{{ product.name }}</h3>
+                <div class="flex items-start justify-between gap-1">
+                  <h3 class="font-bold text-xs text-slate-800 line-clamp-2">{{ product.name }}</h3>
+
+                  <!-- INDICADOR DE STOCK -->
+                  <template v-if="productTracksStock(product)">
+                    <span
+                      v-if="(product.stock ?? 0) > 0"
+                      class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap"
+                    >
+                      {{ product.stock }} disp.
+                    </span>
+                    <span
+                      v-else
+                      class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200 whitespace-nowrap"
+                    >
+                      Agotado
+                    </span>
+                  </template>
+                </div>
+
                 <p v-if="product.description" class="text-[10px] text-slate-400 line-clamp-2 mt-1">
                   {{ product.description }}
                 </p>
@@ -361,8 +419,16 @@ onMounted(() => {
                 <span class="font-extrabold text-xs text-blue-600">
                   {{ formatCurrency(product.salePrice) }}
                 </span>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-100">
-                  + Agregar
+
+                <span
+                  :class="[
+                    'px-2 py-0.5 font-bold text-[10px] rounded border',
+                    isProductDisabled(product)
+                      ? 'bg-slate-200 text-slate-500 border-slate-300'
+                      : 'bg-blue-50 text-blue-600 border-blue-100'
+                  ]"
+                >
+                  {{ isProductDisabled(product) ? 'Sin stock' : '+ Agregar' }}
                 </span>
               </div>
             </div>
