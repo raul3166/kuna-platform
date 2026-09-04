@@ -1,14 +1,104 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 function handleLogout() {
   authStore.logout()
   router.push('/login')
 }
+
+// Configuración centralizada del menú (Data-Driven)
+const navigation = [
+  {
+    key: 'core',
+    label: 'Core',
+    items: [
+      { label: 'Bienvenida', icon: '👋', to: '/dashboard' },
+      { label: 'Organizaciones', icon: '🏢', to: '/organizations' }
+    ]
+  },
+  {
+    key: 'comercial',
+    label: 'Comercial',
+    items: [
+      { label: 'Dashboard Ejecutivo', icon: '📈', to: '/executive-dashboard' },
+      { label: 'Reporte de Rendimiento', icon: '📈', to: '/sales-performance' },
+      { label: 'Terminal Punto de Venta (POS)', icon: '🎛️', to: '/pos' },
+      { label: 'Historial de Ventas', icon: '📊', to: '/sales' },
+      { label: 'Clientes (CRM)', icon: '👥', to: '/customers' },
+      { label: 'Devoluciones de Clientes', icon: '↩️', to: '/sale-returns' }
+    ]
+  },
+  {
+    key: 'inventario',
+    label: 'Inventario Core',
+    items: [
+      { label: 'Productos y Catálogos', icon: '📦', to: '/products' },
+      { label: 'Panel Analítico Stock', icon: '📊', to: '/inventory-dashboard' },
+      { label: 'Movimientos y Ajustes', icon: '🔄', to: '/inventory-movements' },
+      { label: 'Transferencias', icon: '🚚', to: '/inventory-transfers' },
+      { label: 'Kardex / Historial', icon: '📋', to: '/kardex' }
+    ]
+  },
+  {
+    key: 'compras',
+    label: 'Compras',
+    items: [
+      { label: 'Proveedores', icon: '🚚', to: '/suppliers' },
+      { label: 'Órdenes de Compra', icon: '📑', to: '/purchase-orders' },
+      { label: 'Recepción de Mercancía', icon: '📥', to: '/goods-receipts' },
+      { label: 'Facturas de Proveedores', icon: '🧾', to: '/purchase-invoices' },
+      { label: 'Devoluciones a Proveedores', icon: '↩️', to: '/purchase-returns' }
+    ]
+  },
+  {
+    key: 'restaurante',
+    label: 'Restaurante',
+    items: [
+      { label: 'Salones y Mesas', icon: '🍽️', to: '/rooms' },
+      { label: 'Toma de Pedidos', icon: '📝', to: '/restaurant-orders' },
+      { label: 'Monitor de Cocina', icon: '👨‍🍳', to: '/kitchen' }
+    ]
+  },
+  {
+    key: 'configuracion',
+    label: 'Configuración',
+    items: [
+      { label: 'Impuestos y Fiscal', icon: '🏛️', to: '/taxes' },
+      { label: 'Personal / Usuarios', icon: '👥', to: '/users' },
+      { label: 'Roles y Permisos (RBAC)', icon: '🛡️', to: '/security-settings' }
+    ]
+  }
+]
+
+const activeSection = ref<string | null>(null)
+
+// Encuentra dinámicamente qué sección contiene la ruta actual
+function autoExpandSection(currentPath: string) {
+  const matchingSection = navigation.find(section =>
+    section.items.some(item => currentPath.startsWith(item.to))
+  )
+  if (matchingSection) {
+    activeSection.value = matchingSection.key
+  }
+}
+
+function toggleSection(sectionKey: string) {
+  activeSection.value = activeSection.value === sectionKey ? null : sectionKey
+}
+
+watch(() => route.path, (newPath) => {
+  autoExpandSection(newPath)
+}, { immediate: true })
+
+onMounted(() => {
+  autoExpandSection(route.path)
+})
 </script>
 
 <template>
@@ -21,118 +111,29 @@ function handleLogout() {
         <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
       </div>
 
-      <!-- Menú de Navegación Estructurado -->
-      <nav class="flex-1 space-y-7 px-4 py-6 overflow-y-auto">
-        <!-- Grupo 1: Core Corporativo -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Core</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              👋 Bienvenida
-            </router-link>
-            <router-link to="/organizations" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🏢 Organizaciones
-            </router-link>
-          </div>
-        </div>
+      <!-- Menú Renderizado Dinámicamente -->
+      <nav class="flex-1 space-y-2 px-3 py-6 overflow-y-auto">
+        <div v-for="section in navigation" :key="section.key">
+          <button
+            @click="toggleSection(section.key)"
+            type="button"
+            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:bg-slate-800/60 hover:text-white transition-colors"
+            :class="{ 'text-white bg-slate-800/40': activeSection === section.key }"
+          >
+            <span>{{ section.label }}</span>
+            <span class="text-[10px] transform transition-transform duration-200" :class="{ 'rotate-180 text-blue-400': activeSection === section.key }">▼</span>
+          </button>
 
-        <!-- Grupo 2: Catálogo Comercial / CRM -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Comercial</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/executive-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📈 Dashboard Ejecutivo
-            </router-link>
-            <router-link to="/sales-performance" class="flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-slate-300 hover:bg-slate-800" active-class="bg-blue-600 text-white font-semibold">
-              📈 Reporte de Rendimiento
-            </router-link>
-            <router-link to="/pos" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🎛️ Terminal Punto de Venta (POS)
-            </router-link>
-            <router-link to="/sales" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📊 Historial de Ventas
-            </router-link>
-            <router-link to="/customers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              👥 Clientes (CRM)
-            </router-link>
-            <router-link to="/sale-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              ↩️ Devoluciones de Clientes
-            </router-link>
-          </div>
-        </div>
-
-        <!-- Grupo 3: Inventarios -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Inventario Core</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/products" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📦 Productos y Catálogos
-            </router-link>
-            <router-link to="/inventory-dashboard" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📊 Panel Analítico Stock
-            </router-link>
-            <router-link to="/inventory-movements" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🔄 Movimientos y Ajustes
-            </router-link>
-            <router-link to="/inventory-transfers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🚚 Transferencias
-            </router-link>
-            <router-link to="/kardex" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📋 Kardex / Historial
-            </router-link>
-          </div>
-        </div>
-
-        <!-- Grupo 4: Compras -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Compras</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/suppliers" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🚚 Proveedores
-            </router-link>
-            <router-link to="/purchase-orders" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📑 Órdenes de Compra
-            </router-link>
-            <router-link to="/goods-receipts" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📥 Recepción de Mercancía
-            </router-link>
-            <router-link to="/purchase-invoices" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🧾 Facturas de Proveedores
-            </router-link>
-            <router-link to="/purchase-returns" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              ↩️ Devoluciones a Proveedores
-            </router-link>
-          </div>
-        </div>
-
-        <!-- Grupo Gastronomía / Restaurante (KNA-085) -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Restaurante</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/rooms" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🍽️ Salones y Mesas
-            </router-link>
-            <router-link to="/restaurant-orders" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              📝 Toma de Pedidos
-            </router-link>
-            <router-link to="/kitchen" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              👨‍🍳 Monitor de Cocina
-            </router-link>
-          </div>
-        </div>
-
-        <!-- Grupo 5: Configuración -->
-        <div>
-          <p class="px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Configuración</p>
-          <div class="mt-2 space-y-1">
-            <router-link to="/taxes" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🏛️ Impuestos y Fiscal
-            </router-link>
-            <router-link to="/users" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              👥 Personal / Usuarios
-            </router-link>
-            <router-link to="/security-settings" class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white" active-class="bg-blue-600 text-white hover:bg-blue-600">
-              🛡️ Roles y Permisos (RBAC)
+          <div v-show="activeSection === section.key" class="mt-1 space-y-1 pl-2">
+            <router-link
+              v-for="item in section.items"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
+              active-class="bg-blue-600 text-white hover:bg-blue-600"
+            >
+              <span class="mr-2">{{ item.icon }}</span>
+              <span>{{ item.label }}</span>
             </router-link>
           </div>
         </div>
@@ -152,6 +153,7 @@ function handleLogout() {
           <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 border border-slate-200">
             📍 {{ authStore.currentBranch?.name || 'Sucursal Activa' }}
           </span>
+
           <span class="text-sm font-medium text-slate-400">/</span>
           <span class="text-sm font-semibold text-slate-600">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
         </div>
