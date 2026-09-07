@@ -384,4 +384,127 @@ async getInventoryTurnover(query: TopSellersQueryDto) {
     turnoverRatio: Number(turnoverRatio.toFixed(2)),
   };
 }
+// ============================================================
+// REPORTE FISCAL DE IMPUESTOS Y CIERRE DE CAJA (ARQUEO Z)
+// ============================================================
+async getFiscalSummaryReport(query: SalesPerformanceQueryDto) {
+  const { organizationId, branchId, startDate, endDate } = query;
+
+  const saleWhereCondition: any = {
+    organizationId,
+    status: 'CONFIRMED',
+  };
+
+  if (branchId) {
+    saleWhereCondition.branchId = branchId;
+  }
+
+  if (startDate || endDate) {
+    saleWhereCondition.createdAt = {};
+    if (startDate) saleWhereCondition.createdAt.gte = new Date(startDate);
+    if (endDate) saleWhereCondition.createdAt.lte = new Date(endDate);
+  }
+
+  // 1. IDs de ventas filtradas
+  const matchingSales = await this.prisma.sale.findMany({
+    where: saleWhereCondition,
+    select: {
+      id: true,
+      subtotal: true,
+      tax: true,
+      discount: true,
+      total: true,
+    },
+  });
+
+  const saleIds = matchingSales.map((s) => s.id);
+
+  if (saleIds.length === 0) {
+    return {
+      summary: {
+        totalTransactions: 0,
+        totalBase: 0,
+        totalTax: 0,
+        totalDiscount: 0,
+        grandTotal: 0,
+      },
+      taxBreakdown: [],
+      paymentBreakdown: [],
+    };
+  }
+
+  // 2. Desglose de impuestos por tarifa (0%, 5%, 19%, etc.)
+  const saleItems = await this.prisma.saleItem.findMany({
+    where: { saleId: { in: saleIds } },
+    select: {
+      subtotal: true,
+      taxAmount: true,
+      total: true,
+      taxPercentage: true,
+    },
+  });
+
+  const taxMap = new Map<
+    number,
+    { taxRate: number; baseAmount: number; taxAmount: number; totalAmount: number }
+  >();
+
+  saleItems.forEach((item) => {
+    const rate = Number(item.taxPercentage || 0);
+    const existing = taxMap.get(rate) || {
+      taxRate: rate,
+      baseAmount: 0,
+      taxAmount: 0,
+      totalAmount: 0,
+    };
+
+    existing.baseAmount += Number(item.subtotal || 0);
+    existing.taxAmount += Number(item.taxAmount || 0);
+    existing.totalAmount += Number(item.total || 0);
+
+    taxMap.set(rate, existing);
+  });
+
+  const taxBreakdown = Array.from(taxMap.values()).map((t) => ({
+    taxRate: t.taxRate,
+    baseAmount: Number(t.baseAmount.toFixed(2)),
+    taxAmount: Number(t.taxAmount.toFixed(2)),
+    totalAmount: Number(t.totalAmount.toFixed(2)),
+  }));
+
+  // 3. Arqueo por Medio de Pago
+  const paymentsGrouped = await this.prisma.payment.groupBy({
+    by: ['method'],
+    where: {
+      organizationId,
+      saleId: { in: saleIds },
+    },
+    _sum: { amount: true },
+    _count: { id: true },
+  });
+
+  const paymentBreakdown = paymentsGrouped.map((pg) => ({
+    paymentMethod: pg.method,
+    totalAmount: Number(pg._sum.amount || 0),
+    transactionCount: pg._count.id || 0,
+  }));
+
+  // 4. Totales Consolidados
+  const totalBase = matchingSales.reduce((acc, s) => acc + Number(s.subtotal || 0), 0);
+  const totalTax = matchingSales.reduce((acc, s) => acc + Number(s.tax || 0), 0);
+  const totalDiscount = matchingSales.reduce((acc, s) => acc + Number(s.discount || 0), 0);
+  const grandTotal = matchingSales.reduce((acc, s) => acc + Number(s.total || 0), 0);
+
+  return {
+    summary: {
+      totalTransactions: matchingSales.length,
+      totalBase: Number(totalBase.toFixed(2)),
+      totalTax: Number(totalTax.toFixed(2)),
+      totalDiscount: Number(totalDiscount.toFixed(2)),
+      grandTotal: Number(grandTotal.toFixed(2)),
+    },
+    taxBreakdown,
+    paymentBreakdown,
+  };
+}
 }

@@ -50,4 +50,12 @@ async getTopSellers(@Query() query: TopSellersQueryDto) {
 async getInventoryTurnover(@Query() query: TopSellersQueryDto) {
   return this.analyticsService.getInventoryTurnover(query);
 }
+
+@ApiOperation({ summary: 'Obtener reporte fiscal de impuestos y cierre de caja (Arqueo Z)' })
+@Permissions('analytics.read')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Get('fiscal-summary')
+async getFiscalSummary(@Query() query: SalesPerformanceQueryDto) {
+  return this.analyticsService.getFiscalSummaryReport(query);
+}
 }

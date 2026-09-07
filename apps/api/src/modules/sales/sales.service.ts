@@ -252,13 +252,26 @@ export class SalesService {
       let accumulatedTax = 0;
 
       for (const item of activeOrder.items) {
-        const itemSubtotal = Number(item.unitPrice) * item.quantity;
+        console.log('=== DEBUG IVA ===');
+        console.log('Product ID en ítem:', item.productId);
+        console.log('Producto cargado:', item.product?.name);
+        console.log('TaxRule cargada:', item.product?.taxRule);
+        console.log('Porcentaje:', item.product?.taxRule?.percentage);
         const taxPercentage = item.product?.taxRule
           ? Number(item.product.taxRule.percentage)
           : 0;
 
-        const itemTaxAmount = itemSubtotal * (taxPercentage / 100);
-        const itemTotal = itemSubtotal + itemTaxAmount;
+          console.log('taxPercentage asignado:', taxPercentage);
+        const taxMultiplier = taxPercentage / 100;
+
+        // 1. El itemTotal es el precio final (ya incluye IVA)
+        const itemTotal = Number(item.unitPrice) * item.quantity;
+
+        // 2. Extraer la base (Subtotal sin IVA)
+        const itemSubtotal = itemTotal / (1 + taxMultiplier);
+
+        // 3. Extraer el valor exacto del impuesto
+        const itemTaxAmount = itemTotal - itemSubtotal;
 
         accumulatedSubtotal += itemSubtotal;
         accumulatedTax += itemTaxAmount;
@@ -268,7 +281,7 @@ export class SalesService {
             saleId: newSale.id,
             productId: item.productId,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            unitPrice: item.unitPrice, // Guarda el precio de venta al público (con IVA)
             subtotal: itemSubtotal,
             taxPercentage,
             taxAmount: itemTaxAmount,
@@ -487,30 +500,19 @@ export class SalesService {
       where: { id: saleId },
     });
 
-    if (!sale) {
-      throw new NotFoundException('Sale not found');
-    }
+    if (!sale) throw new NotFoundException('Sale not found');
 
     const items = await this.prisma.saleItem.findMany({
       where: { saleId },
     });
 
-    const subtotalBase = items.reduce(
-      (acc, item) => acc + item.quantity * Number(item.unitPrice),
-      0,
-    );
+    // Sumar directamente los valores calculados al crear los items
+    const subtotalBase = items.reduce((acc, item) => acc + Number(item.subtotal), 0);
+    const totalTax = items.reduce((acc, item) => acc + Number(item.taxAmount), 0);
+    const totalDiscount = items.reduce((acc, item) => acc + Number(item.discount), 0);
 
-    const totalDiscount = items.reduce(
-      (acc, item) => acc + Number(item.discount),
-      0,
-    );
-
-    const totalTax = items.reduce(
-      (acc, item) => acc + Number(item.taxAmount),
-      0,
-    );
-
-    const grandTotal = subtotalBase - totalDiscount + totalTax;
+    // El gran total es la suma de los totales de cada item (que ya traían impuesto) menos descuentos
+    const grandTotal = items.reduce((acc, item) => acc + Number(item.total), 0) - totalDiscount;
 
     return this.prisma.sale.update({
       where: { id: saleId },

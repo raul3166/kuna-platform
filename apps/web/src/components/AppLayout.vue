@@ -28,6 +28,7 @@ const navigation = [
     items: [
       { label: 'Dashboard Ejecutivo', icon: '📈', to: '/executive-dashboard' },
       { label: 'Reporte de Rendimiento', icon: '📈', to: '/sales-performance' },
+      { label: 'Reporte Fiscal', icon: '📈', to: '/fiscalSummary' },
       { label: 'Terminal Punto de Venta (POS)', icon: '🎛️', to: '/pos' },
       { label: 'Historial de Ventas', icon: '📊', to: '/sales' },
       { label: 'Clientes (CRM)', icon: '👥', to: '/customers' },

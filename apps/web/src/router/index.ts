@@ -171,6 +171,12 @@ const routes: Array<RouteRecordRaw> = [
       component: () => import('../views/TaxesView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/fiscalSummary',
+      name: 'fiscalSummary',
+      component: () => import('../views/FiscalSUmmaryView.vue'),
+      meta: { requiresAuth: true }
+    },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

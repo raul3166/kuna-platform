@@ -445,7 +445,7 @@ onMounted(async () => {
 
           <div class="border-t border-slate-800 pt-4 bg-slate-900 z-10">
             <div class="space-y-1.5 text-xs text-slate-400">
-              <div class="flex justify-between"><span>Subtotal Bruto:</span><span class="font-mono text-slate-200">{{ formatCurrency(cartSubtotal) }}</span></div>
+              <div class="flex justify-between"><span>Total de Productos (IVA inc.):</span><span class="font-mono text-slate-200">{{ formatCurrency(cartSubtotal) }}</span></div>
               <div class="flex justify-between text-rose-400"><span>Descuentos:</span><span class="font-mono">- {{ formatCurrency(cartDiscount) }}</span></div>
               <div class="flex justify-between text-base font-black text-white pt-2 border-t border-slate-800">
                 <span>TOTAL NETO:</span>
@@ -577,11 +577,14 @@ onMounted(async () => {
       </table>
 
       <div style="border-top: 1px dashed black; padding-top: 2mm; font-size: 11px; line-height: 1.5; text-align: right; margin-bottom: 4mm;">
-        <div>SUBTOTAL BRUTO: {{ formatCurrency(lastPrintedInvoice.subtotal) }}</div>
+        <div style="border-top: 1px dashed black; padding-top: 2mm; font-size: 11px; line-height: 1.5; text-align: right; margin-bottom: 4mm;">
+        <div>SUBTOTAL BASE: {{ formatCurrency(lastPrintedInvoice.subtotal) }}</div>
+        <div>IMPUESTOS (IVA): {{ formatCurrency(lastPrintedInvoice.tax) }}</div>
         <div v-if="Number(lastPrintedInvoice.discount) > 0">DESCUENTOS: - {{ formatCurrency(lastPrintedInvoice.discount) }}</div>
         <div style="font-size: 13px; font-weight: bold; margin-top: 1mm; border-top: 1px solid black; padding-top: 1mm;">
-          TOTAL NETO: {{ formatCurrency(lastPrintedInvoice.total) }}
+          TOTAL NETO A PAGAR: {{ formatCurrency(lastPrintedInvoice.total) }}
         </div>
+      </div>
         <div style="margin-top: 2mm; font-size: 10px; color: #333;">
           <div>MÉTODO: {{ lastPrintedInvoice.paymentMethod }}</div>
           <div v-if="lastPrintedInvoice.paymentMethod === 'CASH'">RECIBIDO: {{ formatCurrency(lastPrintedInvoice.amountPaid) }}</div>
