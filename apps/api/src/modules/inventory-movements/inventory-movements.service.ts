@@ -1475,7 +1475,7 @@ export class InventoryMovementsService {
       entry,
       exit,
       balance: tracksStock ? balance : 0,
-      affectsStock: tracksStock ? movement.movementType !== InventoryMovementType.SALE : false,
+      affectsStock: tracksStock,
     };
   });
 
