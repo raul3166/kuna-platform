@@ -55,6 +55,14 @@ async function main() {
       { module: 'goods-receipts', code: 'goods-receipts.update', name: 'Update goods receipt', description: 'Allows modifying draft goods receipts' },
       { module: 'goods-receipts', code: 'goods-receipts.delete', name: 'Delete goods receipt', description: 'Allows removing draft goods receipts' },
       { module: 'goods-receipts', code: 'goods-receipts.process', name: 'Process goods receipt', description: 'Allows processing draft goods receipts to adjust stock and update purchase order status' },
+
+      // --- MODULE: INVENTORY & LOTS ---
+      { module: 'inventory', code: 'inventory.read', name: 'Read inventory', description: 'Allows viewing products and stock' },
+      // --- MODULE: GYM ---
+      { module: 'gym', code: 'gym.create', name: 'Create gym data', description: 'Allows creating membership plans, subscriptions, and checking in members' },
+      { module: 'gym', code: 'gym.read', name: 'Read gym data', description: 'Allows viewing gym membership plans, active subscriptions, and attendance logs' },
+      { module: 'gym', code: 'gym.update', name: 'Update gym data', description: 'Allows updating membership plans and subscription details' },
+      { module: 'gym', code: 'gym.delete', name: 'Delete gym data', description: 'Allows removing membership plans and subscriptions' },
     ],
     skipDuplicates: true,
   });

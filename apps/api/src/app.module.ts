@@ -38,6 +38,9 @@ import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-o
 import { TaxesModule } from './modules/taxes/taxes.module';
 import { ProductPharmasModule } from './modules/product-pharmas/product-pharmas.module';
 import { ProductLotsModule } from './modules/product-lots/product-lots.module';
+import { GymMembershipPlansModule } from './modules/gym-membership-plans/gym-membership-plans.module';
+import { GymSubscriptionsModule } from './modules/gym-subscriptions/gym-subscriptions.module';
+import { GymAttendancesModule } from './modules/gym-attendances/gym-attendances.module';
 
 @Module({
   imports: [
@@ -79,6 +82,9 @@ import { ProductLotsModule } from './modules/product-lots/product-lots.module';
     TaxesModule,
     ProductPharmasModule,
     ProductLotsModule,
+    GymMembershipPlansModule,
+    GymSubscriptionsModule,
+    GymAttendancesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

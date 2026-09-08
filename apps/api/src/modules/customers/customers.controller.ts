@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 
 import {
@@ -14,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 import { CustomersService } from './customers.service';
@@ -58,7 +60,7 @@ export class CustomersController {
       createCustomerDto,
     );
   }
-
+/*
   @ApiOperation({
     summary: 'Get all active customers',
   })
@@ -71,6 +73,21 @@ export class CustomersController {
   @Get()
   findAll() {
     return this.customersService.findAll();
+  }
+*/
+  @ApiOperation({
+    summary: 'Get all active organization customers',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of active organization customers.',
+  })
+  @Permissions('customers.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+@Get()
+  @ApiQuery({ name: 'organizationId', required: false, description: 'ID de la organización (opcional)' })
+  findAll(@Query('organizationId') organizationId?: string) {
+    return this.customersService.findAll(organizationId);
   }
 
   @ApiOperation({

@@ -309,3 +309,17 @@ Sprint 15 — Sales Analytics, Reports & Executive DashboardObjetivo: Proveer vi
 Sprint 16 — Restaurant Module & Table Management (Módulo Vertical)Objetivo: Desarrollar el primer módulo de industria de KUNA para operaciones gastronómicas, integrado nativamente con el motor de POS, inventarios y caja.IDHistoriaEstadoAlcanceKNA-085Room & Table Layout Engine (Salones y Mesas)⏳Frontend/BackendKNA-086Order Taking & Waiter Interface (Comandero)⏳Frontend/BackendKNA-087Kitchen Display System — KDS (Pantalla de Cocina)⏳Frontend/BackendKNA-088Table Checkout & POS Session Integration⏳Frontend/Backend
 
 Sprint 17 — Accounting, Tax Localization & CxC / CxP CoreObjetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y control de cuentas pendientes comerciales y operativas.IDHistoriaEstadoAlcanceKNA-089Latam Tax Engine & Rules (IVA, INC, Retenciones)⏳Frontend/BackendKNA-090Sales & Purchase Auxiliary Ledger (Libros Fiscales)⏳Frontend/BackendKNA-091Accounts Receivable — CxC (Crédito a Clientes CRM)⏳Frontend/BackendKNA-092Accounts Payable — CxP (Obligaciones con Proveedores)⏳Frontend/Backend
+
+Sprint de Gimnasio
+
+Diseño del Esquema de Base de Datos (Prisma): Definir los modelos para MembershipPlan (planes de membresía), Member (socios/clientes con datos específicos del gimnasio), Subscription (membresías activas con fechas de inicio y fin) y AttendanceLog (registro de accesos y asistencias).
+
+Desarrollo del Backend en NestJS: Crear los módulos, controladores y servicios para gestionar los planes de membresía, la inscripción de socios y la validación de accesos vigentes.
+
+Implementación de Lógica de Cobro y Validación: Programar la regla de negocio para verificar si una suscripción está activa al momento del ingreso y manejar los estados de pago o renovaciones.
+
+Diseño del Frontend (Vistas en Vue): Construir la interfaz de usuario para la administración de planes, el listado de socios y la pantalla de control de acceso / check-in.
+
+Configuración de Permisos y Semillas: Agregar los códigos de permisos correspondientes al módulo de gimnasio en el script de semillas de Prisma y asociarlos al rol de administrador.
+
+

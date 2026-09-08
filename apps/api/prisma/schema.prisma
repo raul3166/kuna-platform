@@ -154,6 +154,9 @@ model Organization {
   cashSessions       CashSession[]
   rooms              Room[]
   taxes              TaxRule[]
+  gymMembershipPlans GymMembershipPlan[]
+  gymSubscriptions   GymSubscription[]
+  gymAttendanceLogs  GymAttendanceLog[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -185,6 +188,9 @@ model Branch {
   rooms                Room[]
   purchaseOrders PurchaseOrder[]
   productLots ProductLot[]
+  gymMembershipPlans GymMembershipPlan[]
+  gymSubscriptions   GymSubscription[]
+  gymAttendanceLogs  GymAttendanceLog[]
   isActive             Boolean              @default(true)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -984,6 +990,8 @@ model Customer {
 
   sales                Sale[]
   saleReturns          SaleReturn[]
+  gymSubscriptions   GymSubscription[]
+  gymAttendanceLogs  GymAttendanceLog[]
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
@@ -992,4 +1000,76 @@ model Customer {
   @@index([organizationId])
   @@index([identificationNumber])
   @@index([email])
+}
+
+// ============================================================
+// EXTENSIÓN PARA GIMNASIOS (MEMBRESÍAS Y ACCESOS)
+// ============================================================
+
+enum PlanAccessType {
+  LIMITED_DAILY  // Ej. 1 entrada al día
+  UNLIMITED      // Entradas ilimitadas
+}
+model GymMembershipPlan {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String?           // Opcional si aplica a toda la organización o por sucursal
+  name           String            // Ej: "Mensualidad Full", "Pase Diario"
+  description    String?
+  price          Decimal           @db.Decimal(12, 2)
+  durationDays   Int               // Vigencia en días
+  isActive       Boolean           @default(true)
+  accessType     PlanAccessType    @default(UNLIMITED) // Nuevo campo
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch?           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  subscriptions  GymSubscription[]
+
+  @@index([organizationId])
+  @@index([branchId])
+}
+
+model GymSubscription {
+  id               String            @id @default(cuid())
+  organizationId   String
+  branchId         String
+  customerId       String            // Vinculado al cliente/socio del CRM general
+  membershipPlanId String
+  startDate        DateTime
+  endDate          DateTime
+  status           String            @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  paymentStatus    String            @default("PAID")   // PAID, PENDING
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch           Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customer         Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan             GymMembershipPlan @relation(fields: [membershipPlanId], references: [id])
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([customerId])
+  @@index([membershipPlanId])
+  @@index([endDate])
+}
+
+model GymAttendanceLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  branchId       String
+  customerId     String
+  checkInAt      DateTime     @default(now())
+  status         String       // ALLOWED, DENIED
+  reason         String?      @db.VarChar(255)
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([customerId])
 }

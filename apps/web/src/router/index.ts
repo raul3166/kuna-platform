@@ -177,6 +177,36 @@ const routes: Array<RouteRecordRaw> = [
       component: () => import('../views/FiscalSUmmaryView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+    path: '/expiring-lots',
+    name: 'expiring-lots',
+    component: () => import('../views/ExpiringLotsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  /*{
+    path: '/prescriptions',
+    name: 'prescriptions',
+    component: () => import('../views/PrescriptionsView.vue'),
+    meta: { requiresAuth: true }
+  },*/
+  {
+  path: '/gym-membership-plans',
+  name: 'gym-membership-plans',
+  component: () => import('../views/GymMembershipPlansView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/gym-subscriptions',
+  name: 'gym-subscriptions',
+  component: () => import('../views/GymSubscriptionsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/gym-checkin',
+  name: 'gym-checkin',
+  component: () => import('../views/GymCheckInView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

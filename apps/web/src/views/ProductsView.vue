@@ -222,20 +222,6 @@ async function loadInventoryData() {
 }
 
 // -----------------------------------------------------------------------------
-// Lotes próximos a vencer
-// -----------------------------------------------------------------------------
-
-async function loadExpiringLots() {
-  /*
-   * Esta función queda preparada para conectar
-   * posteriormente con el endpoint real de lotes.
-   *
-   * No alteramos la lógica actual de productos.
-   */
-  expiringLots.value = []
-}
-
-// -----------------------------------------------------------------------------
 // Abrir modal de lotes
 // -----------------------------------------------------------------------------
 
@@ -862,26 +848,7 @@ onMounted(() => {
         </button>
 
 
-        <!-- Vencimientos -->
 
-        <button
-          @click="activeTab = 'expiring'; loadExpiringLots()"
-          :class="[
-            'pb-3 px-1 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors',
-            activeTab === 'expiring'
-              ? 'border-amber-600 text-amber-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-          ]"
-        >
-          ⏳ Vencimientos FEFO
-
-          <span
-            v-if="expiringLots.length"
-            class="ml-1 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 font-bold rounded-full"
-          >
-            {{ expiringLots.length }}
-          </span>
-        </button>
 
       </div>
 
@@ -1461,168 +1428,6 @@ onMounted(() => {
 
       </div>
 
-
-      <!-- ================================================================= -->
-      <!-- TAB 3: LOTES PRÓXIMOS A VENCER -->
-      <!-- ================================================================= -->
-
-      <div
-        v-if="activeTab === 'expiring'"
-        class="space-y-4"
-      >
-
-        <!-- Encabezado -->
-
-        <div
-          class="flex items-center justify-between bg-amber-50 border border-amber-200 p-4 rounded-xl"
-        >
-
-          <div class="flex items-center gap-3">
-
-            <span class="text-2xl">
-              🚨
-            </span>
-
-            <div>
-
-              <h3 class="font-semibold text-amber-900">
-                Alertas de Vencimiento de Lotes
-              </h3>
-
-              <p class="text-xs text-amber-700">
-                Lotes que expiran dentro del umbral configurado para la sucursal actual.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div class="flex items-center gap-2">
-
-            <span class="text-xs text-amber-800 font-medium">
-              Umbral (Días):
-            </span>
-
-            <select
-              v-model="expiringDaysThreshold"
-              @change="loadExpiringLots"
-              class="border border-amber-300 rounded-lg px-2 py-1 text-xs bg-white text-slate-800"
-            >
-
-              <option :value="30">
-                30 días
-              </option>
-
-              <option :value="60">
-                60 días
-              </option>
-
-              <option :value="90">
-                90 días
-              </option>
-
-              <option :value="180">
-                180 días
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-
-        <!-- Tabla -->
-
-        <div
-          class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
-        >
-
-          <div class="overflow-x-auto">
-
-            <table class="w-full text-left text-sm">
-
-              <thead
-                class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px]"
-              >
-
-                <tr>
-
-                  <th class="px-4 py-3">
-                    Producto
-                  </th>
-
-                  <th class="px-4 py-3">
-                    Número de Lote
-                  </th>
-
-                  <th class="px-4 py-3">
-                    Fecha de Vencimiento
-                  </th>
-
-                  <th class="px-4 py-3 text-right">
-                    Stock Disponible
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody class="divide-y divide-slate-100">
-
-                <tr
-                  v-if="expiringLots.length === 0"
-                >
-
-                  <td
-                    colspan="4"
-                    class="py-8 text-center text-slate-400"
-                  >
-                    No hay lotes próximos a vencer en los próximos
-                    {{ expiringDaysThreshold }} días.
-                  </td>
-
-                </tr>
-
-
-                <tr
-                  v-for="lot in expiringLots"
-                  :key="lot.id"
-                  class="hover:bg-red-50/30"
-                >
-
-                  <td class="px-4 py-3 font-medium text-slate-800">
-                    {{ lot.product?.name || '—' }}
-                  </td>
-
-
-                  <td class="px-4 py-3 font-mono text-xs text-slate-600">
-                    {{ lot.lotNumber }}
-                  </td>
-
-
-                  <td class="px-4 py-3 font-medium text-red-600">
-                    {{ formatDate(lot.expirationDate) }}
-                  </td>
-
-
-                  <td class="px-4 py-3 text-right font-bold text-slate-700">
-                    {{ formatStock(lot.stock) }} uds
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-      </div>
 
     </div>
 

@@ -56,12 +56,12 @@ async create(
   });
 }
 
-  async findAll() {
+async findAll(organizationId?: string) {
   return this.prisma.customer.findMany({
     where: {
       isActive: true,
+      ...(organizationId ? { organizationId } : {}),
     },
-
     orderBy: [
       {
         firstName: 'asc',
@@ -70,7 +70,6 @@ async create(
         companyName: 'asc',
       },
     ],
-
     select: customerSelect,
   });
 }

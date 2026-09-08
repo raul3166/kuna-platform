@@ -67,6 +67,23 @@ const navigation = [
     ]
   },
   {
+    key: 'farmacia',
+    label: 'Farmacia',
+    items: [
+      { label: 'Control de Lotes (FEFO)', icon: '🏷️', to: '/expiring-lots' },
+      { label: 'Recetas Médicas', icon: '💊', to: '/prescriptions' }
+    ]
+  },
+  {
+    key: 'gimnasio',
+    label: 'Gimnasio',
+    items: [
+      { label: 'Planes de Membresía', icon: '🏋️', to: '/gym-membership-plans' },
+      { label: 'Suscripciones', icon: '💳', to: '/gym-subscriptions' },
+      { label: 'Control de Acceso (Check-in)', icon: '🚪', to: '/gym-checkin' }
+    ]
+  },
+  {
     key: 'configuracion',
     label: 'Configuración',
     items: [
