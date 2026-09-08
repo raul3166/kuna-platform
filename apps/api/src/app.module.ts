@@ -36,6 +36,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
 import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-orders.module';
 import { TaxesModule } from './modules/taxes/taxes.module';
+import { ProductPharmasModule } from './modules/product-pharmas/product-pharmas.module';
+import { ProductLotsModule } from './modules/product-lots/product-lots.module';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { TaxesModule } from './modules/taxes/taxes.module';
     RestaurantsModule,
     RestaurantOrdersModule,
     TaxesModule,
+    ProductPharmasModule,
+    ProductLotsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

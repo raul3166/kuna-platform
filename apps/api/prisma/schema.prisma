@@ -184,6 +184,7 @@ model Branch {
   cashSessions         CashSession[]
   rooms                Room[]
   purchaseOrders PurchaseOrder[]
+  productLots ProductLot[]
   isActive             Boolean              @default(true)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -259,6 +260,10 @@ model Product {
 
   organization         Organization           @relation(fields: [organizationId], references: [id])
   taxRule              TaxRule? @relation(fields: [taxRuleId], references: [id])
+
+  // === NUEVAS RELACIONES DE EXTENSIÓN ===
+  pharmaDetail         ProductPharma?
+  lots                 ProductLot[]
   @@unique([organizationId, sku])
   @@index([categoryId])
   @@index([supplierId])
@@ -829,6 +834,48 @@ model CashSession {
   @@index([userId])
 }
 
+// ============================================================
+// EXTENSIÓN PARA DROGUERÍA / FARMACIA (Relación 1 a 1 con Product)
+// ============================================================
+
+model ProductPharma {
+  id                   String   @id @default(cuid())
+  productId            String   @unique
+  activeIngredient     String?  // Principio activo (ej. Acetaminofén)
+  laboratory           String?  // Laboratorio (ej. Genfar, MK)
+  invimaCode           String?  // Registro Sanitario INVIMA
+  requiresPrescription Boolean  @default(false) // Requiere fórmula médica
+  concentration        String?  // Ej. 500mg, 10ml
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// CONTROL DE LOTES Y VENCIMIENTOS (FEFO)
+// ============================================================
+
+model ProductLot {
+  id             String   @id @default(cuid())
+  productId      String
+  branchId       String
+  lotNumber      String   // Código o número de lote
+  expirationDate DateTime // Fecha de vencimiento
+  stock          Decimal  @default(0) @db.Decimal(12, 3)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch         Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, branchId, lotNumber])
+  @@index([productId])
+  @@index([branchId])
+  @@index([expirationDate])
+}
 // ============================================================
 // USUARIOS Y SEGURIDAD
 // ============================================================

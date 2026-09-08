@@ -78,6 +78,7 @@ export const productSelect = {
       percentage: true,
     },
   },
+  pharmaDetail: true,
   createdAt: true,
   updatedAt: true,
 } as const;
