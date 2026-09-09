@@ -41,6 +41,11 @@ import { ProductLotsModule } from './modules/product-lots/product-lots.module';
 import { GymMembershipPlansModule } from './modules/gym-membership-plans/gym-membership-plans.module';
 import { GymSubscriptionsModule } from './modules/gym-subscriptions/gym-subscriptions.module';
 import { GymAttendancesModule } from './modules/gym-attendances/gym-attendances.module';
+import { StudioPlansModule } from './modules/studio-plans/studio-plans.module';
+import { StudioSubscriptionsModule } from './modules/studio-subscriptions/studio-subscriptions.module';
+import { StudioAttendancesModule } from './modules/studio-attendances/studio-attendances.module';
+import { StudioSchedulesModule } from './modules/studio-schedules/studio-schedules.module';
+import { StudioBookingsModule } from './modules/studio-bookings/studio-bookings.module';
 
 @Module({
   imports: [
@@ -85,6 +90,11 @@ import { GymAttendancesModule } from './modules/gym-attendances/gym-attendances.
     GymMembershipPlansModule,
     GymSubscriptionsModule,
     GymAttendancesModule,
+    StudioPlansModule,
+    StudioSubscriptionsModule,
+    StudioAttendancesModule,
+    StudioSchedulesModule,
+    StudioBookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

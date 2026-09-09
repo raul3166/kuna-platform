@@ -84,6 +84,17 @@ const navigation = [
     ]
   },
   {
+    key: 'estudio',
+    label: 'Estudio (Yoga / Pilates)',
+    items: [
+      { label: 'Planes y Paquetes', icon: '🧘‍♀️', to: '/studio-plans' },
+      { label: 'Suscripciones y Tiqueteras', icon: '🎟️', to: '/studio-subscriptions' },
+      { label: 'Control de Asistencia', icon: '🚪', to: '/studio-checkin' },
+      { label: 'Calendario Clases', icon: '🚪', to: '/studio-schedules' },
+      { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings' } // <-- AGREGADO
+    ]
+  },
+  {
     key: 'configuracion',
     label: 'Configuración',
     items: [

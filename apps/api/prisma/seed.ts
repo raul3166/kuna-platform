@@ -63,6 +63,12 @@ async function main() {
       { module: 'gym', code: 'gym.read', name: 'Read gym data', description: 'Allows viewing gym membership plans, active subscriptions, and attendance logs' },
       { module: 'gym', code: 'gym.update', name: 'Update gym data', description: 'Allows updating membership plans and subscription details' },
       { module: 'gym', code: 'gym.delete', name: 'Delete gym data', description: 'Allows removing membership plans and subscriptions' },
+
+      // --- MODULE: STUDIO ---
+      { module: 'studio', code: 'studio.create', name: 'Create studio data', description: 'Allows creating studio plans, subscriptions, and checking in members' },
+      { module: 'studio', code: 'studio.read', name: 'Read studio data', description: 'Allows viewing studio plans, active subscriptions, and attendance logs' },
+      { module: 'studio', code: 'studio.update', name: 'Update studio data', description: 'Allows updating studio plans and subscription statuses' },
+      { module: 'studio', code: 'studio.delete', name: 'Delete studio data', description: 'Allows removing studio plans and cancelling subscriptions' },
     ],
     skipDuplicates: true,
   });

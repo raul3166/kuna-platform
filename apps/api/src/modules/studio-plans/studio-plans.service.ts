@@ -1,19 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { CreateGymMembershipPlanDto } from './dto/create-gym-membership-plan.dto';
-import { UpdateGymMembershipPlanDto } from './dto/update-gym-membership-plan.dto';
+import { CreateStudioPlanDto } from './dto/create-studio-plan.dto';
+import { UpdateStudioPlanDto } from './dto/update-studio-plan.dto';
 
 @Injectable()
-export class GymMembershipPlansService {
+export class StudioPlansService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateGymMembershipPlanDto) {
+  async create(dto: CreateStudioPlanDto) {
     return this.prisma.$transaction(async (tx) => {
-      // 1. Buscar o crear la categoría "Membresías" (sin control de stock ni lotes)
+      // 1. Buscar o crear la categoría "Clases de Estudio" sin control de inventario
       let category = await tx.productCategory.findFirst({
         where: {
           organizationId: dto.organizationId,
-          name: 'Membresías',
+          name: 'Clases de Estudio',
         },
       });
 
@@ -21,19 +21,19 @@ export class GymMembershipPlansService {
         category = await tx.productCategory.create({
           data: {
             organizationId: dto.organizationId,
-            name: 'Membresías',
-            description: 'Categoría generada automáticamente para servicios de gimnasio',
+            name: 'Clases de Estudio',
+            description: 'Categoría para paquetes y tiqueteras de Yoga, Pilates y Barre',
             trackStock: false,
           },
         });
       }
 
-      // 2. Crear el producto correspondiente para el POS
+      // 2. Crear el producto equivalente en el POS
       const product = await tx.product.create({
         data: {
           organizationId: dto.organizationId,
           categoryId: category.id,
-          sku: `MEMB-${Date.now()}`,
+          sku: `STUDIO-${Date.now()}`,
           name: dto.name,
           description: dto.description,
           salePrice: dto.price,
@@ -42,8 +42,8 @@ export class GymMembershipPlansService {
         },
       });
 
-      // 3. Crear el plan de gimnasio vinculado al producto
-      return tx.gymMembershipPlan.create({
+      // 3. Crear el plan de estudio
+      return tx.studioPlan.create({
         data: {
           organizationId: dto.organizationId,
           branchId: dto.branchId,
@@ -51,7 +51,11 @@ export class GymMembershipPlansService {
           description: dto.description,
           price: dto.price,
           durationDays: dto.durationDays,
-          accessType: dto.accessType,
+          type: dto.type,
+          totalClasses: dto.totalClasses ?? null,
+          maxDailyCheckIns: dto.maxDailyCheckIns ?? 2,
+          isNewStudentOnly: dto.isNewStudentOnly ?? false,
+          badge: dto.badge,
           productId: product.id,
         },
         include: {
@@ -66,9 +70,10 @@ export class GymMembershipPlansService {
   }
 
   async findAll(organizationId: string, branchId?: string) {
-    return this.prisma.gymMembershipPlan.findMany({
+    return this.prisma.studioPlan.findMany({
       where: {
         organizationId,
+        isActive: true,
         ...(branchId ? { branchId } : {}),
       },
       include: {
@@ -78,25 +83,22 @@ export class GymMembershipPlansService {
   }
 
   async findOne(id: string) {
-    const plan = await this.prisma.gymMembershipPlan.findUnique({
+    const plan = await this.prisma.studioPlan.findUnique({
       where: { id },
-      include: {
-        product: true,
-      },
+      include: { product: true },
     });
 
     if (!plan) {
-      throw new NotFoundException(`Membership plan with ID ${id} not found`);
+      throw new NotFoundException(`Studio plan with ID ${id} not found`);
     }
 
     return plan;
   }
 
-  async update(id: string, dto: UpdateGymMembershipPlanDto) {
+  async update(id: string, dto: UpdateStudioPlanDto) {
     const plan = await this.findOne(id);
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Si se actualizan nombre, precio o descripción, sincronizar el producto del POS
       if (plan.productId) {
         await tx.product.update({
           where: { id: plan.productId },
@@ -108,13 +110,10 @@ export class GymMembershipPlansService {
         });
       }
 
-      // 2. Actualizar el plan de membresía
-      return tx.gymMembershipPlan.update({
+      return tx.studioPlan.update({
         where: { id },
         data: dto,
-        include: {
-          product: true,
-        },
+        include: { product: true },
       });
     });
   }
@@ -123,12 +122,10 @@ export class GymMembershipPlansService {
     const plan = await this.findOne(id);
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Eliminar el plan de membresía
-      const deletedPlan = await tx.gymMembershipPlan.delete({
+      const deletedPlan = await tx.studioPlan.delete({
         where: { id },
       });
 
-      // 2. Desactivar el producto en el POS (en lugar de eliminarlo para no romper historial de ventas pasadas)
       if (plan.productId) {
         await tx.product.update({
           where: { id: plan.productId },

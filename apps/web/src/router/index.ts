@@ -207,6 +207,36 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/GymCheckInView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/studio-plans',
+  name: 'studio-plans',
+  component: () => import('../views/StudioPlansView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/studio-subscriptions',
+  name: 'studio-subscriptions',
+  component: () => import('../views/StudioSubscriptionsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/studio-checkin',
+  name: 'studio-checkin',
+  component: () => import('../views/StudioCheckInView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/studio-schedules',
+  name: 'studio-schedules',
+  component: () => import('../views/StudioSchedulesView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/studio-bookings',
+  name: 'studio-bookings',
+  component: () => import('../views/StudioBookingsView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
