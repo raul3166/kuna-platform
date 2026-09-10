@@ -91,7 +91,8 @@ const navigation = [
       { label: 'Suscripciones y Tiqueteras', icon: '🎟️', to: '/studio-subscriptions' },
       { label: 'Control de Asistencia', icon: '🚪', to: '/studio-checkin' },
       { label: 'Calendario Clases', icon: '🚪', to: '/studio-schedules' },
-      { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings' } // <-- AGREGADO
+      { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings' },
+      { label: 'Instructores y Liquidación', icon: '👩‍🏫', to: '/studio-instructors' }
     ]
   },
   {

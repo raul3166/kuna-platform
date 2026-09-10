@@ -91,7 +91,7 @@ export class StudioBookingsService {
       return this.prisma.studioBooking.update({
         where: { id: existingBooking.id },
         data: { status: BookingStatus.CONFIRMED },
-        include: { customer: true, schedule: true },
+        include: { customer: true, schedule: { include: { instructor: true } } },
       });
     }
 
@@ -106,7 +106,7 @@ export class StudioBookingsService {
       },
       include: {
         customer: true,
-        schedule: true,
+        schedule: { include: { instructor: true } },
       },
     });
   }
@@ -129,7 +129,7 @@ export class StudioBookingsService {
       },
       include: {
         customer: true,
-        schedule: true,
+        schedule: { include: { instructor: true } },
       },
       orderBy: { bookingDate: 'desc' },
     });
@@ -138,7 +138,7 @@ export class StudioBookingsService {
   async findOne(id: string, organizationId: string) {
     const booking = await this.prisma.studioBooking.findFirst({
       where: { id, organizationId },
-      include: { customer: true, schedule: true },
+      include: { customer: true, schedule: { include: { instructor: true } } },
     });
 
     if (!booking) {

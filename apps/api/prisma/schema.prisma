@@ -161,6 +161,7 @@ model Organization {
   studioSubscriptions StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
   studioSchedules      StudioSchedule[] // <-- AGREGAR ESTA LÍNEA
+  instructors          Instructor[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -199,6 +200,7 @@ model Branch {
   studioSubscriptions StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
   studioSchedules      StudioSchedule[] // <-- AGREGAR ESTA LÍNEA
+  instructors          Instructor[]
   isActive             Boolean              @default(true)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -1097,6 +1099,39 @@ enum StudioPlanType {
   UNLIMITED   // Plan ilimitado por días (ej. 1 mes o 3 meses)
 }
 
+enum InstructorPaymentModel {
+  FIXED_PER_CLASS
+  PER_STUDENT
+  HYBRID
+}
+
+model Instructor {
+  id             String                 @id @default(cuid())
+  organizationId String
+  branchId       String?
+  firstName      String
+  lastName       String?
+  identification String
+  phoneNumber    String?
+  email          String?
+  specialty      String?
+  paymentModel   InstructorPaymentModel @default(FIXED_PER_CLASS)
+  fixedClassRate Decimal                @default(0) @db.Decimal(12, 2)
+  perStudentRate Decimal                @default(0) @db.Decimal(12, 2)
+  isActive       Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch?                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  schedules      StudioSchedule[]
+  classInstructors StudioClassInstructor[]
+
+  @@unique([organizationId, identification])
+  @@index([organizationId])
+  @@index([branchId])
+}
+
 model StudioPlan {
   id               String            @id @default(cuid())
   organizationId   String
@@ -1184,6 +1219,7 @@ model StudioSchedule {
   branchId       String?
   className      String
   instructorName String?
+  instructorId   String?
   dayOfWeek      Int          // 0: Domingo, 1: Lunes, ..., 6: Sábado
   startTime      String       // Ej: "09:00"
   endTime        String       // Ej: "10:00"
@@ -1195,12 +1231,32 @@ model StudioSchedule {
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch         Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  instructor     Instructor?  @relation(fields: [instructorId], references: [id], onDelete: SetNull)
 
   attendanceLogs StudioAttendanceLog[]
   bookings StudioBooking[]
+  classInstructors StudioClassInstructor[]
   @@index([organizationId])
   @@index([branchId])
   @@index([dayOfWeek])
+  @@index([instructorId])
+}
+
+model StudioClassInstructor {
+  id               String         @id @default(cuid())
+  studioScheduleId String
+  instructorId     String
+  classDate        DateTime
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  schedule         StudioSchedule @relation(fields: [studioScheduleId], references: [id], onDelete: Cascade)
+  instructor       Instructor     @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+
+  @@unique([studioScheduleId, classDate])
+  @@index([instructorId])
+  @@index([classDate])
 }
 
 enum BookingStatus {

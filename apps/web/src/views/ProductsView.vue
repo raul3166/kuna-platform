@@ -86,9 +86,6 @@ const taxRules = ref<TaxRule[]>([])
 // Lotes / vencimientos
 // -----------------------------------------------------------------------------
 
-const expiringLots = ref<any[]>([])
-const expiringDaysThreshold = ref<number>(90)
-
 const productLots = ref<any[]>([])
 const selectedProductForLot = ref<Product | null>(null)
 

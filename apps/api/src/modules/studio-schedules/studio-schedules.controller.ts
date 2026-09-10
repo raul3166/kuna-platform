@@ -40,8 +40,9 @@ export class StudioSchedulesController {
   findAll(
     @Query('organizationId') organizationId: string,
     @Query('branchId') branchId?: string,
+    @Query('date') date?: string,
   ) {
-    return this.studioSchedulesService.findAll(organizationId, branchId);
+    return this.studioSchedulesService.findAll(organizationId, branchId, date);
   }
 
   @ApiOperation({ summary: 'Get a single studio schedule by id' })

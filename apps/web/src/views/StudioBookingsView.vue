@@ -37,6 +37,16 @@ const initialForm = {
 };
 const form = ref({ ...initialForm });
 
+const instructorLabel = (schedule: any) => {
+  const instructor = schedule?.effectiveInstructor || schedule?.instructor;
+  if (instructor) return [instructor.firstName, instructor.lastName].filter(Boolean).join(' ');
+  return 'Sin instructor recurrente';
+};
+
+const selectedSchedule = computed(() =>
+  schedules.value.find((schedule) => schedule.id === form.value.studioScheduleId)
+);
+
 // Cargar reservas con filtros
 const fetchBookings = async () => {
   loading.value = true;
@@ -64,14 +74,14 @@ const fetchBookings = async () => {
 };
 
 // Cargar la parrilla de horarios para los dropdowns
-const fetchSchedules = async () => {
+const fetchSchedules = async (date?: string) => {
   try {
     const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
     const branchId = authStore.currentBranch?.id;
     if (!orgId) return;
 
     const { data } = await api.get('/studio-schedules', {
-      params: { organizationId: orgId, ...(branchId ? { branchId } : {}) },
+      params: { organizationId: orgId, ...(branchId ? { branchId } : {}), ...(date ? { date } : {}) },
     });
     schedules.value = Array.isArray(data) ? data : (data.items || data.data || []);
   } catch (error) {
@@ -216,13 +226,15 @@ const availableSchedulesForSelectedDate = computed(() => {
 });
 
 // Métodos auxiliares
-const openCreateModal = () => {
+const openCreateModal = async () => {
   const selectedDateStr = filterDate.value || new Date().toISOString().split('T')[0];
   form.value = {
     customerId: '',
     studioScheduleId: '',
     bookingDate: selectedDateStr,
   };
+
+  await fetchSchedules(selectedDateStr);
 
   // Seleccionar la primera clase válida para la fecha elegida
   if (availableSchedulesForSelectedDate.value.length > 0) {
@@ -250,8 +262,10 @@ watch([filterDate, filterStatus, filterScheduleId], () => {
 });
 
 // Escuchar cambios de fecha dentro del modal para reajustar clases y verificar cupos
-watch(() => form.value.bookingDate, (newDate) => {
+watch(() => form.value.bookingDate, async (newDate) => {
   if (!showCreateModal.value || !newDate) return;
+
+  await fetchSchedules(newDate);
 
   const validSchedules = availableSchedulesForSelectedDate.value;
   const isCurrentScheduleValid = validSchedules.some((s) => s.id === form.value.studioScheduleId);
@@ -355,7 +369,7 @@ onMounted(() => {
                 </td>
                 <td class="px-6 py-4">
                   <p class="font-semibold text-slate-800">{{ b.schedule?.className }}</p>
-                  <p class="text-xs text-slate-400">Profesor: {{ b.schedule?.instructorName || 'Por asignar' }}</p>
+                  <p class="text-xs text-slate-400">Profesora/or: {{ instructorLabel(b.schedule) }}</p>
                 </td>
                 <td class="px-6 py-4">
                   <p class="font-medium text-slate-800">
@@ -452,9 +466,12 @@ onMounted(() => {
                   {{ availableSchedulesForSelectedDate.length > 0 ? '-- Selecciona una clase --' : 'No hay clases programadas para este día' }}
                 </option>
                 <option v-for="sch in availableSchedulesForSelectedDate" :key="sch.id" :value="sch.id">
-                  {{ sch.className }} ({{ sch.startTime }} - {{ sch.endTime }})
+                  {{ sch.className }} ({{ sch.startTime }} - {{ sch.endTime }}) · {{ instructorLabel(sch) }}
                 </option>
               </select>
+              <div v-if="selectedSchedule" class="mt-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-800">
+                Instructor asignado: <strong>{{ instructorLabel(selectedSchedule) }}</strong>
+              </div>
               <p v-if="availableSchedulesForSelectedDate.length === 0" class="text-xs text-rose-500 mt-1 font-medium">
                 ⚠️ No existen clases recurrentes configuradas para este día de la semana.
               </p>

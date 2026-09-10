@@ -13,17 +13,30 @@ export class StudioSchedulesService {
     });
   }
 
-  async findAll(organizationId: string, branchId?: string) {
-    return this.prisma.studioSchedule.findMany({
+  async findAll(organizationId: string, branchId?: string, date?: string) {
+    const classDate = date ? new Date(`${date}T00:00:00`) : undefined;
+    const schedules = await this.prisma.studioSchedule.findMany({
       where: {
         organizationId,
         ...(branchId ? { branchId } : {}),
+      },
+      include: {
+        instructor: true,
+        classInstructors: {
+          where: classDate ? { classDate } : { id: { in: [] } },
+          include: { instructor: true },
+        },
       },
       orderBy: [
         { dayOfWeek: 'asc' },
         { startTime: 'asc' },
       ],
     });
+
+    return schedules.map(({ classInstructors, ...schedule }) => ({
+      ...schedule,
+      effectiveInstructor: classInstructors?.[0]?.instructor || schedule.instructor,
+    }));
   }
 
   async findOne(id: string) {
@@ -33,6 +46,7 @@ export class StudioSchedulesService {
         branch: {
           select: { id: true, name: true },
         },
+        instructor: true,
       },
     });
 

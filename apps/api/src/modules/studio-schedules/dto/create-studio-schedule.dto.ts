@@ -21,6 +21,11 @@ export class CreateStudioScheduleDto {
   instructorName?: string;
 
   @ApiProperty({ example: 1, description: '0=Domingo, 1=Lunes, ..., 6=Sábado' })
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  instructorId?: string;
+
   @IsNumber()
   @Min(0)
   @Max(6)

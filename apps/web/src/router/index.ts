@@ -237,6 +237,12 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/StudioBookingsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/studio-instructors',
+  name: 'studio-instructors',
+  component: () => import('../views/StudioInstructorsView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

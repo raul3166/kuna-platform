@@ -160,6 +160,15 @@ const getDayName = (dayNumber: number) => {
   return daysOfWeek.find(d => d.id === dayNumber)?.name || '-';
 };
 
+const getInstructorName = (schedule: any) => {
+  if (schedule.instructor) {
+    return [schedule.instructor.firstName, schedule.instructor.lastName]
+      .filter(Boolean)
+      .join(' ');
+  }
+  return 'Por asignar';
+};
+
 onMounted(() => {
   fetchSchedules();
 });
@@ -224,7 +233,7 @@ onMounted(() => {
 
           <div>
             <h3 class="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors">{{ sch.className }}</h3>
-            <p class="text-xs text-slate-500 font-medium">Instructor: {{ sch.instructorName || 'Por asignar' }}</p>
+            <p class="text-xs text-slate-500 font-medium">Instructor: {{ getInstructorName(sch) }}</p>
           </div>
 
           <div class="flex items-center gap-4 text-xs font-semibold text-slate-700 bg-slate-50 p-2.5 rounded-xl">

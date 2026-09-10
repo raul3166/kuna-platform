@@ -47,6 +47,7 @@ import { StudioAttendancesModule } from './modules/studio-attendances/studio-att
 import { StudioSchedulesModule } from './modules/studio-schedules/studio-schedules.module';
 import { StudioBookingsModule } from './modules/studio-bookings/studio-bookings.module';
 
+import { InstructorsModule } from './modules/instructors/instructors.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -95,6 +96,7 @@ import { StudioBookingsModule } from './modules/studio-bookings/studio-bookings.
     StudioAttendancesModule,
     StudioSchedulesModule,
     StudioBookingsModule,
+    InstructorsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
