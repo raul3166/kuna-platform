@@ -158,7 +158,6 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/RestaurantOrderView.vue'),
     meta: { requiresAuth: true }
 },
-,
 {
   path: '/kitchen',
   name: 'kitchen',
@@ -174,7 +173,7 @@ const routes: Array<RouteRecordRaw> = [
     {
       path: '/fiscalSummary',
       name: 'fiscalSummary',
-      component: () => import('../views/FiscalSUmmaryView.vue'),
+      component: () => import('../views/FiscalSummaryView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -205,6 +204,12 @@ const routes: Array<RouteRecordRaw> = [
   path: '/gym-checkin',
   name: 'gym-checkin',
   component: () => import('../views/GymCheckInView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/gym-instructors',
+  name: 'gym-instructors',
+  component: () => import('../views/GymInstructorsView.vue'),
   meta: { requiresAuth: true }
 },
 {
@@ -255,7 +260,7 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

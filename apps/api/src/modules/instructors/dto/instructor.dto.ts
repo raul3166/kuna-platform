@@ -11,6 +11,7 @@ export class CreateInstructorDto {
   @IsOptional() @IsString() phoneNumber?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() specialty?: string;
+  @IsOptional() @IsString() businessType?: string;
   @IsEnum(InstructorPaymentModel) paymentModel: InstructorPaymentModel;
   @IsNumber() @Min(0) fixedClassRate: number;
   @IsNumber() @Min(0) perStudentRate: number;

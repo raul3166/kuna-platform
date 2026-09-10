@@ -80,7 +80,8 @@ const navigation = [
     items: [
       { label: 'Planes de Membresía', icon: '🏋️', to: '/gym-membership-plans' },
       { label: 'Suscripciones', icon: '💳', to: '/gym-subscriptions' },
-      { label: 'Control de Acceso (Check-in)', icon: '🚪', to: '/gym-checkin' }
+      { label: 'Control de Acceso (Check-in)', icon: '🚪', to: '/gym-checkin' },
+      { label: 'Instructores / Entrenadores', icon: '🧑‍🏫', to: '/gym-instructors' }
     ]
   },
   {

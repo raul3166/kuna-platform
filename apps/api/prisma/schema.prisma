@@ -157,6 +157,7 @@ model Organization {
   gymMembershipPlans GymMembershipPlan[]
   gymSubscriptions   GymSubscription[]
   gymAttendanceLogs  GymAttendanceLog[]
+  gymSchedules       GymSchedule[]
   studioPlans         StudioPlan[]
   studioSubscriptions StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
@@ -196,6 +197,7 @@ model Branch {
   gymMembershipPlans GymMembershipPlan[]
   gymSubscriptions   GymSubscription[]
   gymAttendanceLogs  GymAttendanceLog[]
+  gymSchedules       GymSchedule[]
   studioPlans         StudioPlan[]
   studioSubscriptions StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
@@ -1090,6 +1092,48 @@ model GymAttendanceLog {
   @@index([customerId])
 }
 
+model GymSchedule {
+  id             String       @id @default(cuid())
+  organizationId String
+  branchId       String?
+  name           String       // Ej: "Turno Mañana - Musculación", "Turno Tarde"
+  dayOfWeek      Int          // 0: Domingo, 1: Lunes, ..., 6: Sábado
+  startTime      String       // Ej: "06:00"
+  endTime        String       // Ej: "12:00"
+  instructorId   String?
+  notes          String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch?      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  instructor     Instructor?  @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  shiftInstructors GymShiftInstructor[]
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([dayOfWeek])
+  @@index([instructorId])
+}
+
+model GymShiftInstructor {
+  id            String       @id @default(cuid())
+  gymScheduleId String
+  instructorId  String
+  shiftDate     DateTime     // Fecha del turno (YYYY-MM-DD)
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  schedule      GymSchedule  @relation(fields: [gymScheduleId], references: [id], onDelete: Cascade)
+  instructor    Instructor   @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+
+  @@unique([gymScheduleId, shiftDate])
+  @@index([instructorId])
+  @@index([shiftDate])
+}
+
 // ============================================================
 // EXTENSIÓN PARA ESTUDIO (YOGA, PILATES, BARRE)
 // ============================================================
@@ -1115,6 +1159,7 @@ model Instructor {
   phoneNumber    String?
   email          String?
   specialty      String?
+  businessType   String                 @default("STUDIO")
   paymentModel   InstructorPaymentModel @default(FIXED_PER_CLASS)
   fixedClassRate Decimal                @default(0) @db.Decimal(12, 2)
   perStudentRate Decimal                @default(0) @db.Decimal(12, 2)
@@ -1126,10 +1171,13 @@ model Instructor {
   branch         Branch?                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   schedules      StudioSchedule[]
   classInstructors StudioClassInstructor[]
+  gymSchedules   GymSchedule[]
+  gymShiftInstructors GymShiftInstructor[]
 
   @@unique([organizationId, identification])
   @@index([organizationId])
   @@index([branchId])
+  @@index([businessType])
 }
 
 model StudioPlan {

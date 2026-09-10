@@ -48,6 +48,7 @@ import { StudioSchedulesModule } from './modules/studio-schedules/studio-schedul
 import { StudioBookingsModule } from './modules/studio-bookings/studio-bookings.module';
 
 import { InstructorsModule } from './modules/instructors/instructors.module';
+import { GymSchedulesModule } from './modules/gym-schedules/gym-schedules.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -97,6 +98,7 @@ import { InstructorsModule } from './modules/instructors/instructors.module';
     StudioSchedulesModule,
     StudioBookingsModule,
     InstructorsModule,
+    GymSchedulesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

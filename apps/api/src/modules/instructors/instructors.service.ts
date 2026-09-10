@@ -10,9 +10,17 @@ const localDate = (value: string) => new Date(`${value}T00:00:00`);
 export class InstructorsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(organizationId: string, branchId?: string) {
+  findAll(organizationId: string, branchId?: string, businessType?: string) {
     return this.prisma.instructor.findMany({
-      where: { organizationId, ...(branchId ? { branchId } : {}) },
+      where: {
+        organizationId,
+        ...(branchId ? { branchId } : {}),
+        ...(businessType
+          ? {
+              OR: [{ businessType }, { businessType: 'ALL' }],
+            }
+          : {}),
+      },
       orderBy: [{ isActive: 'desc' }, { firstName: 'asc' }],
     });
   }

@@ -7,7 +7,7 @@ import {
 
 import { Reflector } from '@nestjs/core';
 
-import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { PERMISSIONS_KEY, PERMISSIONS_ANY_KEY } from '../decorators/permissions.decorator';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 
 @Injectable()
@@ -30,12 +30,22 @@ export class PermissionsGuard implements CanActivate {
         ],
       );
 
-    if (
-      !requiredPermissions ||
-      requiredPermissions.length === 0
-    ) {
+    const requiredAnyPermissions =
+      this.reflector.getAllAndOverride<string[]>(
+        PERMISSIONS_ANY_KEY,
+        [
+          context.getHandler(),
+          context.getClass(),
+        ],
+      );
+
+    const hasRequired = requiredPermissions && requiredPermissions.length > 0;
+    const hasRequiredAny = requiredAnyPermissions && requiredAnyPermissions.length > 0;
+
+    if (!hasRequired && !hasRequiredAny) {
       return true;
     }
+
 
     const request =
       context.switchToHttp().getRequest();
@@ -89,15 +99,28 @@ const userPermissions =
     ),
   );
 
-  const hasPermission =
-  requiredPermissions.every((permission) =>
-    userPermissions.includes(permission),
-  );
-if (!hasPermission) {
-  throw new ForbiddenException(
-    'You do not have permission to perform this action',
-  );
-}
+    if (hasRequired) {
+      const hasAll = requiredPermissions.every((permission) =>
+        userPermissions.includes(permission),
+      );
+      if (!hasAll) {
+        throw new ForbiddenException(
+          'You do not have permission to perform this action',
+        );
+      }
+    }
+
+    if (hasRequiredAny) {
+      const hasAny = requiredAnyPermissions.some((permission) =>
+        userPermissions.includes(permission),
+      );
+      if (!hasAny) {
+        throw new ForbiddenException(
+          'You do not have permission to perform this action',
+        );
+      }
+    }
+
 
 return true;
   }
