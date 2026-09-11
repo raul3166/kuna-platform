@@ -58,6 +58,7 @@ async function main() {
 
       // --- MODULE: INVENTORY & LOTS ---
       { module: 'inventory', code: 'inventory.read', name: 'Read inventory', description: 'Allows viewing products and stock' },
+
       // --- MODULE: GYM ---
       { module: 'gym', code: 'gym.create', name: 'Create gym data', description: 'Allows creating membership plans, subscriptions, and checking in members' },
       { module: 'gym', code: 'gym.read', name: 'Read gym data', description: 'Allows viewing gym membership plans, active subscriptions, and attendance logs' },
@@ -69,6 +70,24 @@ async function main() {
       { module: 'studio', code: 'studio.read', name: 'Read studio data', description: 'Allows viewing studio plans, active subscriptions, and attendance logs' },
       { module: 'studio', code: 'studio.update', name: 'Update studio data', description: 'Allows updating studio plans and subscription statuses' },
       { module: 'studio', code: 'studio.delete', name: 'Delete studio data', description: 'Allows removing studio plans and cancelling subscriptions' },
+
+      // --- MODULE: SERVICE-ORDERS ---
+      { module: 'service-orders', code: 'service-orders.create', name: 'Create service orders', description: 'Allows creating service orders' },
+      { module: 'service-orders', code: 'service-orders.read', name: 'Read service orders', description: 'Allows reading service orders history and details' },
+      { module: 'service-orders', code: 'service-orders.update', name: 'Update service orders', description: 'Allows modifying service orders and changing statuses' },
+      { module: 'service-orders', code: 'service-orders.delete', name: 'Delete service orders', description: 'Allows deleting pending service orders' },
+
+      // --- MODULE: SERVICE-WORKERS ---
+      { module: 'service-workers', code: 'service-workers.create', name: 'Create service workers', description: 'Allows creating service workers' },
+      { module: 'service-workers', code: 'service-workers.read', name: 'Read service workers', description: 'Allows reading service workers' },
+      { module: 'service-workers', code: 'service-workers.update', name: 'Update service workers', description: 'Allows modifying service workers' },
+      { module: 'service-workers', code: 'service-workers.delete', name: 'Delete service workers', description: 'Allows soft deleting service workers' },
+
+      // --- MODULE: SERVICE-ITEMS ---
+      { module: 'service-items', code: 'service-items.create', name: 'Create service items', description: 'Allows creating service items' },
+      { module: 'service-items', code: 'service-items.read', name: 'Read service items', description: 'Allows reading service items' },
+      { module: 'service-items', code: 'service-items.update', name: 'Update service items', description: 'Allows modifying service items' },
+      { module: 'service-items', code: 'service-items.delete', name: 'Delete service items', description: 'Allows soft deleting service items' },
     ],
     skipDuplicates: true,
   });

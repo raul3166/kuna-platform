@@ -49,6 +49,11 @@ import { StudioBookingsModule } from './modules/studio-bookings/studio-bookings.
 
 import { InstructorsModule } from './modules/instructors/instructors.module';
 import { GymSchedulesModule } from './modules/gym-schedules/gym-schedules.module';
+import { ServiceWorkersModule } from './modules/service-workers/service-workers.module';
+import { ServiceItemsModule } from './modules/service-items/service-items.module';
+import { ServiceOrdersModule } from './modules/service-orders/service-orders.module';
+import { ServiceOrderTasksModule } from './modules/service-order-tasks/service-order-tasks.module';
+import { ServiceOrderMaterialsModule } from './modules/service-order-materials/service-order-materials.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -99,6 +104,11 @@ import { GymSchedulesModule } from './modules/gym-schedules/gym-schedules.module
     StudioBookingsModule,
     InstructorsModule,
     GymSchedulesModule,
+    ServiceWorkersModule,
+    ServiceItemsModule,
+    ServiceOrdersModule,
+    ServiceOrderTasksModule,
+    ServiceOrderMaterialsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
