@@ -60,25 +60,32 @@ export class ServiceOrderTasksService {
   }
 
   private async recalculateTotals(orderId: string) {
-    const tasks = await this.prisma.serviceOrderTask.findMany({
-      where: { serviceOrderId: orderId },
-    });
+  const order = await this.prisma.serviceOrder.findUnique({
+    where: { id: orderId },
+    include: { serviceItem: true },
+  });
 
-    const materials = await this.prisma.serviceOrderMaterial.findMany({
-      where: { serviceOrderId: orderId },
-    });
+  if (!order) return;
 
-    const laborTotal = tasks.reduce((acc, t) => acc + Number(t.price), 0);
-    const materialsTotal = materials.reduce((acc, m) => acc + Number(m.total), 0);
-    const total = laborTotal + materialsTotal;
+  const tasks = await this.prisma.serviceOrderTask.findMany({
+    where: { serviceOrderId: orderId },
+  });
 
-    await this.prisma.serviceOrder.update({
-      where: { id: orderId },
-      data: {
-        laborTotal,
-        materialsTotal,
-        total,
-      },
-    });
-  }
+  const materials = await this.prisma.serviceOrderMaterial.findMany({
+    where: { serviceOrderId: orderId },
+  });
+
+  // Conservar precio base del servicio asignado
+  const serviceBasePrice = Number(order.serviceItem?.basePrice || 0);
+  const tasksTotal = tasks.reduce((acc, t) => acc + Number(t.price), 0);
+
+  const laborTotal = serviceBasePrice + tasksTotal;
+  const materialsTotal = materials.reduce((acc, m) => acc + Number(m.total), 0);
+  const total = laborTotal + materialsTotal;
+
+  await this.prisma.serviceOrder.update({
+    where: { id: orderId },
+    data: { laborTotal, materialsTotal, total },
+  });
+}
 }

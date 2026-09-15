@@ -63,6 +63,13 @@ export class ServiceOrderMaterialsService {
   }
 
   private async recalculateTotals(orderId: string) {
+    const order = await this.prisma.serviceOrder.findUnique({
+      where: { id: orderId },
+      include: { serviceItem: true },
+    });
+
+    if (!order) return;
+
     const tasks = await this.prisma.serviceOrderTask.findMany({
       where: { serviceOrderId: orderId },
     });
@@ -71,7 +78,15 @@ export class ServiceOrderMaterialsService {
       where: { serviceOrderId: orderId },
     });
 
-    const laborTotal = tasks.reduce((acc, t) => acc + Number(t.price), 0);
+    // Conservar la mano de obra existente o tomar la del servicio
+    let laborTotal = Number(order.laborTotal) || 0;
+    if (laborTotal === 0 && order.serviceItem) {
+      laborTotal = Number(order.serviceItem.basePrice || 0);
+    }
+
+    const tasksTotal = tasks.reduce((acc, t) => acc + Number(t.price), 0);
+    laborTotal += tasksTotal;
+
     const materialsTotal = materials.reduce((acc, m) => acc + Number(m.total), 0);
     const total = laborTotal + materialsTotal;
 

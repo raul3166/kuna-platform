@@ -299,6 +299,7 @@ model Product {
   lots              ProductLot[]
   gymMembershipPlan GymMembershipPlan?
   serviceMaterials  ServiceOrderMaterial[]
+  serviceItems       ServiceItem[] // Relación con los servicios que utilizan este producto como material
 
   @@unique([organizationId, sku])
   @@index([categoryId])
@@ -922,8 +923,13 @@ model ProductLot {
 // MÓDULO DE SERVICIOS / ÓRDENES DE TRABAJO
 // ============================================================
 
+enum EmploymentType {
+  SALARIED
+  COMMISSION
+}
+
 model ServiceWorker {
-  id                   String   @id @default(cuid())
+  id                   String         @id @default(cuid())
   organizationId       String
   branchId             String?
   firstName            String
@@ -932,11 +938,12 @@ model ServiceWorker {
   phoneNumber          String?
   email                String?
   specialty            String?
-  commissionPercentage Decimal  @default(0) @db.Decimal(5, 2)
-  fixedSalary          Decimal  @default(0) @db.Decimal(12, 2)
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  employmentType       EmploymentType @default(SALARIED)
+  commissionPercentage Decimal        @default(0) @db.Decimal(5, 2)
+  fixedSalary          Decimal        @default(0) @db.Decimal(12, 2)
+  isActive             Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch         Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -958,12 +965,15 @@ model ServiceItem {
   estimatedMinutes Int      @default(60)
   basePrice        Decimal  @db.Decimal(12, 2)
   isActive         Boolean  @default(true)
+  productId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   tasks            ServiceOrderTask[]
   saleServiceItems SaleServiceItem[]
+  serviceOrders  ServiceOrder[]
+  product   Product? @relation(fields: [productId], references: [id])
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -983,10 +993,13 @@ model ServiceOrder {
   diagnosis        String?
   resolutionNotes  String?
   status           ServiceOrderStatus @default(PENDING)
+  scheduledAt      DateTime?         // <--- Agregar esta línea
   laborTotal       Decimal            @default(0) @db.Decimal(12, 2)
   materialsTotal   Decimal            @default(0) @db.Decimal(12, 2)
   total            Decimal            @default(0) @db.Decimal(12, 2)
   saleId           String?            @unique
+  serviceItemId    String?         // <-- Asegúrate de tener este campo
+
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -995,6 +1008,7 @@ model ServiceOrder {
   customer           Customer               @relation(fields: [customerId], references: [id])
   assignedWorker     ServiceWorker?         @relation("ServiceOrderAssignedWorker", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
   sale               Sale?                  @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  serviceItem        ServiceItem?    @relation(fields: [serviceItemId], references: [id])
   tasks              ServiceOrderTask[]
   materials          ServiceOrderMaterial[]
   inventoryMovements InventoryMovement[]

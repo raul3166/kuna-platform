@@ -97,6 +97,17 @@ const navigation = [
     ]
   },
   {
+    key: 'servicios',
+    label: 'Órdenes de Servicio',
+    items: [
+      { label: 'Órdenes de Servicio', icon: '🛠️', to: '/service-orders' },
+      { label: 'Catálogo de Servicios', icon: '📋', to: '/service-items' },
+      { label: 'Técnicos / Personal', icon: '👷', to: '/service-workers' },
+      { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
+      { label: 'Reportes de Servicio', icon: '📊', to: '/service-reports' } // <--- Agregado
+    ]
+  },
+  {
     key: 'configuracion',
     label: 'Configuración',
     items: [

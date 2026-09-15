@@ -74,6 +74,67 @@ const amountPaid = ref(0)
 const showInvoiceSuccessModal = ref(false)
 const lastPrintedInvoice = ref<any>(null)
 
+  // Cargar los ítems y materiales de una Orden de Servicio
+async function loadServiceOrderItems(id: string) {
+  try {
+    const res = await api.get(`/service-orders/${id}`)
+
+    if (res.data) {
+      const order = res.data
+      const newCartItems: CartItem[] = []
+
+      // 1. Mapear las tareas de servicio (mano de obra / servicios técnicos)
+      if (order.tasks && Array.isArray(order.tasks)) {
+        order.tasks.forEach((task: any) => {
+          // Si el ServiceItem tiene un productId asociado, úsalo para hacer match con el catálogo POS
+          const linkedProductId = task.serviceItem?.productId
+          const productMatch = products.value.find(p => p.id === linkedProductId || p.id === task.serviceItemId) || {
+            id: task.serviceItemId || task.id,
+            name: task.serviceItem?.name || task.description || 'Servicio Técnico',
+            sku: task.serviceItem?.sku || 'SERV',
+            salePrice: Number(task.price || 0)
+          }
+
+          newCartItems.push({
+            product: productMatch,
+            quantity: 1,
+            unitPrice: Number(task.price || 0),
+            discount: 0
+          })
+        })
+      }
+
+      // 2. Mapear los materiales o repuestos utilizados (ServiceOrderMaterial)
+      if (order.materials && Array.isArray(order.materials)) {
+        order.materials.forEach((mat: any) => {
+          const productMatch = products.value.find(p => p.id === mat.productId) || {
+            id: mat.productId,
+            name: mat.product?.name || 'Material / Repuesto',
+            sku: mat.product?.sku || '',
+            salePrice: Number(mat.unitPrice || 0)
+          }
+
+          newCartItems.push({
+            product: productMatch,
+            quantity: Number(mat.quantity),
+            unitPrice: Number(mat.unitPrice || 0),
+            discount: 0
+          })
+        })
+      }
+
+      cart.value = newCartItems
+
+      // 3. Asignar cliente si existe
+      if (order.customerId) {
+        selectedCustomerId.value = order.customerId
+      }
+    }
+  } catch (error) {
+    console.error('Error al cargar la orden de servicio en el POS:', error)
+  }
+}
+
 async function checkCashSessionStatus() {
   isLoading.value = true
   errorMessage.value = ''
@@ -326,6 +387,15 @@ onMounted(async () => {
   if (route.query.tableId) {
     tableId.value = route.query.tableId as string
     await loadTableItems(tableId.value)
+  }
+
+  // Añadir esta validación para órdenes de servicio
+  if (route.query.serviceOrderId) {
+    currentOrderId.value = route.query.serviceOrderId as string
+    // Esperamos a que carguen los productos del catálogo primero para hacer el match de precios/ids
+    await checkCashSessionStatus()
+    await loadServiceOrderItems(currentOrderId.value)
+    return
   }
   checkCashSessionStatus()
 })

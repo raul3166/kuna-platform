@@ -400,6 +400,7 @@ export class InventoryMovementsService {
           // ====================================================
 
           case InventoryMovementType.SALE:
+          case InventoryMovementType.SERVICE_CONSUMPTION:
 
             if (
               quantity >
@@ -1438,6 +1439,7 @@ export class InventoryMovementsService {
         break;
 
       case InventoryMovementType.SALE:
+      case InventoryMovementType.SERVICE_CONSUMPTION:
         // Si la categoría no controla stock, la venta no altera el saldo acumulado del kardex
         if (tracksStock) {
           balance -= quantity;
@@ -1621,6 +1623,9 @@ export class InventoryMovementsService {
 
       case InventoryMovementType.ADJUSTMENT:
         return 'Inventory Adjustment';
+
+      case InventoryMovementType.SERVICE_CONSUMPTION:
+        return 'Service Consumption';
 
       default:
         return movementType;

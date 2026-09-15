@@ -54,6 +54,7 @@ import { ServiceItemsModule } from './modules/service-items/service-items.module
 import { ServiceOrdersModule } from './modules/service-orders/service-orders.module';
 import { ServiceOrderTasksModule } from './modules/service-order-tasks/service-order-tasks.module';
 import { ServiceOrderMaterialsModule } from './modules/service-order-materials/service-order-materials.module';
+import { ServiceReportsModule } from './modules/service-reports/service-reports.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -109,6 +110,7 @@ import { ServiceOrderMaterialsModule } from './modules/service-order-materials/s
     ServiceOrdersModule,
     ServiceOrderTasksModule,
     ServiceOrderMaterialsModule,
+    ServiceReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

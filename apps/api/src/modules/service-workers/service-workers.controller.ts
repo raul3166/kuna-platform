@@ -24,6 +24,7 @@ import { Permissions } from '../auth/decorators/permissions.decorator';
 import { ServiceWorkersService } from './service-workers.service';
 import { CreateServiceWorkerDto } from './dto/create-service-worker.dto';
 import { UpdateServiceWorkerDto } from './dto/update-service-worker.dto';
+import { EmploymentType } from '@prisma/client';
 
 @ApiTags('Service Workers')
 @ApiBearerAuth('JWT-auth')
@@ -102,6 +103,29 @@ export class ServiceWorkersController {
       organizationId,
       startDate,
       endDate,
+    );
+  }
+  @Get('commissions')
+  @Permissions('service-workers.read')
+  @ApiOperation({ summary: 'Get performance and commission summary for all service workers' })
+  @ApiQuery({ name: 'organizationId', required: true })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  @ApiQuery({ name: 'workerId', required: false })
+  @ApiQuery({ name: 'employmentType', required: false })
+  getAllCommissions(
+    @Query('organizationId') organizationId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('workerId') workerId?: string,
+    @Query('employmentType') employmentType?: EmploymentType,
+  ) {
+    return this.serviceWorkersService.getAllWorkersCommissions(
+      organizationId,
+      startDate,
+      endDate,
+      workerId,
+      employmentType,
     );
   }
 }

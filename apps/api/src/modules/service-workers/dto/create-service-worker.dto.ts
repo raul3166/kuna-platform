@@ -1,5 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsNotEmpty, IsEnum } from 'class-validator';
+
+export enum EmploymentType {
+  SALARIED = 'SALARIED',
+  COMMISSION = 'COMMISSION',
+}
 
 export class CreateServiceWorkerDto {
   @ApiProperty({ description: 'ID de la organización a la que pertenece' })
@@ -41,6 +46,15 @@ export class CreateServiceWorkerDto {
   @IsString()
   @IsOptional()
   specialty?: string;
+
+  @ApiPropertyOptional({
+    enum: EmploymentType,
+    description: 'Tipo de vinculación laboral',
+    default: EmploymentType.SALARIED
+  })
+  @IsEnum(EmploymentType)
+  @IsOptional()
+  employmentType?: EmploymentType;
 
   @ApiPropertyOptional({ description: 'Porcentaje de comisión estándar' })
   @IsNumber()

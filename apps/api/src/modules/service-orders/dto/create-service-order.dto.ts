@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum, IsNotEmpty, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNotEmpty, IsDateString, IsNumber } from 'class-validator';
 import { ServiceOrderStatus } from '@prisma/client';
 
 export class CreateServiceOrderDto {
@@ -31,7 +31,7 @@ export class CreateServiceOrderDto {
   @ApiPropertyOptional({ description: 'ID del técnico principal o responsable' })
   @IsString()
   @IsOptional()
-  workerId?: string;
+  assignedWorkerId?: string;
 
   @ApiPropertyOptional({ description: 'Notas o descripción del problema/solicitud' })
   @IsString()
@@ -47,4 +47,14 @@ export class CreateServiceOrderDto {
   @IsEnum(ServiceOrderStatus)
   @IsOptional()
   status?: ServiceOrderStatus;
+
+  @ApiPropertyOptional({ description: 'ID del ítem del catálogo de servicios' })
+  @IsString()
+  @IsOptional()
+  serviceItemId?: string;
+
+  @ApiPropertyOptional({ description: 'Total de mano de obra inicial' })
+  @IsNumber()
+  @IsOptional()
+  laborTotal?: number;
 }

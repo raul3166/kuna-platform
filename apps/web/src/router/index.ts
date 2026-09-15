@@ -248,6 +248,36 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/StudioInstructorsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+    path: '/service-orders',
+    name: 'service-orders',
+    component: () => import('../views/ServiceOrdersView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/service-items',
+    name: 'service-items',
+    component: () => import('../views/ServiceItemsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/service-workers',
+    name: 'service-workers',
+    component: () => import('../views/ServiceWorkersView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/service-commissions',
+    name: 'service-commissions',
+    component: () => import('../views/ServiceCommissionsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+  path: '/service-reports',
+  name: 'service-reports',
+  component: () => import('../views/ServiceReportsView.vue'),
+  meta: { requiresAuth: true }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
