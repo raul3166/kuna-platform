@@ -699,7 +699,7 @@ async confirm(id: string) {
     // LIBERAR MESA Y MARCAR COMANDA COMO ENTREGADA
     // ==========================================================
     if (sale.orderId) {
-      await tx.restaurantOrder.update({
+      await tx.restaurantOrder.updateMany({
         where: { id: sale.orderId },
         data: {
           status: KitchenStatus.DELIVERED,

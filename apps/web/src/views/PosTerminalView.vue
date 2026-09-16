@@ -14,7 +14,7 @@ interface Product {
   name: string
   sku: string
   salePrice: number
-  stock?: number // Propiedad añadida para evaluar existencias
+  stock?: number
   barcode?: string
   category?: Category
 }
@@ -39,7 +39,7 @@ interface CartItem {
   discount: number
 }
 
-// Integración de Mesas y Comandas
+// Integración de Mesas y Comandas / Órdenes
 const tableId = ref<string | null>(null)
 const currentOrderId = ref<string | null>(null)
 
@@ -74,7 +74,7 @@ const amountPaid = ref(0)
 const showInvoiceSuccessModal = ref(false)
 const lastPrintedInvoice = ref<any>(null)
 
-  // Cargar los ítems y materiales de una Orden de Servicio
+// Cargar servicio base, tareas y materiales de una Orden de Servicio
 async function loadServiceOrderItems(id: string) {
   try {
     const res = await api.get(`/service-orders/${id}`)
@@ -83,15 +83,32 @@ async function loadServiceOrderItems(id: string) {
       const order = res.data
       const newCartItems: CartItem[] = []
 
-      // 1. Mapear las tareas de servicio (mano de obra / servicios técnicos)
+      // 1. Cargar el servicio base (ServiceItem principal)
+      if (order.serviceItem) {
+        const linkedProductId = order.serviceItem.productId
+        const productMatch = products.value.find(p => p.id === linkedProductId) || {
+          id: linkedProductId || order.serviceItem.id,
+          name: order.serviceItem.name || 'Servicio Técnico Base',
+          sku: 'SERV',
+          salePrice: Number(order.laborTotal || order.serviceItem.basePrice || 0)
+        }
+
+        newCartItems.push({
+          product: productMatch,
+          quantity: 1,
+          unitPrice: Number(order.laborTotal || order.serviceItem.basePrice || 0),
+          discount: 0
+        })
+      }
+
+      // 2. Mapear las tareas adicionales
       if (order.tasks && Array.isArray(order.tasks)) {
         order.tasks.forEach((task: any) => {
-          // Si el ServiceItem tiene un productId asociado, úsalo para hacer match con el catálogo POS
           const linkedProductId = task.serviceItem?.productId
           const productMatch = products.value.find(p => p.id === linkedProductId || p.id === task.serviceItemId) || {
             id: task.serviceItemId || task.id,
-            name: task.serviceItem?.name || task.description || 'Servicio Técnico',
-            sku: task.serviceItem?.sku || 'SERV',
+            name: task.serviceItem?.name || task.description || 'Tarea / Mano de obra',
+            sku: 'TASK',
             salePrice: Number(task.price || 0)
           }
 
@@ -104,7 +121,7 @@ async function loadServiceOrderItems(id: string) {
         })
       }
 
-      // 2. Mapear los materiales o repuestos utilizados (ServiceOrderMaterial)
+      // 3. Mapear materiales y repuestos
       if (order.materials && Array.isArray(order.materials)) {
         order.materials.forEach((mat: any) => {
           const productMatch = products.value.find(p => p.id === mat.productId) || {
@@ -125,7 +142,6 @@ async function loadServiceOrderItems(id: string) {
 
       cart.value = newCartItems
 
-      // 3. Asignar cliente si existe
       if (order.customerId) {
         selectedCustomerId.value = order.customerId
       }
@@ -208,8 +224,6 @@ const cashChange = computed(() => Math.max(0, amountPaid.value - cartTotal.value
 function addToCart(product: Product) {
   const existing = cart.value.find(item => item.product.id === product.id)
   const currentQuantity = existing ? existing.quantity : 0
-
-  // Se evalúa trackStock de la categoría. Si no tiene categoría asignada, por defecto valida stock.
   const requiresStock = product.category ? product.category.trackStock : true
 
   if (requiresStock && (currentQuantity + 1) > (product.stock || 0)) {
@@ -238,7 +252,6 @@ function triggerNativePrint() {
   }, 300)
 }
 
-// Cargar la comanda de cocina ligada a una mesa
 async function loadTableItems(id: string) {
   try {
     const res = await api.get(`/restaurant-orders/tables/${id}/current`)
@@ -274,19 +287,19 @@ async function handleFinalizeSale() {
     const orgId = authStore.user?.organizationId || ''
     const branchId = authStore.currentBranch?.id || authStore.user?.branchId || ''
 
-    // 1. Crear Venta Definitiva (Header)
     const salePayload = {
       organizationId: orgId,
       branchId,
       customerId: selectedCustomerId.value || undefined,
       notes: notes.value || undefined,
       tableId: tableId.value || undefined,
-      orderId: currentOrderId.value || undefined
+      // Solo enviar orderId si hay una mesa vinculada (comanda de restaurante)
+      orderId: tableId.value ? currentOrderId.value || undefined : undefined,
+      serviceOrderId: route.query.serviceOrderId ? (route.query.serviceOrderId as string) : undefined
     }
     const saleRes = await api.post('/sales', salePayload)
     const saleId = saleRes.data.id
 
-    // 2. Persistir Ítems de la Venta
     for (const item of cart.value) {
       await api.post('/sale-items', {
         saleId,
@@ -297,7 +310,6 @@ async function handleFinalizeSale() {
       })
     }
 
-    // 3. Registrar Pago
     await api.post('/payments', {
       organizationId: orgId,
       saleId,
@@ -305,10 +317,8 @@ async function handleFinalizeSale() {
       amount: cartTotal.value
     })
 
-    // 4. Confirmar Venta (Afecta Stock e Ingresos)
     await api.patch(`/sales/${saleId}/confirm`)
 
-    // 5. Liberar Mesa en el backend si aplicaba
     if (tableId.value) {
       try {
         await api.patch(`/restaurants/tables/${tableId.value}/release`)
@@ -317,7 +327,6 @@ async function handleFinalizeSale() {
       }
     }
 
-    // 6. Cargar detalle formateado para el ticket
     const invoiceDetail = await api.get(`/sales/${saleId}`)
 
     lastPrintedInvoice.value = {
@@ -330,7 +339,6 @@ async function handleFinalizeSale() {
 
     showInvoiceSuccessModal.value = true
 
-    // Resetear formulario del POS
     cart.value = []
     selectedCustomerId.value = ''
     notes.value = ''
@@ -389,14 +397,13 @@ onMounted(async () => {
     await loadTableItems(tableId.value)
   }
 
-  // Añadir esta validación para órdenes de servicio
   if (route.query.serviceOrderId) {
     currentOrderId.value = route.query.serviceOrderId as string
-    // Esperamos a que carguen los productos del catálogo primero para hacer el match de precios/ids
     await checkCashSessionStatus()
     await loadServiceOrderItems(currentOrderId.value)
     return
   }
+
   checkCashSessionStatus()
 })
 </script>

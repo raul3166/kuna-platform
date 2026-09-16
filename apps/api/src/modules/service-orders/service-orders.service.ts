@@ -71,42 +71,57 @@ export class ServiceOrdersService {
   }
 
   async findAll(organizationId: string, status?: ServiceOrderStatus) {
-    return this.prisma.serviceOrder.findMany({
-      where: {
-        organizationId,
-        ...(status && { status }),
+  return this.prisma.serviceOrder.findMany({
+    where: {
+      organizationId,
+      ...(status && { status }),
+    },
+    include: {
+      tasks: true,
+      materials: {
+        include: { product: true },
       },
-      include: {
-        tasks: true,
-        materials: true,
-        customer: true,
-        assignedWorker: true,
+      customer: true,
+      assignedWorker: true,
+      serviceItem: {
+        include: { product: true }, // <-- Agregar aquí también
       },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
 
   async findOne(id: string, organizationId: string) {
     let order = await this.prisma.serviceOrder.findFirst({
-      where: { id, organizationId },
-      include: {
-        tasks: true,
-        materials: true,
-        customer: true,
-        assignedWorker: true,
-        sale: true,
+    where: { id, organizationId },
+    include: {
+      tasks: true,
+      materials: {
+        include: { product: true },
       },
-    });
+      customer: true,
+      assignedWorker: true,
+      sale: true,
+      serviceItem: {
+        include: { product: true }, // <-- Carga el servicio base y su producto POS
+      },
+    },
+  });
 
     if (!order) {
-      const exists = await this.prisma.serviceOrder.findUnique({
-        where: { id },
+      const exists = await this.prisma.serviceOrder.findFirst({
+        where: { id, organizationId },
         include: {
           tasks: true,
-          materials: true,
+          materials: {
+            include: { product: true },
+          },
           customer: true,
           assignedWorker: true,
           sale: true,
+          serviceItem: {
+            include: { product: true }, // <-- Resuelve TS2322 (falta serviceItem en el tipo)
+          },
         },
       });
 

@@ -65,4 +65,8 @@ export class CreateSaleDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  serviceOrderId?: string;
 }
