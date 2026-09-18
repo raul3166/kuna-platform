@@ -404,6 +404,23 @@ onMounted(async () => {
     return
   }
 
+  if (route.query.productId || route.query.productName) {
+    await checkCashSessionStatus()
+    const pId = route.query.productId as string
+    let prod = products.value.find(p => p.id === pId)
+    if (!prod && route.query.productName) {
+      const pName = (route.query.productName as string).toLowerCase()
+      prod = products.value.find(p => p.name.toLowerCase() === pName)
+    }
+    if (prod) {
+      addToCart(prod)
+    }
+    if (route.query.customerId) {
+      selectedCustomerId.value = route.query.customerId as string
+    }
+    return
+  }
+
   checkCashSessionStatus()
 })
 </script>

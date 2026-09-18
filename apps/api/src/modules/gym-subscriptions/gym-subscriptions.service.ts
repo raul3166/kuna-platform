@@ -8,12 +8,47 @@ export class GymSubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateGymSubscriptionDto) {
-    // Buscar el plan para calcular la fecha de fin automáticamente basada en durationDays
     const plan = await this.prisma.gymMembershipPlan.findUnique({
       where: { id: dto.membershipPlanId },
+      include: { product: true },
     });
 
     if (!plan) throw new NotFoundException('Membership plan not found');
+
+    // Asegurar que el plan tenga producto vinculado en el catálogo POS
+    let productId = plan.productId;
+    if (!productId) {
+      let category = await this.prisma.productCategory.findFirst({
+        where: { organizationId: dto.organizationId, name: 'Membresías' },
+      });
+      if (!category) {
+        category = await this.prisma.productCategory.create({
+          data: {
+            organizationId: dto.organizationId,
+            name: 'Membresías',
+            description: 'Categoría generada automáticamente para servicios de gimnasio',
+            trackStock: false,
+          },
+        });
+      }
+      const product = await this.prisma.product.create({
+        data: {
+          organizationId: dto.organizationId,
+          categoryId: category.id,
+          sku: `MEMB-${Date.now()}`,
+          name: plan.name,
+          description: plan.description,
+          salePrice: plan.price,
+          costPrice: 0,
+          stock: 0,
+        },
+      });
+      await this.prisma.gymMembershipPlan.update({
+        where: { id: plan.id },
+        data: { productId: product.id },
+      });
+      productId = product.id;
+    }
 
     const start = new Date(dto.startDate);
     const end = new Date(start);
@@ -32,7 +67,9 @@ export class GymSubscriptionsService {
       },
       include: {
         customer: true,
-        plan: true,
+        plan: {
+          include: { product: true },
+        },
       },
     });
   }
@@ -45,15 +82,23 @@ export class GymSubscriptionsService {
       },
       include: {
         customer: true,
-        plan: true,
+        plan: {
+          include: { product: true },
+        },
       },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
     const subscription = await this.prisma.gymSubscription.findUnique({
       where: { id },
-      include: { customer: true, plan: true },
+      include: {
+        customer: true,
+        plan: {
+          include: { product: true },
+        },
+      },
     });
     if (!subscription) throw new NotFoundException(`Subscription with ID ${id} not found`);
     return subscription;
@@ -64,7 +109,12 @@ export class GymSubscriptionsService {
     return this.prisma.gymSubscription.update({
       where: { id },
       data: dto,
-      include: { customer: true, plan: true },
+      include: {
+        customer: true,
+        plan: {
+          include: { product: true },
+        },
+      },
     });
   }
 

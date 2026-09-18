@@ -278,6 +278,24 @@ const routes: Array<RouteRecordRaw> = [
   component: () => import('../views/ServiceReportsView.vue'),
   meta: { requiresAuth: true }
 },
+{
+  path: '/hotel-rooms',
+  name: 'hotel-rooms',
+  component: () => import('../views/HotelRoomsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/hotel-reservations',
+  name: 'hotel-reservations',
+  component: () => import('../views/HotelReservationsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+    path: '/internal-consumptions',
+    name: 'internal-consumptions',
+    component: () => import('../views/InternalConsumptionsView.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import AppLayout from '../components/AppLayout.vue';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const subscriptions = ref<any[]>([]);
 const customers = ref<any[]>([]);
@@ -62,16 +64,47 @@ const closeModal = () => {
   showModal.value = false;
 };
 
+const goToPos = (sub: any) => {
+  const productId = sub.plan?.productId || sub.plan?.product?.id;
+  const customerId = sub.customerId;
+  const productName = sub.plan?.name;
+  router.push({
+    path: '/pos',
+    query: {
+      ...(productId ? { productId } : {}),
+      ...(productName ? { productName } : {}),
+      ...(customerId ? { customerId } : {}),
+    },
+  });
+};
+
 const saveSubscription = async () => {
   try {
     form.value.organizationId = authStore.user?.organizationId || authStore.currentOrganization?.id || '';
     form.value.branchId = authStore.currentBranch?.id || '';
 
-    await api.post('/gym-subscriptions', form.value);
+    const res = await api.post('/gym-subscriptions', form.value);
     closeModal();
     fetchSubscriptions();
+
+    const createdSub = res.data;
+    const productId = createdSub?.plan?.productId || createdSub?.plan?.product?.id;
+    const customerId = createdSub?.customerId;
+    const productName = createdSub?.plan?.name;
+
+    if (confirm(`¡Membresía registrada con éxito! ¿Deseas ir a la Terminal POS para generar la factura?`)) {
+      router.push({
+        path: '/pos',
+        query: {
+          ...(productId ? { productId } : {}),
+          ...(productName ? { productName } : {}),
+          ...(customerId ? { customerId } : {}),
+        },
+      });
+    }
   } catch (error: any) {
     console.error('Errores de validación del backend:', error.response?.data?.message);
+    alert(error.response?.data?.message || 'Error al guardar membresía');
   }
 };
 
@@ -115,6 +148,7 @@ onMounted(() => {
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Inicio</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Expiración</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado de Pago</th>
+                <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-sm bg-white">
@@ -128,6 +162,15 @@ onMounted(() => {
                     <span class="w-1.5 h-1.5 rounded-full" :class="sub.paymentStatus === 'PAID' ? 'bg-emerald-500' : 'bg-amber-500'"></span>
                     {{ sub.paymentStatus === 'PAID' ? 'Pagado' : sub.paymentStatus }}
                   </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button
+                    @click="goToPos(sub)"
+                    title="Ir al POS para generar la factura"
+                    class="font-semibold text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    💳 Facturar en POS
+                  </button>
                 </td>
               </tr>
               <tr v-if="subscriptions.length === 0">

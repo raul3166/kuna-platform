@@ -55,6 +55,9 @@ import { ServiceOrdersModule } from './modules/service-orders/service-orders.mod
 import { ServiceOrderTasksModule } from './modules/service-order-tasks/service-order-tasks.module';
 import { ServiceOrderMaterialsModule } from './modules/service-order-materials/service-order-materials.module';
 import { ServiceReportsModule } from './modules/service-reports/service-reports.module';
+import { HotelRoomsModule } from './modules/hotel-rooms/hotel-rooms.module';
+import { HotelReservationsModule } from './modules/hotel-reservations/hotel-reservations.module';
+import { InternalConsumptionsModule } from './modules/internal-consumptions/internal-consumptions.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -111,6 +114,9 @@ import { ServiceReportsModule } from './modules/service-reports/service-reports.
     ServiceOrderTasksModule,
     ServiceOrderMaterialsModule,
     ServiceReportsModule,
+    HotelRoomsModule,
+    HotelReservationsModule,
+    InternalConsumptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

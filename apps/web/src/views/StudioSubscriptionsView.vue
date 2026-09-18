@@ -1,10 +1,12 @@
 <!-- src/views/StudioSubscriptionsView.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import AppLayout from '../components/AppLayout.vue';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const subscriptions = ref<any[]>([]);
 const customers = ref<any[]>([]);
@@ -59,12 +61,25 @@ const closeModal = () => {
   showModal.value = false;
 };
 
+const goToPos = (sub: any) => {
+  const productId = sub.plan?.productId || sub.plan?.product?.id;
+  const customerId = sub.customerId;
+  const productName = sub.plan?.name;
+  router.push({
+    path: '/pos',
+    query: {
+      ...(productId ? { productId } : {}),
+      ...(productName ? { productName } : {}),
+      ...(customerId ? { customerId } : {}),
+    },
+  });
+};
+
 const saveSubscription = async () => {
   try {
     const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id || '';
     const branchId = authStore.currentBranch?.id || '';
 
-    // Enviar estrictamente las propiedades declaradas en el DTO
     const payload = {
       organizationId: orgId,
       branchId: branchId,
@@ -73,9 +88,25 @@ const saveSubscription = async () => {
       startDate: form.value.startDate,
     };
 
-    await api.post('/studio-subscriptions', payload);
+    const res = await api.post('/studio-subscriptions', payload);
     closeModal();
     fetchData();
+
+    const createdSub = res.data;
+    const productId = createdSub?.plan?.productId || createdSub?.plan?.product?.id;
+    const customerId = createdSub?.customerId;
+    const productName = createdSub?.plan?.name;
+
+    if (confirm(`¡Suscripción registrada con éxito! ¿Deseas ir a la Terminal POS para generar la factura?`)) {
+      router.push({
+        path: '/pos',
+        query: {
+          ...(productId ? { productId } : {}),
+          ...(productName ? { productName } : {}),
+          ...(customerId ? { customerId } : {}),
+        },
+      });
+    }
   } catch (error: any) {
     const serverMessage = error.response?.data?.message;
     console.error('Error al registrar suscripción:', serverMessage || error);
@@ -181,15 +212,21 @@ onMounted(() => {
                     {{ getStatusBadge(sub.status).label }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-right">
+                <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
+                  <button
+                    @click="goToPos(sub)"
+                    title="Ir al POS para generar la factura"
+                    class="font-semibold text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    💳 Facturar en POS
+                  </button>
                   <button
                     v-if="sub.status === 'ACTIVE'"
                     @click="cancelSubscription(sub.id)"
-                    class="font-medium text-rose-600 hover:text-rose-900 transition-colors"
+                    class="font-medium text-xs text-rose-600 hover:text-rose-900 transition-colors"
                   >
                     Cancelar
                   </button>
-                  <span v-else class="text-xs text-slate-400">-</span>
                 </td>
               </tr>
               <tr v-if="subscriptions.length === 0 && !loading">

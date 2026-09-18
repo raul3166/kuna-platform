@@ -35,4 +35,12 @@ export class CreateInventoryMovementDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+@IsString()
+serviceOrderId?: string;
+
+@IsOptional()
+@IsString()
+internalConsumptionId?: string;
 }

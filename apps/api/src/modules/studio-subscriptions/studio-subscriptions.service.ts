@@ -9,15 +9,51 @@ export class StudioSubscriptionsService {
 
   async create(dto: CreateStudioSubscriptionDto) {
     if (!dto.branchId) {
-    throw new BadRequestException('Se requiere una sucursal (branchId) para crear la suscripción');
-  }
+      throw new BadRequestException('Se requiere una sucursal (branchId) para crear la suscripción');
+    }
 
     const plan = await this.prisma.studioPlan.findUnique({
       where: { id: dto.studioPlanId },
+      include: { product: true },
     });
 
     if (!plan) {
       throw new NotFoundException('El plan de estudio no existe');
+    }
+
+    // Asegurar que el plan tenga un producto vinculado para facturación en POS
+    let productId = plan.productId;
+    if (!productId) {
+      let category = await this.prisma.productCategory.findFirst({
+        where: { organizationId: dto.organizationId, name: 'Clases de Estudio' },
+      });
+      if (!category) {
+        category = await this.prisma.productCategory.create({
+          data: {
+            organizationId: dto.organizationId,
+            name: 'Clases de Estudio',
+            description: 'Categoría para paquetes y tiqueteras de Yoga, Pilates y Barre',
+            trackStock: false,
+          },
+        });
+      }
+      const product = await this.prisma.product.create({
+        data: {
+          organizationId: dto.organizationId,
+          categoryId: category.id,
+          sku: `STUDIO-${Date.now()}`,
+          name: plan.name,
+          description: plan.description,
+          salePrice: plan.price,
+          costPrice: 0,
+          stock: 0,
+        },
+      });
+      await this.prisma.studioPlan.update({
+        where: { id: plan.id },
+        data: { productId: product.id },
+      });
+      productId = product.id;
     }
 
     // Validación si el plan es exclusivo para alumnos nuevos
@@ -49,7 +85,9 @@ export class StudioSubscriptionsService {
         status: 'ACTIVE',
       },
       include: {
-        plan: true,
+        plan: {
+          include: { product: true },
+        },
         customer: true,
       },
     });
@@ -63,7 +101,9 @@ export class StudioSubscriptionsService {
         ...(customerId ? { customerId } : {}),
       },
       include: {
-        plan: true,
+        plan: {
+          include: { product: true },
+        },
         customer: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -74,7 +114,9 @@ export class StudioSubscriptionsService {
     const sub = await this.prisma.studioSubscription.findUnique({
       where: { id },
       include: {
-        plan: true,
+        plan: {
+          include: { product: true },
+        },
         customer: true,
         attendanceLogs: {
           take: 10,

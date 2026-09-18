@@ -43,6 +43,7 @@ const navigation = [
       { label: 'Panel Analítico Stock', icon: '📊', to: '/inventory-dashboard' },
       { label: 'Movimientos y Ajustes', icon: '🔄', to: '/inventory-movements' },
       { label: 'Transferencias', icon: '🚚', to: '/inventory-transfers' },
+      { label: 'Consumo Interno', icon: '📉', to: '/internal-consumptions' },
       { label: 'Kardex / Historial', icon: '📋', to: '/kardex' }
     ]
   },
@@ -105,6 +106,14 @@ const navigation = [
       { label: 'Técnicos / Personal', icon: '👷', to: '/service-workers' },
       { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
       { label: 'Reportes de Servicio', icon: '📊', to: '/service-reports' } // <--- Agregado
+    ]
+  },
+  {
+    key: 'hotel',
+    label: 'Recepción Hotel',
+    items: [
+      { label: 'Habitaciones', icon: '🛏️', to: '/hotel-rooms' },
+      { label: 'Reservas', icon: '🛎️', to: '/hotel-reservations' }
     ]
   },
   {

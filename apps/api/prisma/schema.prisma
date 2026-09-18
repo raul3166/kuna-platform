@@ -175,6 +175,9 @@ model Organization {
   serviceWorkers       ServiceWorker[]
   serviceItems         ServiceItem[]
   serviceOrders        ServiceOrder[]
+  hotelReservations    HotelReservation[]
+  hotelRooms           HotelRoom[]
+  internalConsumptions InternalConsumption[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -217,6 +220,9 @@ model Branch {
   instructors          Instructor[]
   serviceWorkers       ServiceWorker[]
   serviceOrders        ServiceOrder[]
+  hotelReservations    HotelReservation[]
+  hotelRooms           HotelRoom[]
+  internalConsumptions InternalConsumption[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -288,6 +294,7 @@ model Product {
   items                SaleItem[]
   returnItems          SaleReturnItem[]
   restaurantOrderItems RestaurantOrderItem[] // <--- NUEVA RELACIÓN
+  hotelRoomCharges     HotelRoomCharge[]
   category             ProductCategory?      @relation(fields: [categoryId], references: [id])
   supplier             Supplier?             @relation(fields: [supplierId], references: [id])
 
@@ -340,12 +347,14 @@ model InventoryMovement {
   totalCost      Decimal?              @db.Decimal(14, 2)
   reference      String?
   notes          String?
+  internalConsumptionId String?
   createdAt      DateTime              @default(now())
 
   organization Organization  @relation(fields: [organizationId], references: [id])
   product      Product       @relation(fields: [productId], references: [id])
   branch       Branch?       @relation(fields: [branchId], references: [id])
   serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  internalConsumption   InternalConsumption? @relation(fields: [internalConsumptionId], references: [id])
 
   @@index([organizationId])
   @@index([productId])
@@ -718,6 +727,7 @@ model Sale {
   table           RestaurantTable?  @relation("TableSales", fields: [tableId], references: [id])
   restaurantOrder RestaurantOrder? // Relación inversa opcional con la orden de cocina
   serviceOrder    ServiceOrder?
+  hotelReservation HotelReservation?
   serviceItems    SaleServiceItem[]
 
   @@unique([organizationId, saleNumber])
@@ -1164,6 +1174,7 @@ model User {
   userRoles     UserRole[]
   goodsReceipts GoodsReceipt[]
   cashSessions  CashSession[]
+  internalConsumptions InternalConsumption[]
 
   firstName    String
   lastName     String
@@ -1203,6 +1214,7 @@ model Customer {
   studioAttendanceLogs StudioAttendanceLog[]
   bookings             StudioBooking[]
   serviceOrders        ServiceOrder[]
+  hotelReservations     HotelReservation[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -1525,4 +1537,112 @@ model StudioBooking {
   schedule StudioSchedule @relation(fields: [studioScheduleId], references: [id])
 
   @@unique([studioScheduleId, customerId, bookingDate])
+}
+
+// --- ENUMS ---
+enum HotelRoomStatus {
+  AVAILABLE
+  OCCUPIED
+  CLEANING
+  MAINTENANCE
+  OUT_OF_ORDER
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+// --- MODELS ---
+model HotelRoom {
+  id             String          @id @default(cuid())
+  organizationId String
+  branchId       String
+  roomNumber     String
+  roomType       String          // Ej. SINGLE, DOUBLE, SUITE
+  description    String?
+  capacity       Int             @default(2)
+  pricePerNight  Decimal?        @db.Decimal(10, 2)
+  status         HotelRoomStatus @default(AVAILABLE)
+
+  hotelReservations   HotelReservation[]
+
+  // Relaciones (Asegúrate de tener los campos correctos hacia tus modelos globales)
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, branchId, roomNumber]) // Evita números de habitación duplicados en la misma sucursal
+}
+
+model HotelReservation {
+  id             String            @id @default(cuid())
+  organizationId String
+  branchId       String
+  customerId     String
+  hotelRoomId    String
+
+  checkInDate    DateTime
+  checkOutDate   DateTime
+  nightlyRate    Decimal?          @db.Decimal(12, 2)
+  totalAmount    Decimal?          @db.Decimal(12, 2)
+  notes          String?
+  status         ReservationStatus @default(CONFIRMED)
+
+  hotelRoom      HotelRoom         @relation(fields: [hotelRoomId], references: [id])
+
+  saleId         String?           @unique
+  sale           Sale?             @relation(fields: [saleId], references: [id])
+
+  charges        HotelRoomCharge[]
+
+  // Relaciones
+  customer     Customer          @relation(fields: [customerId], references: [id])
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  branch       Branch            @relation(fields: [branchId], references: [id])
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model HotelRoomCharge {
+  id             String           @id @default(cuid())
+  organizationId String
+  reservationId  String
+  description    String
+  amount         Decimal          @db.Decimal(12, 2)
+  quantity       Int              @default(1)
+  productId      String?
+  createdAt      DateTime         @default(now())
+
+  reservation    HotelReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  product        Product?         @relation(fields: [productId], references: [id])
+
+  @@index([reservationId])
+  @@index([organizationId])
+}
+
+model InternalConsumption {
+  id             String              @id @default(cuid())
+  organizationId String
+  branchId       String
+  userId         String              // Usuario que registra la salida
+  code           String              // Folio ej: CONS-2026-0001
+  department     String?             // Ej: "Housekeeping", "Spa", "Mantenimiento"
+  notes          String?
+  createdAt      DateTime            @default(now())
+
+  organization        Organization        @relation(fields: [organizationId], references: [id])
+  branch              Branch              @relation(fields: [branchId], references: [id])
+  user                User                @relation(fields: [userId], references: [id])
+  inventoryMovements  InventoryMovement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([branchId])
 }
