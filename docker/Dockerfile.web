@@ -1,0 +1,25 @@
+FROM node:20-bookworm-slim
+
+# Configurar pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
+
+WORKDIR /app
+
+# Copiar manifiestos para aprovechar caché
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Instalar dependencias
+RUN pnpm install --frozen-lockfile
+
+# Copiar código fuente del frontend
+COPY apps/web ./apps/web
+
+EXPOSE 5173
+
+# Arrancar Vite escuchando en todas las interfaces para ser accesible desde el host
+CMD ["pnpm", "--filter", "web", "dev", "--host", "0.0.0.0"]
+

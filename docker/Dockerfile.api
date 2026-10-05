@@ -1,0 +1,38 @@
+FROM node:20-bookworm-slim
+
+# Instalar dependencias necesarias para Prisma y módulos nativos
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configurar pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
+
+WORKDIR /app
+
+# Copiar manifiestos de dependencias para aprovechar la caché de capas
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Instalar dependencias del monorepo
+RUN pnpm install --frozen-lockfile
+
+# Generar cliente de Prisma
+COPY apps/api/prisma ./apps/api/prisma
+RUN pnpm --filter api exec prisma generate
+
+# Copiar código fuente de la API
+COPY apps/api ./apps/api
+
+EXPOSE 3000
+
+# Por defecto: aplicar migraciones pendientes y arrancar en modo desarrollo con hot-reload
+CMD ["sh", "-c", "pnpm --filter api exec prisma migrate deploy && pnpm --filter api start:dev"]
+

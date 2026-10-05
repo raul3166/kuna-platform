@@ -1,0 +1,91 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kuna-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Kuna2026!}
+      POSTGRES_DB: ${POSTGRES_DB:-kuna}
+    ports:
+      # Puerto 5433 en host por defecto para no colisionar con PostgreSQL local en 5432.
+      # En un equipo limpio, puede cambiarse a 5432 en el archivo .env
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - kuna_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-kuna}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kuna-network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: kuna-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-Kuna2026!}@db:5432/${POSTGRES_DB:-kuna}?schema=public"
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-kuna}
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-Kuna2026!}
+      JWT_SECRET: ${JWT_SECRET:-KUNA_DEVELOPMENT_SECRET_CHANGE_IN_PRODUCTION}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    volumes:
+      # Montaje del código fuente para Hot-Reload
+      - ./apps/api:/app/apps/api
+      # Volúmenes nombrados para proteger los módulos Linux de sobrescritura desde el host
+      - api_node_modules:/app/apps/api/node_modules
+      - root_node_modules:/app/node_modules
+    networks:
+      - kuna-network
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    container_name: kuna-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    volumes:
+      # Montaje del código fuente para Hot-Reload
+      - ./apps/web:/app/apps/web
+      # Volúmenes nombrados para proteger los módulos Linux de sobrescritura desde el host
+      - web_node_modules:/app/apps/web/node_modules
+      - root_node_modules:/app/node_modules
+    networks:
+      - kuna-network
+
+volumes:
+  kuna_pgdata:
+    name: kuna_pgdata
+  root_node_modules:
+    name: kuna_root_node_modules
+  api_node_modules:
+    name: kuna_api_node_modules
+  web_node_modules:
+    name: kuna_web_node_modules
+
+networks:
+  kuna-network:
+    name: kuna-network
+    driver: bridge
+
