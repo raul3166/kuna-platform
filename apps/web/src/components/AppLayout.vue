@@ -112,8 +112,10 @@ const navigation = [
     key: 'hotel',
     label: 'Recepción Hotel',
     items: [
+      { label: 'Dashboard', icon: '📊', to: '/hotel-dashboard' },
       { label: 'Habitaciones', icon: '🛏️', to: '/hotel-rooms' },
-      { label: 'Reservas', icon: '🛎️', to: '/hotel-reservations' }
+      { label: 'Reservas', icon: '🛎️', to: '/hotel-reservations' },
+      { label: 'Reportes', icon: '📈', to: '/hotel-reports' }
     ]
   },
   {

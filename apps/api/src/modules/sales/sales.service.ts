@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { KitchenStatus, SaleStatus, TableStatus } from '@prisma/client';
+import { KitchenStatus, SaleStatus, TableStatus, ServiceOrderStatus } from '@prisma/client';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -127,7 +127,7 @@ export class SalesService {
         data: { currentNumber: { increment: 1 } },
       });
 
-      return tx.sale.create({
+      const newSale = await tx.sale.create({
         data: {
           organizationId,
           branchId,
@@ -158,6 +158,32 @@ export class SalesService {
           },
         },
       });
+
+      if (createSaleDto.serviceOrderId) {
+        const serviceOrder = await tx.serviceOrder.findFirst({
+          where: {
+            id: createSaleDto.serviceOrderId,
+            organizationId,
+          },
+        });
+
+        if (!serviceOrder) {
+          throw new NotFoundException('Service order not found in organization');
+        }
+
+        if (serviceOrder.saleId) {
+          throw new ConflictException(
+            'Esta orden de servicio ya tiene una venta asociada',
+          );
+        }
+
+        await tx.serviceOrder.update({
+          where: { id: serviceOrder.id },
+          data: { saleId: newSale.id },
+        });
+      }
+
+      return newSale;
     });
   }
 
@@ -542,6 +568,11 @@ async confirm(id: string) {
           },
         },
       },
+      serviceOrder: {
+        include: {
+          materials: true,
+        },
+      },
     },
   });
 
@@ -558,6 +589,21 @@ async confirm(id: string) {
   }
 
   return this.prisma.$transaction(async (tx) => {
+    // ========================================================
+    // MAPEO DE MATERIALES YA DESCONTADOS POR ORDEN DE SERVICIO
+    // ========================================================
+    const serviceOrderConsumedMap = new Map<string, number>();
+    if (
+      sale.serviceOrder &&
+      (sale.serviceOrder.status === ServiceOrderStatus.COMPLETED ||
+        sale.serviceOrder.status === ServiceOrderStatus.BILLED)
+    ) {
+      for (const mat of sale.serviceOrder.materials) {
+        const prev = serviceOrderConsumedMap.get(mat.productId) || 0;
+        serviceOrderConsumedMap.set(mat.productId, prev + Number(mat.quantity));
+      }
+    }
+
     for (const item of sale.items) {
       const quantity = Number(item.quantity);
 
@@ -573,6 +619,18 @@ async confirm(id: string) {
       const tracksStock = item.product.category?.trackStock ?? true;
 
       let unitCost = 0;
+
+      // Descontar inventario únicamente por el excedente no consumido previamente
+      const alreadyConsumed = serviceOrderConsumedMap.get(item.productId) || 0;
+      const consumedForThisItem = Math.min(quantity, alreadyConsumed);
+      const remainingToDiscount = quantity - consumedForThisItem;
+
+      if (alreadyConsumed > 0) {
+        serviceOrderConsumedMap.set(
+          item.productId,
+          alreadyConsumed - consumedForThisItem,
+        );
+      }
 
       // ========================================================
       // PRODUCTO QUE SÍ CONTROLA INVENTARIO
@@ -593,106 +651,106 @@ async confirm(id: string) {
           );
         }
 
-        const currentStock = Number(stockRecord.stock);
-
-        if (!Number.isFinite(currentStock)) {
-          throw new ConflictException(
-            `Invalid stock for product [${item.product.name}]`,
-          );
-        }
-
-        // --------------------------------------------------------
-        // VALIDAR STOCK DE LA SUCURSAL
-        // --------------------------------------------------------
-        if (currentStock < quantity) {
-          throw new ConflictException(
-            `Insufficient stock for product [${item.product.name}]. Available: ${currentStock}, Required: ${quantity}`,
-          );
-        }
-
-        // --------------------------------------------------------
-        // VALIDAR STOCK GLOBAL
-        // --------------------------------------------------------
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (!product) {
-          throw new NotFoundException('Product not found');
-        }
-
-        const globalStock = Number(product.stock);
-
-        if (!Number.isFinite(globalStock)) {
-          throw new ConflictException(
-            `Invalid global stock for product [${item.product.name}]`,
-          );
-        }
-
-        if (globalStock < quantity) {
-          throw new ConflictException(
-            `Insufficient global stock for product [${item.product.name}]`,
-          );
-        }
-
-        // --------------------------------------------------------
-        // DESCONTAR STOCK DE LA SUCURSAL
-        // --------------------------------------------------------
-        await tx.branchProductStock.update({
-          where: { id: stockRecord.id },
-          data: {
-            stock: { decrement: quantity },
-          },
-        });
-
-        // --------------------------------------------------------
-        // DESCONTAR STOCK GLOBAL
-        // --------------------------------------------------------
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: { decrement: quantity },
-          },
-        });
-
-        // --------------------------------------------------------
-        // COSTO PROMEDIO DEL INVENTARIO
-        // --------------------------------------------------------
         unitCost = Number(stockRecord.averageCost || 0);
-      }
 
-      // ========================================================
-      // REGISTRAR SIEMPRE EL MOVIMIENTO EN EL KARDEX
-      // ========================================================
-      //
-      // IMPORTANTE:
-      //
-      // tracksStock = true
-      //   -> el movimiento representa una salida física
-      //   -> ya descontamos inventario
-      //
-      // tracksStock = false
-      //   -> no existe control de inventario
-      //   -> NO descontamos stock
-      //   -> pero SI registramos la venta en el Kardex
-      //
-      await tx.inventoryMovement.create({
-        data: {
-          organizationId: sale.organizationId,
-          branchId: sale.branchId,
-          productId: item.productId,
-          movementType: 'SALE',
-          quantity,
-          unitCost,
-          totalCost: quantity * unitCost,
-          reference: `VENTA-${sale.saleNumber}`,
-          notes: tracksStock
-            ? item.description ||
-              'Salida automática por concepto de venta POS.'
-            : item.description ||
+        if (remainingToDiscount > 0) {
+          const currentStock = Number(stockRecord.stock);
+
+          if (!Number.isFinite(currentStock)) {
+            throw new ConflictException(
+              `Invalid stock for product [${item.product.name}]`,
+            );
+          }
+
+          // --------------------------------------------------------
+          // VALIDAR STOCK DE LA SUCURSAL
+          // --------------------------------------------------------
+          if (currentStock < remainingToDiscount) {
+            throw new ConflictException(
+              `Insufficient stock for product [${item.product.name}]. Available: ${currentStock}, Required: ${remainingToDiscount}`,
+            );
+          }
+
+          // --------------------------------------------------------
+          // VALIDAR STOCK GLOBAL
+          // --------------------------------------------------------
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
+
+          if (!product) {
+            throw new NotFoundException('Product not found');
+          }
+
+          const globalStock = Number(product.stock);
+
+          if (!Number.isFinite(globalStock)) {
+            throw new ConflictException(
+              `Invalid global stock for product [${item.product.name}]`,
+            );
+          }
+
+          if (globalStock < remainingToDiscount) {
+            throw new ConflictException(
+              `Insufficient global stock for product [${item.product.name}]`,
+            );
+          }
+
+          // --------------------------------------------------------
+          // DESCONTAR STOCK DE LA SUCURSAL
+          // --------------------------------------------------------
+          await tx.branchProductStock.update({
+            where: { id: stockRecord.id },
+            data: {
+              stock: { decrement: remainingToDiscount },
+            },
+          });
+
+          // --------------------------------------------------------
+          // DESCONTAR STOCK GLOBAL
+          // --------------------------------------------------------
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: remainingToDiscount },
+            },
+          });
+
+          // REGISTRAR MOVIMIENTO EN EL KARDEX POR LA SALIDA EFECTIVA
+          await tx.inventoryMovement.create({
+            data: {
+              organizationId: sale.organizationId,
+              branchId: sale.branchId,
+              productId: item.productId,
+              movementType: 'SALE',
+              quantity: remainingToDiscount,
+              unitCost,
+              totalCost: remainingToDiscount * unitCost,
+              reference: `VENTA-${sale.saleNumber}`,
+              notes:
+                item.description ||
+                'Salida automática por concepto de venta POS.',
+            },
+          });
+        }
+      } else {
+        // tracksStock = false
+        await tx.inventoryMovement.create({
+          data: {
+            organizationId: sale.organizationId,
+            branchId: sale.branchId,
+            productId: item.productId,
+            movementType: 'SALE',
+            quantity,
+            unitCost: 0,
+            totalCost: 0,
+            reference: `VENTA-${sale.saleNumber}`,
+            notes:
+              item.description ||
               'Venta de producto sin control de inventario.',
-        },
-      });
+          },
+        });
+      }
     }
 
     // ==========================================================
@@ -731,6 +789,25 @@ async confirm(id: string) {
     }
 
     // ==========================================================
+    // MARCAR ORDEN DE SERVICIO COMO FACTURADA (BILLED)
+    // ==========================================================
+    if (sale.serviceOrder) {
+      await tx.serviceOrder.update({
+        where: { id: sale.serviceOrder.id },
+        data: {
+          status: ServiceOrderStatus.BILLED,
+        },
+      });
+
+      await tx.serviceOrderMaterial.updateMany({
+        where: { serviceOrderId: sale.serviceOrder.id },
+        data: {
+          isBilled: true,
+        },
+      });
+    }
+
+    // ==========================================================
     // SELLAR VENTA
     // ==========================================================
     return tx.sale.update({
@@ -761,6 +838,7 @@ async confirm(id: string) {
   async cancel(id: string) {
     const sale = await this.prisma.sale.findUnique({
       where: { id },
+      include: { serviceOrder: true },
     });
 
     if (!sale) {
@@ -771,11 +849,22 @@ async confirm(id: string) {
       throw new ConflictException('Only DRAFT sales can be cancelled');
     }
 
-    return this.prisma.sale.update({
-      where: { id },
-      data: {
-        status: SaleStatus.CANCELLED,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      if (sale.serviceOrder) {
+        await tx.serviceOrder.update({
+          where: { id: sale.serviceOrder.id },
+          data: {
+            saleId: null,
+          },
+        });
+      }
+
+      return tx.sale.update({
+        where: { id },
+        data: {
+          status: SaleStatus.CANCELLED,
+        },
+      });
     });
   }
 }

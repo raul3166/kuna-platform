@@ -346,6 +346,7 @@ async function handleFinalizeSale() {
     amountPaid.value = 0
     tableId.value = null
     currentOrderId.value = null
+    router.replace({ path: '/pos' })
   } catch (error: any) {
     alert(error.response?.data?.message || 'Error crítico procesando la transacción de venta.')
   } finally {

@@ -1554,6 +1554,7 @@ enum ReservationStatus {
   CHECKED_IN
   CHECKED_OUT
   CANCELLED
+  NO_SHOW
 }
 
 // --- MODELS ---
@@ -1593,6 +1594,12 @@ model HotelReservation {
   totalAmount    Decimal?          @db.Decimal(12, 2)
   notes          String?
   status         ReservationStatus @default(CONFIRMED)
+
+  // Operaciones avanzadas
+  cancellationReason  String?
+  cancellationCharge  Decimal?  @db.Decimal(12, 2)
+  actualCheckInAt     DateTime?
+  actualCheckOutAt    DateTime?
 
   hotelRoom      HotelRoom         @relation(fields: [hotelRoomId], references: [id])
 

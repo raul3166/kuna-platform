@@ -279,6 +279,12 @@ const routes: Array<RouteRecordRaw> = [
   meta: { requiresAuth: true }
 },
 {
+  path: '/hotel-dashboard',
+  name: 'hotel-dashboard',
+  component: () => import('../views/HotelDashboardView.vue'),
+  meta: { requiresAuth: true }
+},
+{
   path: '/hotel-rooms',
   name: 'hotel-rooms',
   component: () => import('../views/HotelRoomsView.vue'),
@@ -288,6 +294,12 @@ const routes: Array<RouteRecordRaw> = [
   path: '/hotel-reservations',
   name: 'hotel-reservations',
   component: () => import('../views/HotelReservationsView.vue'),
+  meta: { requiresAuth: true }
+},
+{
+  path: '/hotel-reports',
+  name: 'hotel-reports',
+  component: () => import('../views/HotelReportsView.vue'),
   meta: { requiresAuth: true }
 },
 {

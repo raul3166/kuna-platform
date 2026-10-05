@@ -426,7 +426,7 @@ onMounted(() => {
                     Gestionar
                   </button>
                   <button
-                    v-if="order.status === 'COMPLETED' || order.status === 'IN_PROGRESS'"
+                    v-if="order.status === 'COMPLETED'"
                     @click="goToPosWithServiceOrder(order.id)"
                     class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm inline-flex items-center gap-1.5"
                   >
@@ -663,6 +663,13 @@ onMounted(() => {
                 class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition-colors"
               >
                 Completar Orden
+              </button>
+              <button
+                v-if="selectedOrder.status === 'COMPLETED'"
+                @click="goToPosWithServiceOrder(selectedOrder.id)"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>🛒</span> Facturar en el POS
               </button>
               <button
                 @click="showDetailModal = false"
