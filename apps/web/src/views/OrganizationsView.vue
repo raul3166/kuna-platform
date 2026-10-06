@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
+import { useAuthStore } from '../stores/auth'
+import { useVerticalsStore } from '../stores/verticals'
+
+const authStore = useAuthStore()
+const verticalsStore = useVerticalsStore()
 
 // Interfaces
 interface Organization {
@@ -50,12 +55,16 @@ interface BillingResolution {
 }
 
 // Estados
-const activeTab = ref<'organizations' | 'branches' | 'resolutions'>('organizations')
+const activeTab = ref<'organizations' | 'branches' | 'resolutions' | 'verticals'>('organizations')
 const organizations = ref<Organization[]>([])
 const branches = ref<Branch[]>([])
 const resolutions = ref<BillingResolution[]>([])
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// Estados de Verticales
+const selectedOrgForVerticals = ref<string>('')
+const togglingCode = ref<string | null>(null)
 
 // Modal y Formulario
 const isModalOpen = ref(false)
@@ -84,11 +93,34 @@ async function loadData() {
     organizations.value = orgResponse.data
     branches.value = branchResponse.data
     resolutions.value = resResponse.data
+
+    if (organizations.value.length > 0 && !selectedOrgForVerticals.value) {
+      selectedOrgForVerticals.value = authStore.currentOrganization?.id || organizations.value[0].id
+      verticalsStore.loadOrganizationVerticals(selectedOrgForVerticals.value)
+    }
   } catch (error: any) {
     console.error(error)
     errorMessage.value = 'Error al conectar con la base de datos de infraestructura corporativa.'
   } finally {
     isLoading.value = false
+  }
+}
+
+watch(selectedOrgForVerticals, (newOrgId) => {
+  if (newOrgId) {
+    verticalsStore.loadOrganizationVerticals(newOrgId, true)
+  }
+})
+
+async function handleToggleVertical(verticalCode: string, currentActive: boolean) {
+  if (!selectedOrgForVerticals.value) return
+  togglingCode.value = verticalCode
+  try {
+    await verticalsStore.toggleVertical(selectedOrgForVerticals.value, verticalCode, !currentActive)
+  } catch (error: any) {
+    alert(error.response?.data?.message || 'Error al actualizar el estado del vertical.')
+  } finally {
+    togglingCode.value = null
   }
 }
 
@@ -210,6 +242,18 @@ onMounted(() => {
         >
           📄 Resoluciones DIAN ({{ resolutions.length }})
         </button>
+        <button
+          type="button"
+          @click="activeTab = 'verticals'"
+          :class="[
+            activeTab === 'verticals'
+              ? 'border-blue-600 text-blue-600 font-semibold'
+              : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700',
+            'whitespace-nowrap border-b-2 px-1 pb-4 text-sm transition-colors'
+          ]"
+        >
+          🧩 Verticales de Negocio ({{ verticalsStore.verticals.length }})
+        </button>
       </nav>
     </div>
 
@@ -312,6 +356,120 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- VERTICALES DE NEGOCIO -->
+      <div v-if="activeTab === 'verticals'" class="p-6">
+        <!-- Selector de Organización y Explicación -->
+        <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Activar o Desactivar Tipos de Negocio</h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              KUNA adaptará dinámicamente el menú lateral, permisos y rutas según los verticales activados para esta empresa.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-semibold text-slate-700 whitespace-nowrap">Empresa seleccionada:</label>
+            <select
+              v-model="selectedOrgForVerticals"
+              class="rounded-lg border border-slate-300 bg-white py-2 px-3 text-sm font-semibold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option v-for="org in organizations" :key="org.id" :value="org.id">
+                🏢 {{ org.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Indicador de carga -->
+        <div v-if="verticalsStore.isLoading" class="p-12 text-center text-sm font-medium text-slate-500 animate-pulse">
+          Cargando configuración de verticales...
+        </div>
+
+        <!-- Grid de Verticales -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-for="vert in verticalsStore.verticals"
+            :key="vert.id"
+            class="flex flex-col justify-between rounded-xl border p-5 transition-all shadow-sm"
+            :class="[
+              vert.isActiveForOrg
+                ? 'border-blue-200 bg-gradient-to-br from-blue-50/40 via-white to-white'
+                : 'border-slate-200 bg-slate-50/40 opacity-75'
+            ]"
+          >
+            <div>
+              <!-- Header de la tarjeta -->
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
+                    :class="vert.isActiveForOrg ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'"
+                  >
+                    {{ vert.icon === 'shopping-bag' ? '🛍️' :
+                       vert.icon === 'utensils' ? '🍽️' :
+                       vert.icon === 'pill' ? '💊' :
+                       vert.icon === 'dumbbell' ? '🏋️' :
+                       vert.icon === 'heart' ? '🧘' :
+                       vert.icon === 'wrench' ? '🔧' :
+                       vert.icon === 'bed' ? '🛏️' :
+                       vert.icon === 'car' ? '🚗' :
+                       vert.icon === 'scissors' ? '✂️' :
+                       vert.icon === 'paw' ? '🐾' :
+                       vert.icon === 'shirt' ? '👔' :
+                       vert.icon === 'cake' ? '🍰' :
+                       vert.icon === 'graduation-cap' ? '🎓' :
+                       vert.icon === 'building' ? '🏢' : '📦' }}
+                  </span>
+                  <div>
+                    <h4 class="font-bold text-sm text-slate-900">{{ vert.name }}</h4>
+                    <span
+                      class="font-mono text-[10px] tracking-wider uppercase px-1.5 py-0.5 rounded"
+                      :class="vert.isActiveForOrg ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-slate-200 text-slate-600'"
+                    >
+                      {{ vert.code }}
+                    </span>
+                  </div>
+                </div>
+
+                <span
+                  class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  :class="vert.isActiveForOrg ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'"
+                >
+                  {{ vert.isActiveForOrg ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+
+              <!-- Descripción -->
+              <p class="text-xs text-slate-600 mt-2 mb-4 leading-relaxed">
+                {{ vert.description || 'Módulo especializado para la operación de este tipo de negocio.' }}
+              </p>
+            </div>
+
+            <!-- Footer / Botón de Acción -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">
+                {{ vert.isActiveForOrg ? 'Visible en menú' : 'Oculto en menú' }}
+              </span>
+
+              <button
+                type="button"
+                @click="handleToggleVertical(vert.code, vert.isActiveForOrg)"
+                :disabled="togglingCode === vert.code"
+                class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors shadow-sm disabled:opacity-50"
+                :class="[
+                  vert.isActiveForOrg
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                ]"
+              >
+                <span v-if="togglingCode === vert.code" class="inline-block animate-spin">⏳</span>
+                <span>{{ vert.isActiveForOrg ? 'Desactivar' : 'Activar Vertical' }}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

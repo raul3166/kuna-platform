@@ -178,6 +178,7 @@ model Organization {
   hotelReservations    HotelReservation[]
   hotelRooms           HotelRoom[]
   internalConsumptions InternalConsumption[]
+  organizationVerticals OrganizationVertical[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -1652,4 +1653,40 @@ model InternalConsumption {
   @@unique([organizationId, code])
   @@index([organizationId])
   @@index([branchId])
+}
+
+// ============================================================
+// ARQUITECTURA DE VERTICALES DE NEGOCIO (MULTI-VERTICAL TENANT)
+// ============================================================
+
+model Vertical {
+  id          String   @id @default(cuid())
+  code        String   @unique // RETAIL, AUTOMOTIVE, BEAUTY, RESTAURANT, HOTEL, etc.
+  name        String   // "Retail / Comercio", "Taller Automotriz", etc.
+  description String?
+  icon        String?  // Nombre del ícono o emoji
+  isCore      Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationVerticals OrganizationVertical[]
+
+  @@index([code])
+}
+
+model OrganizationVertical {
+  id             String   @id @default(cuid())
+  organizationId String
+  verticalId     String
+  isActive       Boolean  @default(true)
+  activatedAt    DateTime @default(now())
+  config         Json?
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vertical       Vertical     @relation(fields: [verticalId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, verticalId])
+  @@index([organizationId])
+  @@index([verticalId])
 }

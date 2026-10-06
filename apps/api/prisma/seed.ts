@@ -578,6 +578,58 @@ async function main() {
     },
   });
 
+  // 14. Catálogo de Verticales de Negocio
+  console.log('📦 Sembrando catálogo de Verticales de Negocio...');
+  const verticalsData = [
+    { code: 'RETAIL', name: 'Retail / Tienda', icon: 'shopping-bag', description: 'Ventas mostrador, POS, inventarios y compras' },
+    { code: 'RESTAURANT', name: 'Restaurante', icon: 'utensils', description: 'Salones, mesas, comandas y monitor de cocina' },
+    { code: 'PHARMACY', name: 'Farmacia / Droguería', icon: 'pill', description: 'Lotes, vencimientos FEFO y recetas médicas' },
+    { code: 'GYM', name: 'Gimnasio', icon: 'dumbbell', description: 'Membresías, suscripciones y control de accesos' },
+    { code: 'STUDIO', name: 'Studio de Yoga / Pilates', icon: 'heart', description: 'Clases grupales, reservas, tiqueteras e instructores' },
+    { code: 'SERVICES', name: 'Órdenes de Servicio', icon: 'wrench', description: 'Servicios técnicos, órdenes de trabajo y comisiones' },
+    { code: 'HOTEL', name: 'Hotel / Hospedaje', icon: 'bed', description: 'Habitaciones, reservas, check-in y consumos de estancia' },
+    { code: 'AUTOMOTIVE', name: 'Taller Automotriz', icon: 'car', description: 'Vehículos, diagnósticos, repuestos y mecánicos' },
+    { code: 'BEAUTY', name: 'Barbería / Salón / Spa', icon: 'scissors', description: 'Citas, estilistas, agenda y comisiones' },
+    { code: 'VETERINARY', name: 'Veterinaria / Pet Shop', icon: 'paw', description: 'Mascotas, historias clínicas, consultas y tratamientos' },
+    { code: 'LAUNDRY', name: 'Lavandería', icon: 'shirt', description: 'Recepción de prendas, procesos de lavado y entregas' },
+    { code: 'BAKERY', name: 'Panadería / Pastelería', icon: 'cake', description: 'Recetas, producción, ingredientes y producto terminado' },
+    { code: 'ACADEMY', name: 'Academia / Centro Educativo', icon: 'graduation-cap', description: 'Cursos, matrículas, profesores y asistencia' },
+    { code: 'REAL_ESTATE', name: 'Inmobiliaria', icon: 'building', description: 'Propiedades, unidades, contratos de arriendo y pagos' },
+  ];
+
+  for (const v of verticalsData) {
+    await prisma.vertical.upsert({
+      where: { code: v.code },
+      update: { name: v.name, icon: v.icon, description: v.description },
+      create: { ...v, isActive: true },
+    });
+  }
+
+  // Activar verticales por defecto a todas las organizaciones existentes para retrocompatibilidad
+  const allOrganizations = await prisma.organization.findMany();
+  const allVerticals = await prisma.vertical.findMany();
+  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO'];
+
+  for (const org of allOrganizations) {
+    for (const vert of allVerticals) {
+      const shouldBeActive = defaultActiveCodes.includes(vert.code);
+      await prisma.organizationVertical.upsert({
+        where: {
+          organizationId_verticalId: {
+            organizationId: org.id,
+            verticalId: vert.id,
+          },
+        },
+        update: {},
+        create: {
+          organizationId: org.id,
+          verticalId: vert.id,
+          isActive: shouldBeActive,
+        },
+      });
+    }
+  }
+
   console.log('✅ ¡Base de datos sembrada con éxito!');
   console.log('📌 Usuarios creados (Contraseña para todos: MiPassword123):');
   console.log('   - admin@demo.com (Administrador)');

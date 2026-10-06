@@ -1,140 +1,36 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useVerticalsStore } from '../stores/verticals'
+import { navigationSections } from '../config/navigation'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const verticalsStore = useVerticalsStore()
 
 function handleLogout() {
   authStore.logout()
+  verticalsStore.clear()
   router.push('/login')
 }
 
-// Configuración centralizada del menú (Data-Driven)
-const navigation = [
-  {
-    key: 'core',
-    label: 'Core',
-    items: [
-      { label: 'Bienvenida', icon: '👋', to: '/dashboard' },
-      { label: 'Organizaciones', icon: '🏢', to: '/organizations' }
-    ]
-  },
-  {
-    key: 'comercial',
-    label: 'Comercial',
-    items: [
-      { label: 'Dashboard Ejecutivo', icon: '📈', to: '/executive-dashboard' },
-      { label: 'Reporte de Rendimiento', icon: '📈', to: '/sales-performance' },
-      { label: 'Reporte Fiscal', icon: '📈', to: '/fiscalSummary' },
-      { label: 'Terminal Punto de Venta (POS)', icon: '🎛️', to: '/pos' },
-      { label: 'Historial de Ventas', icon: '📊', to: '/sales' },
-      { label: 'Clientes (CRM)', icon: '👥', to: '/customers' },
-      { label: 'Devoluciones de Clientes', icon: '↩️', to: '/sale-returns' }
-    ]
-  },
-  {
-    key: 'inventario',
-    label: 'Inventario Core',
-    items: [
-      { label: 'Productos y Catálogos', icon: '📦', to: '/products' },
-      { label: 'Panel Analítico Stock', icon: '📊', to: '/inventory-dashboard' },
-      { label: 'Movimientos y Ajustes', icon: '🔄', to: '/inventory-movements' },
-      { label: 'Transferencias', icon: '🚚', to: '/inventory-transfers' },
-      { label: 'Consumo Interno', icon: '📉', to: '/internal-consumptions' },
-      { label: 'Kardex / Historial', icon: '📋', to: '/kardex' }
-    ]
-  },
-  {
-    key: 'compras',
-    label: 'Compras',
-    items: [
-      { label: 'Proveedores', icon: '🚚', to: '/suppliers' },
-      { label: 'Órdenes de Compra', icon: '📑', to: '/purchase-orders' },
-      { label: 'Recepción de Mercancía', icon: '📥', to: '/goods-receipts' },
-      { label: 'Facturas de Proveedores', icon: '🧾', to: '/purchase-invoices' },
-      { label: 'Devoluciones a Proveedores', icon: '↩️', to: '/purchase-returns' }
-    ]
-  },
-  {
-    key: 'restaurante',
-    label: 'Restaurante',
-    items: [
-      { label: 'Salones y Mesas', icon: '🍽️', to: '/rooms' },
-      { label: 'Toma de Pedidos', icon: '📝', to: '/restaurant-orders' },
-      { label: 'Monitor de Cocina', icon: '👨‍🍳', to: '/kitchen' }
-    ]
-  },
-  {
-    key: 'farmacia',
-    label: 'Farmacia',
-    items: [
-      { label: 'Control de Lotes (FEFO)', icon: '🏷️', to: '/expiring-lots' },
-      { label: 'Recetas Médicas', icon: '💊', to: '/prescriptions' }
-    ]
-  },
-  {
-    key: 'gimnasio',
-    label: 'Gimnasio',
-    items: [
-      { label: 'Planes de Membresía', icon: '🏋️', to: '/gym-membership-plans' },
-      { label: 'Suscripciones', icon: '💳', to: '/gym-subscriptions' },
-      { label: 'Control de Acceso (Check-in)', icon: '🚪', to: '/gym-checkin' },
-      { label: 'Instructores / Entrenadores', icon: '🧑‍🏫', to: '/gym-instructors' }
-    ]
-  },
-  {
-    key: 'estudio',
-    label: 'Estudio (Yoga / Pilates)',
-    items: [
-      { label: 'Planes y Paquetes', icon: '🧘‍♀️', to: '/studio-plans' },
-      { label: 'Suscripciones y Tiqueteras', icon: '🎟️', to: '/studio-subscriptions' },
-      { label: 'Control de Asistencia', icon: '🚪', to: '/studio-checkin' },
-      { label: 'Calendario Clases', icon: '🚪', to: '/studio-schedules' },
-      { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings' },
-      { label: 'Instructores y Liquidación', icon: '👩‍🏫', to: '/studio-instructors' }
-    ]
-  },
-  {
-    key: 'servicios',
-    label: 'Órdenes de Servicio',
-    items: [
-      { label: 'Órdenes de Servicio', icon: '🛠️', to: '/service-orders' },
-      { label: 'Catálogo de Servicios', icon: '📋', to: '/service-items' },
-      { label: 'Técnicos / Personal', icon: '👷', to: '/service-workers' },
-      { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
-      { label: 'Reportes de Servicio', icon: '📊', to: '/service-reports' } // <--- Agregado
-    ]
-  },
-  {
-    key: 'hotel',
-    label: 'Recepción Hotel',
-    items: [
-      { label: 'Dashboard', icon: '📊', to: '/hotel-dashboard' },
-      { label: 'Habitaciones', icon: '🛏️', to: '/hotel-rooms' },
-      { label: 'Reservas', icon: '🛎️', to: '/hotel-reservations' },
-      { label: 'Reportes', icon: '📈', to: '/hotel-reports' }
-    ]
-  },
-  {
-    key: 'configuracion',
-    label: 'Configuración',
-    items: [
-      { label: 'Impuestos y Fiscal', icon: '🏛️', to: '/taxes' },
-      { label: 'Personal / Usuarios', icon: '👥', to: '/users' },
-      { label: 'Roles y Permisos (RBAC)', icon: '🛡️', to: '/security-settings' }
-    ]
-  }
-]
+// Filtra las secciones visibles según los verticales activos de la organización
+const visibleNavigation = computed(() => {
+  return navigationSections.filter((section) => {
+    if (section.isCore) return true
+    if (!section.requiredVertical) return true
+    return verticalsStore.hasVertical(section.requiredVertical)
+  })
+})
 
 const activeSection = ref<string | null>(null)
 
 // Encuentra dinámicamente qué sección contiene la ruta actual
 function autoExpandSection(currentPath: string) {
-  const matchingSection = navigation.find(section =>
-    section.items.some(item => currentPath.startsWith(item.to))
+  const matchingSection = visibleNavigation.value.find((section) =>
+    section.items.some((item) => currentPath.startsWith(item.to))
   )
   if (matchingSection) {
     activeSection.value = matchingSection.key
@@ -145,11 +41,27 @@ function toggleSection(sectionKey: string) {
   activeSection.value = activeSection.value === sectionKey ? null : sectionKey
 }
 
-watch(() => route.path, (newPath) => {
-  autoExpandSection(newPath)
-}, { immediate: true })
+watch(
+  () => route.path,
+  (newPath) => {
+    autoExpandSection(newPath)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => authStore.currentOrganization?.id,
+  (newOrgId) => {
+    if (newOrgId) {
+      verticalsStore.loadOrganizationVerticals(newOrgId)
+    }
+  }
+)
 
 onMounted(() => {
+  if (authStore.currentOrganization?.id) {
+    verticalsStore.loadOrganizationVerticals(authStore.currentOrganization.id)
+  }
   autoExpandSection(route.path)
 })
 </script>
@@ -166,7 +78,7 @@ onMounted(() => {
 
       <!-- Menú Renderizado Dinámicamente -->
       <nav class="flex-1 space-y-2 px-3 py-6 overflow-y-auto">
-        <div v-for="section in navigation" :key="section.key">
+        <div v-for="section in visibleNavigation" :key="section.key">
           <button
             @click="toggleSection(section.key)"
             type="button"

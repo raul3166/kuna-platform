@@ -58,6 +58,8 @@ import { ServiceReportsModule } from './modules/service-reports/service-reports.
 import { HotelRoomsModule } from './modules/hotel-rooms/hotel-rooms.module';
 import { HotelReservationsModule } from './modules/hotel-reservations/hotel-reservations.module';
 import { InternalConsumptionsModule } from './modules/internal-consumptions/internal-consumptions.module';
+import { VerticalsModule } from './modules/verticals/verticals.module';
+import { RetailModule } from './modules/retail/retail.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -117,6 +119,8 @@ import { InternalConsumptionsModule } from './modules/internal-consumptions/inte
     HotelRoomsModule,
     HotelReservationsModule,
     InternalConsumptionsModule,
+    VerticalsModule,
+    RetailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

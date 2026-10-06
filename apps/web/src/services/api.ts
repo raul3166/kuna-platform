@@ -9,7 +9,7 @@ export const api = axios.create({
   },
 })
 
-// Interceptor de Peticiones: Adjunta el token JWT automáticamente
+// Interceptor de Peticiones: Adjunta el token JWT y el contexto de organización automáticamente
 api.interceptors.request.use(
   (config) => {
     // Obtenemos el token directamente desde el localStorage
@@ -19,6 +19,29 @@ api.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // Adjuntar organización activa para multi-tenancy y verticales
+    const orgStr = localStorage.getItem('kuna_org')
+    if (orgStr && config.headers && !config.headers['x-organization-id']) {
+      try {
+        const org = JSON.parse(orgStr)
+        if (org?.id) {
+          config.headers['x-organization-id'] = org.id
+        }
+      } catch {}
+    }
+
+    // Adjuntar sucursal activa si está presente
+    const branchStr = localStorage.getItem('kuna_branch')
+    if (branchStr && config.headers && !config.headers['x-branch-id']) {
+      try {
+        const branch = JSON.parse(branchStr)
+        if (branch?.id) {
+          config.headers['x-branch-id'] = branch.id
+        }
+      } catch {}
+    }
+
     return config
   },
   (error) => {
