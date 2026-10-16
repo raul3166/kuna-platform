@@ -202,6 +202,9 @@ model Organization {
   beautyNotes          BeautyClientNote[]
   beautyWorkerSchedules BeautyWorkerSchedule[]
   beautyTimeOffs       BeautyTimeOff[]
+  pets                 Pet[]
+  vetMedicalRecords    VetMedicalRecord[]
+  petVaccinations      PetVaccination[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -250,6 +253,8 @@ model Branch {
   vehicleCheckIns      VehicleCheckIn[]
   appointments         Appointment[]
   beautyWorkerSchedules BeautyWorkerSchedule[]
+  vetMedicalRecords    VetMedicalRecord[]
+  petVaccinations      PetVaccination[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -334,6 +339,7 @@ model Product {
   gymMembershipPlan GymMembershipPlan?
   serviceMaterials  ServiceOrderMaterial[]
   serviceItems       ServiceItem[] // Relación con los servicios que utilizan este producto como material
+  petVaccinations   PetVaccination[]
 
   @@unique([organizationId, sku])
   @@index([categoryId])
@@ -991,6 +997,8 @@ model ServiceWorker {
   beautyNotes    BeautyClientNote[]
   workerSchedules BeautyWorkerSchedule[]
   timeOffs       BeautyTimeOff[]
+  vetMedicalRecords VetMedicalRecord[]
+  petVaccinations   PetVaccination[]
 
   @@unique([organizationId, identification])
   @@index([organizationId])
@@ -1043,6 +1051,7 @@ model ServiceOrder {
   saleId           String?            @unique
   serviceItemId    String?         // <-- Asegúrate de tener este campo
   vehicleId        String?
+  petId            String?
 
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -1056,6 +1065,8 @@ model ServiceOrder {
   vehicle            Vehicle?               @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   vehicleCheckIn     VehicleCheckIn?
   appointment        Appointment?
+  pet                Pet?                   @relation(fields: [petId], references: [id], onDelete: SetNull)
+  vetMedicalRecord   VetMedicalRecord?
   tasks              ServiceOrderTask[]
   materials          ServiceOrderMaterial[]
   inventoryMovements InventoryMovement[]
@@ -1066,6 +1077,7 @@ model ServiceOrder {
   @@index([customerId])
   @@index([assignedWorkerId])
   @@index([vehicleId])
+  @@index([petId])
   @@index([status])
   @@index([createdAt])
 }
@@ -1256,6 +1268,7 @@ model Customer {
   vehicles             Vehicle[]
   appointments         Appointment[]
   beautyNotes          BeautyClientNote[]
+  pets                 Pet[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -1910,4 +1923,133 @@ model BeautyClientNote {
 
   @@index([organizationId])
   @@index([customerId])
+}
+
+// ==========================================
+// FASE 4: VERTICAL VETERINARY (VETERINARIA & PET SHOP)
+// ==========================================
+
+enum PetSpecies {
+  CANINE
+  FELINE
+  AVIAN
+  RODENT
+  REPTILE
+  EQUINE
+  BOVINE
+  OTHER
+}
+
+enum PetGender {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum VetVisitType {
+  CONSULTATION
+  EMERGENCY
+  VACCINATION
+  DEWORMING
+  SURGERY
+  GROOMING
+  CHECKUP
+  HOSPITALIZATION
+}
+
+model Pet {
+  id              String     @id @default(cuid())
+  organizationId  String
+  customerId      String
+  name            String
+  species         PetSpecies @default(CANINE)
+  breed           String?
+  gender          PetGender  @default(UNKNOWN)
+  birthDate       DateTime?
+  color           String?
+  weightKg        Decimal?   @db.Decimal(6, 2)
+  microchipNumber String?
+  isSterilized    Boolean    @default(false)
+  allergies       String?
+  chronicIssues   String?
+  notes           String?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  medicalRecords VetMedicalRecord[]
+  vaccinations   PetVaccination[]
+  serviceOrders  ServiceOrder[]
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([organizationId, name])
+  @@index([organizationId, microchipNumber])
+}
+
+model VetMedicalRecord {
+  id               String       @id @default(cuid())
+  organizationId   String
+  branchId         String
+  petId            String
+  veterinarianId   String?
+  serviceOrderId   String?      @unique
+  visitType        VetVisitType @default(CONSULTATION)
+  visitDate        DateTime     @default(now())
+  weightKg         Decimal?     @db.Decimal(6, 2)
+  temperatureC     Decimal?     @db.Decimal(4, 1)
+  heartRateBpm     Int?
+  respiratoryRate  Int?
+  reason           String
+  anamnesis        String?
+  physicalExam     String?
+  diagnosis        String?
+  treatment        String?
+  prescription     String?
+  nextControlDate  DateTime?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  pet          Pet            @relation(fields: [petId], references: [id], onDelete: Cascade)
+  veterinarian ServiceWorker? @relation(fields: [veterinarianId], references: [id], onDelete: SetNull)
+  serviceOrder ServiceOrder?  @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([petId, visitDate])
+  @@index([veterinarianId])
+}
+
+model PetVaccination {
+  id             String    @id @default(cuid())
+  organizationId String
+  branchId       String
+  petId          String
+  veterinarianId String?
+  productId      String?
+  vaccineName    String
+  type           String    @default("VACCINE") // VACCINE, DEWORMING, ANTIPARASITIC
+  batchNumber    String?
+  dose           String?
+  appliedAt      DateTime  @default(now())
+  nextDueDate    DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  pet          Pet            @relation(fields: [petId], references: [id], onDelete: Cascade)
+  veterinarian ServiceWorker? @relation(fields: [veterinarianId], references: [id], onDelete: SetNull)
+  product      Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([petId, appliedAt])
+  @@index([organizationId, nextDueDate])
 }

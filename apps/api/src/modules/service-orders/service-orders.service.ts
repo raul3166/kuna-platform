@@ -36,6 +36,20 @@ export class ServiceOrdersService {
         }
       }
 
+      if (createDto.petId) {
+        const pet = await this.prisma.pet.findUnique({
+          where: { id: createDto.petId },
+        });
+        if (pet) {
+          if (!assetName || assetName.trim() === '' || assetName === 'Mascota') {
+            assetName = `Mascota: ${pet.name} (${pet.species})`;
+          }
+          if (!assetIdentifier) {
+            assetIdentifier = pet.microchipNumber || pet.breed || pet.species;
+          }
+        }
+      }
+
       if (createDto.serviceItemId && !createDto.laborTotal) {
         const serviceItem = await this.prisma.serviceItem.findUnique({
           where: { id: createDto.serviceItemId },
@@ -56,6 +70,7 @@ export class ServiceOrdersService {
           status: createDto.status || ServiceOrderStatus.PENDING,
 
           ...(createDto.vehicleId && { vehicleId: createDto.vehicleId }),
+          ...(createDto.petId && { petId: createDto.petId }),
           ...(createDto.serviceItemId && { serviceItemId: createDto.serviceItemId }),
 
           laborTotal: initialLaborTotal,
@@ -72,6 +87,7 @@ export class ServiceOrdersService {
           customer: true,
           assignedWorker: true,
           vehicle: true,
+          pet: true,
         },
       });
     } catch (error) {
@@ -104,6 +120,7 @@ export class ServiceOrdersService {
       customer: true,
       assignedWorker: true,
       vehicle: true,
+      pet: true,
       serviceItem: {
         include: { product: true },
       },
@@ -124,6 +141,7 @@ export class ServiceOrdersService {
       assignedWorker: true,
       sale: true,
       vehicle: true,
+      pet: true,
       serviceItem: {
         include: { product: true }, // <-- Carga el servicio base y su producto POS
       },
@@ -142,6 +160,7 @@ export class ServiceOrdersService {
           assignedWorker: true,
           sale: true,
           vehicle: true,
+          pet: true,
           serviceItem: {
             include: { product: true }, // <-- Resuelve TS2322 (falta serviceItem en el tipo)
           },

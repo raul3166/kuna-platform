@@ -321,6 +321,24 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/BeautyClientsView.vue'),
     meta: { requiresAuth: true, requiredVertical: 'BEAUTY' },
   },
+  {
+    path: '/veterinary-dashboard',
+    name: 'veterinary-dashboard',
+    component: () => import('../views/VeterinaryDashboardView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'VETERINARY' },
+  },
+  {
+    path: '/veterinary-pets',
+    name: 'veterinary-pets',
+    component: () => import('../views/PetsView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'VETERINARY' },
+  },
+  {
+    path: '/veterinary-consultations',
+    name: 'veterinary-consultations',
+    component: () => import('../views/VeterinaryConsultationsView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'VETERINARY' },
+  },
 {
   path: '/hotel-dashboard',
   name: 'hotel-dashboard',

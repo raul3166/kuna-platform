@@ -213,6 +213,12 @@ async function main() {
     { module: 'beauty', code: 'beauty.read', name: 'Read beauty data', description: 'Allows viewing beauty agenda, availability and client formulas' },
     { module: 'beauty', code: 'beauty.update', name: 'Update beauty data', description: 'Allows rescheduling appointments, updating statuses and staff schedules' },
     { module: 'beauty', code: 'beauty.delete', name: 'Delete beauty data', description: 'Allows removing time-off and client notes' },
+
+    // --- MODULE: VETERINARY ---
+    { module: 'veterinary', code: 'veterinary.create', name: 'Create veterinary records', description: 'Allows registering pets, medical consultations and vaccinations' },
+    { module: 'veterinary', code: 'veterinary.read', name: 'Read veterinary data', description: 'Allows viewing pets, clinical records and vaccination reminders' },
+    { module: 'veterinary', code: 'veterinary.update', name: 'Update veterinary data', description: 'Allows updating pet profiles and veterinary clinic settings' },
+    { module: 'veterinary', code: 'veterinary.delete', name: 'Delete veterinary data', description: 'Allows archiving pet records' },
   ];
 
   await prisma.permission.createMany({
@@ -631,7 +637,7 @@ async function main() {
   // Activar verticales por defecto a todas las organizaciones existentes para retrocompatibilidad
   const allOrganizations = await prisma.organization.findMany();
   const allVerticals = await prisma.vertical.findMany();
-  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE', 'BEAUTY'];
+  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE', 'BEAUTY', 'VETERINARY'];
 
   for (const org of allOrganizations) {
     for (const vert of allVerticals) {

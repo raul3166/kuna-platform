@@ -178,3 +178,14 @@
   * Core reuse: `ServiceWorker` as stylists, `ServiceItem` as service catalog, `Customer`, and `ServiceOrder` for execution, commissions and POS billing.
   * New views: Agenda (`/beauty-agenda`), Team & Schedules (`/beauty-staff`), Clients & Formulas (`/beauty-clients`).
   * Per-organization agenda configuration (slot length, working hours, overlap policy).
+
+---
+
+## v2.2.0-rc1
+
+* **Veterinary & Pet Shop Vertical (Fase 4):**
+  * Relational models `Pet`, `VetMedicalRecord`, and `PetVaccination` with species (`CANINE`, `FELINE`, `AVIAN`, `RODENT`, `REPTILE`, `EQUINE`, `BOVINE`, `OTHER`) and visit types (`CONSULTATION`, `EMERGENCY`, `VACCINATION`, `DEWORMING`, `SURGERY`, `GROOMING`, `CHECKUP`, `HOSPITALIZATION`).
+  * Complete clinical history with physiological constants (weight, temperature, heart rate, respiratory rate), automatic pet weight update, diagnosis, treatment, and medical prescriptions.
+  * Sanitary vaccination & deworming card (`PetVaccination`) with batch tracking, optional direct stock deduction (`SERVICE_CONSUMPTION`), and upcoming booster alerts.
+  * Strict Core reuse: `Customer` (pet owners/tutors), `ServiceWorker` (veterinarians/groomers), `ServiceItem` (clinical & grooming services), `Product` (medicines, vaccines, pet food), `ServiceOrder` (clinical attention & supplies), and POS (`/pos?serviceOrderId=...`).
+  * New views: Veterinary Clinical Hub (`/veterinary-dashboard`), Patients & Clinical Dossier (`/veterinary-pets`), and Consultation, Grooming & Vaccination Console (`/veterinary-consultations`).

@@ -7,6 +7,32 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.2.0-rc1] - 2026-10-16
+
+### Added
+
+#### Vertical VETERINARY / Clínica Veterinaria & Pet Shop (Fase 4)
+* **Modelos clínicos y sanitarios (`schema.prisma`):** `Pet`, `VetMedicalRecord`, `PetVaccination` y enums `PetSpecies`, `PetGender`, `VetVisitType`, todos multi-tenant (`organizationId` y `branchId`).
+* **Reutilización estricta del Core (sin duplicar entidades):**
+  * Propietarios / Tutores = `Customer`
+  * Médicos Veterinarios y Groomers = `ServiceWorker`
+  * Catálogo de consultas, cirugías, vacunación y peluquería = `ServiceItem`
+  * Medicamentos, biológicos, antiparasitarios, concentrados y accesorios Pet Shop = `Product`, `BranchProductStock`, `InventoryMovement`
+  * Atención en clínica, descarga de insumos y comisiones = `ServiceOrder` (vinculada a `petId` y `VetMedicalRecord`)
+  * Facturación y recaudo = POS (`Sale`, `CashSession`, `/pos?serviceOrderId=...`)
+* **Módulo Backend `VeterinaryModule` (`/veterinary`, `@RequiresVertical('VETERINARY')`):**
+  * `GET /veterinary/dashboard`: KPIs clínicos, pacientes activos en clínica/grooming con enlace directo a POS, alertas de próximos refuerzos de vacunación (30 días) y últimas historias clínicas.
+  * `GET /veterinary/pets`, `GET /veterinary/pets/:id`, `POST /veterinary/pets`, `PATCH /veterinary/pets/:id`: Directorio de pacientes, validación de microchip único por organización y expediente clínico integral.
+  * `POST /veterinary/medical-records`, `GET /veterinary/medical-records`: Registro de historia clínica con constantes fisiológicas (peso kg, temperatura °C, frecuencia cardíaca y respiratoria), actualización automática del peso en la ficha de la mascota y generación opcional de `ServiceOrder` con tareas e insumos médicos.
+  * `POST /veterinary/vaccinations`, `GET /veterinary/vaccinations/upcoming`: Carnet sanitario de vacunación y desparasitación con recordatorios (`nextDueDate`) y opción de descuento inmediato de stock (`SERVICE_CONSUMPTION`).
+  * `GET /veterinary/config`, `PATCH /veterinary/config`: Configuración operativa del vertical por organización (`vaccinationAlertDays`, `defaultConsultationMinutes`, `autoCreateOrderOnConsultation`, `enableGrooming`).
+* **Vistas Frontend Vue 3 (`apps/web`):**
+  * `VeterinaryDashboardView.vue` (`/veterinary-dashboard`): Hub operativo de clínica veterinaria y Pet Shop.
+  * `PetsView.vue` (`/veterinary-pets`): Directorio de mascotas, búsqueda multicriterio, filtro por especie y modal de expediente clínico + carnet de vacunas.
+  * `VeterinaryConsultationsView.vue` (`/veterinary-consultations`): Consola de consulta médica, grooming y aplicación de vacunas/antiparasitarios.
+  * Integración en `navigation.ts` y `router/index.ts` protegida con `requiredVertical: 'VETERINARY'`.
+
+---
 ## [2.1.0-rc1] - 2026-10-15
 
 ### Added

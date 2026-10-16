@@ -146,6 +146,18 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    key: 'veterinary',
+    label: 'Veterinaria & Pet Shop',
+    requiredVertical: 'VETERINARY',
+    items: [
+      { label: 'Centro Clínico (Hub)', icon: '🐾', to: '/veterinary-dashboard' },
+      { label: 'Mascotas / Pacientes', icon: '🐶', to: '/veterinary-pets' },
+      { label: 'Consultorio & Vacunas', icon: '🩺', to: '/veterinary-consultations' },
+      { label: 'Catálogo de Servicios', icon: '📋', to: '/service-items' },
+      { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
+    ],
+  },
+  {
     key: 'hotel',
     label: 'Recepción Hotel',
     requiredVertical: 'HOTEL',

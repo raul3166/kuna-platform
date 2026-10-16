@@ -321,14 +321,31 @@ Objetivo: Agenda de citas con profesionales, horarios y fórmulas de cliente, re
 **Sprint 24 (Fase 3) completado al 100%.**
 ---
 
+# Sprint 25 — Veterinary & Pet Shop Vertical (Fase 4)
+
+Objetivo: Gestión integral de clínicas veterinarias, peluquería canina/felina (grooming) y Pet Shop, reutilizando `Customer`, `ServiceWorker`, `ServiceItem`, `Product`, `ServiceOrder` y el POS.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-128 | Modelos Clínicos y Sanitarios (`Pet`, `VetMedicalRecord`, `PetVaccination`) | ✅ | Backend |
+| KNA-129 | Directorio de Mascotas y Expediente Clínico Integral (`PetsView.vue`) | ✅ | Backend/Frontend |
+| KNA-130 | Consultorio Médico, Constantes Fisiológicas, Recetas y Grooming (`VeterinaryConsultationsView.vue`) | ✅ | Backend/Frontend |
+| KNA-131 | Carnet de Vacunación, Desparasitación y Alertas de Refuerzos Próximos | ✅ | Backend/Frontend |
+| KNA-132 | Integración Clínica → Orden de Servicio → Descarga de Medicamentos y Cobro POS | ✅ | Backend/Frontend |
+
+**Sprint 25 (Fase 4) completado al 100%.**
+
+---
+
 # Próximos Sprints / Roadmap de Verticales
 
 | Sprint | Vertical | Alcance Previsto | Estado |
 | --- | --- | --- | :---: |
 | **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | ✅ Completado |
-| **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | 📋 Planificado |
+| **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | ✅ Completado |
 | **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | 📋 Planificado |
 | **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | 📋 Planificado |
 | **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | 📋 Planificado |
 | **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones de arrendamiento y propietarios | 📋 Planificado |
+
 

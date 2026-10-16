@@ -452,3 +452,13 @@ La Fase 3 (BEAUTY / Salón / Barbería / Spa) fue implementada en la versión **
 ### Próximo bloque
 
 * **Sprint 25 (Fase 4):** Vertical VETERINARY / Veterinaria y Pet Shop.
+
+---
+
+## Sprint 25 (Fase 4) — Estado: Completado
+
+La Fase 4 (VETERINARY / Clínica Veterinaria, Grooming & Pet Shop) fue implementada en la versión **v2.2.0-rc1**, incorporando directorio de mascotas (`Pet`), expediente clínico con constantes fisiológicas y fórmulas (`VetMedicalRecord`), carnet sanitario de vacunación/desparasitación con alertas de refuerzos (`PetVaccination`) e integración nativa con `ServiceOrder` y el POS.
+
+### Próximo bloque
+
+* **Sprint 26 (Fase 5):** Vertical LAUNDRY / Lavandería y Tintorería.

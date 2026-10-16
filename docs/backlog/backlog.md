@@ -454,5 +454,18 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-126 | Customer Beauty History & Formula Notes | ✅ | Backend/Frontend |
 | KNA-127 | POS Checkout Integration with Reusable `Sale` & `CashSession` | ✅ | Backend/Frontend |
 
+---
+
+# Sprint 25 (Fase 4) — Veterinary & Pet Shop Vertical (Completado)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-128 | Modelos Clínicos y Sanitarios (`Pet`, `VetMedicalRecord`, `PetVaccination`) | ✅ | Backend |
+| KNA-129 | Directorio de Mascotas y Expediente Clínico Integral (`PetsView.vue`) | ✅ | Backend/Frontend |
+| KNA-130 | Consultorio Médico, Signos Vitales, Recetas y Grooming (`VeterinaryConsultationsView.vue`) | ✅ | Backend/Frontend |
+| KNA-131 | Carnet de Vacunación, Desparasitación y Alertas de Refuerzos Próximos | ✅ | Backend/Frontend |
+| KNA-132 | Integración Clínica → Orden de Servicio → Descarga de Medicamentos y Cobro POS | ✅ | Backend/Frontend |
+
+
 
 

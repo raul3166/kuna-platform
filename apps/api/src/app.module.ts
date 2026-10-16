@@ -62,6 +62,7 @@ import { VerticalsModule } from './modules/verticals/verticals.module';
 import { RetailModule } from './modules/retail/retail.module';
 import { AutomotiveModule } from './modules/automotive/automotive.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
+import { VeterinaryModule } from './modules/veterinary/veterinary.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -125,6 +126,7 @@ import { BeautyModule } from './modules/beauty/beauty.module';
     RetailModule,
     AutomotiveModule,
     BeautyModule,
+    VeterinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

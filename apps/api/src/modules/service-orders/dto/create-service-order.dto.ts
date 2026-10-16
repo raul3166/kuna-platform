@@ -63,8 +63,14 @@ export class CreateServiceOrderDto {
   @IsOptional()
   vehicleId?: string;
 
-  @ApiPropertyOptional({ description: 'Identificador del activo (ej: placa o serial)' })
+  @ApiPropertyOptional({ description: 'ID de la mascota asociada (vertical VETERINARY)' })
+  @IsString()
+  @IsOptional()
+  petId?: string;
+
+  @ApiPropertyOptional({ description: 'Identificador del activo (ej: placa, serial o microchip)' })
   @IsString()
   @IsOptional()
   assetIdentifier?: string;
 }
+
