@@ -60,6 +60,7 @@ import { HotelReservationsModule } from './modules/hotel-reservations/hotel-rese
 import { InternalConsumptionsModule } from './modules/internal-consumptions/internal-consumptions.module';
 import { VerticalsModule } from './modules/verticals/verticals.module';
 import { RetailModule } from './modules/retail/retail.module';
+import { AutomotiveModule } from './modules/automotive/automotive.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -121,6 +122,7 @@ import { RetailModule } from './modules/retail/retail.module';
     InternalConsumptionsModule,
     VerticalsModule,
     RetailModule,
+    AutomotiveModule,
   ],
   controllers: [AppController],
   providers: [AppService],

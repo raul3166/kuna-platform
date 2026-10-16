@@ -608,7 +608,7 @@ async function main() {
   // Activar verticales por defecto a todas las organizaciones existentes para retrocompatibilidad
   const allOrganizations = await prisma.organization.findMany();
   const allVerticals = await prisma.vertical.findMany();
-  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO'];
+  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE'];
 
   for (const org of allOrganizations) {
     for (const vert of allVerticals) {

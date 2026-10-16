@@ -57,4 +57,14 @@ export class CreateServiceOrderDto {
   @IsNumber()
   @IsOptional()
   laborTotal?: number;
+
+  @ApiPropertyOptional({ description: 'ID del vehículo asociado (vertical AUTOMOTIVE)' })
+  @IsString()
+  @IsOptional()
+  vehicleId?: string;
+
+  @ApiPropertyOptional({ description: 'Identificador del activo (ej: placa o serial)' })
+  @IsString()
+  @IsOptional()
+  assetIdentifier?: string;
 }

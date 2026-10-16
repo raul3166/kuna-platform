@@ -246,7 +246,7 @@ const closeModal = () => {
 };
 
 // Guardar consumo interno
-const saveConsumption = async (status: 'Aprobado' | 'Borrador') => {
+const saveConsumption = async (_status?: 'Aprobado' | 'Borrador') => {
   if (form.value.items.length === 0) {
     alert('Debe agregar al menos un producto al consumo interno.');
     return;
@@ -266,7 +266,7 @@ const saveConsumption = async (status: 'Aprobado' | 'Borrador') => {
 const payload = {
   organizationId: orgId, // O la variable donde guardes el ID de la organización
   branchId: branchId,       // O la variable donde guardes la sucursal activa
-  userId: authStore.user.id,                 // O el ID del usuario en sesión
+  userId: authStore.user?.id || '',                 // O el ID del usuario en sesión
   department: form.value.department,
   notes: form.value.notes,
   items: form.value.items.map((item) => ({

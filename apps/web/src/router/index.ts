@@ -285,6 +285,24 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/ServiceReportsView.vue'),
     meta: { requiresAuth: true, requiredVertical: 'SERVICES' }
   },
+  {
+    path: '/automotive-dashboard',
+    name: 'automotive-dashboard',
+    component: () => import('../views/AutomotiveDashboardView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'AUTOMOTIVE' },
+  },
+  {
+    path: '/automotive-checkin',
+    name: 'automotive-checkin',
+    component: () => import('../views/AutomotiveCheckInView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'AUTOMOTIVE' },
+  },
+  {
+    path: '/vehicles',
+    name: 'vehicles',
+    component: () => import('../views/VehiclesView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'AUTOMOTIVE' },
+  },
 {
   path: '/hotel-dashboard',
   name: 'hotel-dashboard',

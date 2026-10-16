@@ -340,7 +340,7 @@ onMounted(() => { loadPurchaseModuleData() })
         <div v-if="createdOrderId" class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm space-y-6">
           <h3 class="text-lg font-bold text-slate-900">2. Cargar Ítems al Documento</h3>
 
-          <form @submit.prevent="handleCreateOrderItem" class="grid gap-4 sm:grid-cols-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <form @submit.prevent="handleAddItemToOrder" class="grid gap-4 sm:grid-cols-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div class="sm:col-span-2">
               <label class="block text-sm font-semibold text-slate-700">Producto / Insumo</label>
               <select v-model="currentItem.productId" @change="handleProductChange" class="mt-1 w-full border border-slate-300 rounded-lg p-2 text-sm bg-white">

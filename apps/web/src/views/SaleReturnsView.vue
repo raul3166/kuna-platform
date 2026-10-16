@@ -8,6 +8,7 @@ interface Sale { id: string; saleNumber: string }
 interface Customer { id: string; firstName: string; lastName: string }
 interface SaleReturn {
   id: string
+  organizationId?: string
   returnNumber: string
   status: 'DRAFT' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
   returnDate: string

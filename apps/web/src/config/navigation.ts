@@ -124,6 +124,16 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    key: 'automotive',
+    label: 'Taller Automotriz',
+    requiredVertical: 'AUTOMOTIVE',
+    items: [
+      { label: 'Patio & Bahías (Hub)', icon: '🏎️', to: '/automotive-dashboard' },
+      { label: 'Recepción (Check-In)', icon: '📝', to: '/automotive-checkin' },
+      { label: 'Flota / Vehículos', icon: '🚗', to: '/vehicles' },
+    ],
+  },
+  {
     key: 'hotel',
     label: 'Recepción Hotel',
     requiredVertical: 'HOTEL',

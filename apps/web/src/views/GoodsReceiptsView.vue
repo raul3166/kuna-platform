@@ -9,6 +9,7 @@ const authStore = useAuthStore()
 interface PurchaseOrder {
   id: string
   number: string
+  status?: string
   supplier?: { companyName: string }
   items?: any[]
 }

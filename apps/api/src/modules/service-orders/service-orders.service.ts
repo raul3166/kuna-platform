@@ -19,6 +19,23 @@ export class ServiceOrdersService {
     let initialLaborTotal = createDto.laborTotal || 0;
 
     try {
+      let assetName = createDto.assetName;
+      let assetIdentifier = createDto.assetIdentifier;
+
+      if (createDto.vehicleId) {
+        const vehicle = await this.prisma.vehicle.findUnique({
+          where: { id: createDto.vehicleId },
+        });
+        if (vehicle) {
+          if (!assetName || assetName.trim() === '' || assetName === 'Vehículo') {
+            assetName = `${vehicle.brand} ${vehicle.model} ${vehicle.year || ''}`.trim();
+          }
+          if (!assetIdentifier) {
+            assetIdentifier = vehicle.licensePlate;
+          }
+        }
+      }
+
       if (createDto.serviceItemId && !createDto.laborTotal) {
         const serviceItem = await this.prisma.serviceItem.findUnique({
           where: { id: createDto.serviceItemId },
@@ -34,9 +51,11 @@ export class ServiceOrdersService {
           branchId: createDto.branchId!,
           customerId: createDto.customerId,
           orderNumber,
-          assetName: createDto.assetName,
+          assetName,
+          assetIdentifier,
           status: createDto.status || ServiceOrderStatus.PENDING,
 
+          ...(createDto.vehicleId && { vehicleId: createDto.vehicleId }),
           ...(createDto.serviceItemId && { serviceItemId: createDto.serviceItemId }),
 
           laborTotal: initialLaborTotal,
@@ -52,6 +71,7 @@ export class ServiceOrdersService {
           materials: true,
           customer: true,
           assignedWorker: true,
+          vehicle: true,
         },
       });
     } catch (error) {
@@ -83,8 +103,9 @@ export class ServiceOrdersService {
       },
       customer: true,
       assignedWorker: true,
+      vehicle: true,
       serviceItem: {
-        include: { product: true }, // <-- Agregar aquí también
+        include: { product: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -102,6 +123,7 @@ export class ServiceOrdersService {
       customer: true,
       assignedWorker: true,
       sale: true,
+      vehicle: true,
       serviceItem: {
         include: { product: true }, // <-- Carga el servicio base y su producto POS
       },
@@ -119,6 +141,7 @@ export class ServiceOrdersService {
           customer: true,
           assignedWorker: true,
           sale: true,
+          vehicle: true,
           serviceItem: {
             include: { product: true }, // <-- Resuelve TS2322 (falta serviceItem en el tipo)
           },
@@ -196,6 +219,11 @@ export class ServiceOrdersService {
       include: {
         tasks: true,
         serviceItem: true,
+        sale: {
+          include: {
+            items: true,
+          },
+        },
         materials: {
           include: {
             product: {
@@ -233,7 +261,12 @@ export class ServiceOrdersService {
       const product = mat.product;
       const trackStock = product.category?.trackStock ?? false;
 
-      if (trackStock) {
+      // Verificar si una venta ya descontó este producto previamente
+      const alreadyDiscountedBySale =
+        order.sale?.status === SaleStatus.CONFIRMED &&
+        order.sale.items.some((si) => si.productId === product.id);
+
+      if (trackStock && !alreadyDiscountedBySale) {
         const branchStock = await tx.branchProductStock.findUnique({
           where: {
             branchId_productId: {

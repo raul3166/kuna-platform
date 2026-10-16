@@ -385,7 +385,15 @@ onMounted(() => {
                   </p>
                 </td>
                 <td class="px-6 py-4">
-                  <p class="font-semibold text-slate-800">{{ order.assetName || order.title || 'S/D' }}</p>
+                  <div class="flex items-center gap-2">
+                    <span
+                      v-if="order.vehicle?.licensePlate || order.assetIdentifier"
+                      class="px-1.5 py-0.5 bg-amber-300 text-slate-900 border border-slate-900 rounded font-mono font-black text-[10px]"
+                    >
+                      {{ order.vehicle?.licensePlate || order.assetIdentifier }}
+                    </span>
+                    <p class="font-semibold text-slate-800">{{ order.assetName || order.title || 'S/D' }}</p>
+                  </div>
                 </td>
                 <td class="px-6 py-4">
                   <span v-if="order.assignedWorker" class="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">

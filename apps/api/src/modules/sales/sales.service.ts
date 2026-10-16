@@ -593,11 +593,7 @@ async confirm(id: string) {
     // MAPEO DE MATERIALES YA DESCONTADOS POR ORDEN DE SERVICIO
     // ========================================================
     const serviceOrderConsumedMap = new Map<string, number>();
-    if (
-      sale.serviceOrder &&
-      (sale.serviceOrder.status === ServiceOrderStatus.COMPLETED ||
-        sale.serviceOrder.status === ServiceOrderStatus.BILLED)
-    ) {
+    if (sale.serviceOrder && sale.serviceOrder.materials) {
       for (const mat of sale.serviceOrder.materials) {
         const prev = serviceOrderConsumedMap.get(mat.productId) || 0;
         serviceOrderConsumedMap.set(mat.productId, prev + Number(mat.quantity));

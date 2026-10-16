@@ -191,34 +191,11 @@ const totalSold = computed(() => {
 
 /*
  * ============================================================
- * TOTAL ENTRADAS DE INVENTARIO
- * ============================================================
- */
-const totalEntries = computed(() => {
-  return kardexMovements.value.reduce((total, movement) => {
-    /*
-     * Si el backend informa explícitamente si el movimiento
-     * afecta inventario, respetamos esa información.
-     */
-    if (movement.affectsStock === false) {
-      return total
-    }
-
-    return total + Number(movement.entry || 0)
-  }, 0)
-})
-
-/*
- * ============================================================
  * TOTAL SALIDAS DE INVENTARIO
  * ============================================================
  */
 const totalExits = computed(() => {
   return kardexMovements.value.reduce((total, movement) => {
-    /*
-     * Una venta de un producto que NO controla inventario
-     * aparece en el Kardex, pero NO cuenta como salida física.
-     */
     if (
       movement.movementType === 'SALE' &&
       movement.affectsStock === false
@@ -230,48 +207,7 @@ const totalExits = computed(() => {
   }, 0)
 })
 
-/*
- * ============================================================
- * SALDO CALCULADO EN LA VISTA
- * ============================================================
- *
- * Este cálculo tiene como objetivo que un producto de menú
- * no termine mostrando stock negativo solamente porque
- * registra sus ventas en el Kardex.
- */
-const calculatedInventoryBalance = computed(() => {
-  let balance = 0
 
-  for (const movement of kardexMovements.value) {
-    /*
-     * Si sabemos que el movimiento NO afecta inventario,
-     * lo ignoramos para el saldo físico.
-     */
-    if (movement.affectsStock === false) {
-      continue
-    }
-
-    /*
-     * Si el producto completo no controla stock,
-     * las ventas no afectan el saldo.
-     */
-    if (
-      movement.movementType === 'SALE' &&
-      !tracksStock.value
-    ) {
-      continue
-    }
-
-    /*
-     * Utilizamos entradas y salidas ya calculadas
-     * por el backend.
-     */
-    balance += Number(movement.entry || 0)
-    balance -= Number(movement.exit || 0)
-  }
-
-  return balance
-})
 
 /*
  * ============================================================

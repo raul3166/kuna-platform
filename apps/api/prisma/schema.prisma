@@ -109,6 +109,22 @@ enum ServiceOrderStatus {
   CANCELLED
 }
 
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  VAN
+  TRUCK
+  OTHER
+}
+
+enum FuelLevel {
+  EMPTY
+  QUARTER
+  HALF
+  THREE_QUARTERS
+  FULL
+}
+
 // ============================================================
 // ESTRUCTURA IMPUESTOS
 // ============================================================
@@ -179,6 +195,8 @@ model Organization {
   hotelRooms           HotelRoom[]
   internalConsumptions InternalConsumption[]
   organizationVerticals OrganizationVertical[]
+  vehicles             Vehicle[]
+  vehicleCheckIns      VehicleCheckIn[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -224,6 +242,7 @@ model Branch {
   hotelReservations    HotelReservation[]
   hotelRooms           HotelRoom[]
   internalConsumptions InternalConsumption[]
+  vehicleCheckIns      VehicleCheckIn[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -1010,6 +1029,7 @@ model ServiceOrder {
   total            Decimal            @default(0) @db.Decimal(12, 2)
   saleId           String?            @unique
   serviceItemId    String?         // <-- Asegúrate de tener este campo
+  vehicleId        String?
 
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -1020,6 +1040,8 @@ model ServiceOrder {
   assignedWorker     ServiceWorker?         @relation("ServiceOrderAssignedWorker", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
   sale               Sale?                  @relation(fields: [saleId], references: [id], onDelete: SetNull)
   serviceItem        ServiceItem?    @relation(fields: [serviceItemId], references: [id])
+  vehicle            Vehicle?               @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  vehicleCheckIn     VehicleCheckIn?
   tasks              ServiceOrderTask[]
   materials          ServiceOrderMaterial[]
   inventoryMovements InventoryMovement[]
@@ -1029,6 +1051,7 @@ model ServiceOrder {
   @@index([branchId])
   @@index([customerId])
   @@index([assignedWorkerId])
+  @@index([vehicleId])
   @@index([status])
   @@index([createdAt])
 }
@@ -1216,6 +1239,7 @@ model Customer {
   bookings             StudioBooking[]
   serviceOrders        ServiceOrder[]
   hotelReservations     HotelReservation[]
+  vehicles             Vehicle[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -1690,3 +1714,63 @@ model OrganizationVertical {
   @@index([organizationId])
   @@index([verticalId])
 }
+
+// ============================================================
+// VERTICAL AUTOMOTIVE / TALLER MECÁNICO
+// ============================================================
+
+model Vehicle {
+  id             String      @id @default(cuid())
+  organizationId String
+  customerId     String
+  licensePlate   String      // Placa o patente (ej: "ABC-123")
+  brand          String      // Ej: "Toyota", "Chevrolet", "Yamaha"
+  model          String      // Ej: "Corolla", "Spark GT", "MT-03"
+  year           Int?        // Año modelo ej: 2022
+  color          String?     // Ej: "Gris Plata"
+  vin            String?     // Número de chasis / VIN
+  mileage        Int?        // Kilometraje actual o último registrado
+  vehicleType    VehicleType @default(CAR)
+  fuelType       String?     // Gasolina, Diésel, Gas, Híbrido, Eléctrico
+  notes          String?
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceOrders  ServiceOrder[]
+  checkIns       VehicleCheckIn[]
+
+  @@unique([organizationId, licensePlate])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([licensePlate])
+}
+
+model VehicleCheckIn {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  branchId           String
+  vehicleId          String
+  serviceOrderId     String?   @unique
+  mileage            Int       // Kilometraje al momento del ingreso
+  fuelLevel          FuelLevel @default(HALF)
+  damages            Json?     // Registro de abolladuras, rayones, etc.
+  inventoryCheck     Json?     // Checklist de pertenencias (gato, llanta repuesto, documentos, etc.)
+  customerBelongings String?   // Objetos de valor declarados
+  receptionNotes     String?   // Notas de recepción
+  receivedById       String?   // Técnico o usuario que recepcionó
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([vehicleId])
+}
+
