@@ -7,6 +7,78 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.0.0-rc1] - 2026-10-15
+
+### Added
+
+#### Arquitectura de Verticales de Negocio (Fase 0)
+* **Catálogo Maestro de Verticales:** Modelos `Vertical` y `OrganizationVertical` en Prisma soportando 14 verticales de industria (Retail, Restaurant, Pharmacy, Gym, Studio, Services, Hotel, Automotive, Beauty, Veterinary, Laundry, Bakery, Academy, Real Estate).
+* **Guarda de Acceso a Nivel de API:** Decorador `@RequiresVertical(code)` y `VerticalGuard` para proteger rutas del backend contra verticales no contratados o deshabilitados.
+* **Store Reactivo y Menú Dinámico:** Store `useVerticalsStore` en Pinia y adaptación de `navigation.ts` para ocultar o mostrar dinámicamente opciones del Sidebar según los verticales habilitados para la organización activa.
+* **Gobierno de Verticales por Organización:** Pestaña "Verticales de Negocio" en `OrganizationsView.vue` con interruptores de activación en tiempo real y modal de configuración JSON personalizada por vertical.
+
+#### Vertical RETAIL / Tienda (Fase 1)
+* **Controlador y Servicio Retail:** Endpoints `/retail/dashboard`, `/retail/config` con métricas de ventas minoristas, rotación de stock y ticket promedio.
+* **Dashboard Retail:** Vista `RetailDashboardView.vue` con KPIs de retail, monitor de productos bajo stock mínimo, márgenes de ganancia y acceso rápido a terminal POS.
+* **Multi-Tenancy Automático:** Interceptores de Axios para inyección de cabeceras `x-organization-id` y `x-branch-id`, y función `resolveOrganizationId` en el backend para resolución transparente del tenant.
+
+#### Vertical AUTOMOTIVE / Taller Automotriz y Motos (Fase 2)
+* **Modelos de Vehículos y Recepción Técnica:** Entidades `Vehicle` y `VehicleCheckIn` con soporte para tipos de vehículo (`CAR`, `MOTORCYCLE`, `VAN`, `TRUCK`) y niveles de combustible (`EMPTY`, `QUARTER`, `HALF`, `THREE_QUARTERS`, `FULL`).
+* **Directorio y Hoja de Vida de Vehículos:** Vista `VehiclesView.vue` para administración de flota, asociación con clientes del CRM e historial clínico completo de mantenimientos pasados.
+* **Hoja de Recepción Técnica (Check-In):** Vista `AutomotiveCheckInView.vue` con checklist de inventario físico (llaves, documentos, kit de carretera, gato, llanta de repuesto), registro de abolladuras o golpes preexistentes, y generación atómica de la orden de servicio (`ServiceOrder`).
+* **Patio y Bahías de Taller (Kanban):** Vista `AutomotiveDashboardView.vue` con tablero visual de bahías (En Patio, En Diagnóstico/Proceso, Esperando Repuestos, Listo para Entrega, Entregado) y configuración de puestos de trabajo por sucursal.
+* **Insignias en Órdenes de Servicio:** Identificación de placa del vehículo en `ServiceOrdersView.vue` con redirección contextual al detalle automotriz.
+
+### Fixed
+* **Protección contra Doble Descuento de Inventario:** Resolución del conflicto entre el consumo técnico de materiales en órdenes de trabajo (`completeOrder` en `ServiceOrdersService`) y la confirmación de facturación POS (`SalesService.confirm`). Si una orden ya consumió stock como `SERVICE_CONSUMPTION`, la factura de venta no descuenta doblemente los repuestos.
+* **Tipado Estricto de Compilación:** Corrección de tipos TypeScript en `GoodsReceiptsView`, `InternalConsumptionsView`, `KardexView`, `PurchaseOrdersView` y `SaleReturnsView`, garantizando compilación limpia con `vue-tsc -b` y `vite build` en el frontend y `nest build` en el backend.
+
+---
+## [1.6.0-rc1] - 2026-10-01
+
+### Added
+* **Control de Lotes y Fechas de Vencimiento:** Módulo `product-lots` y vista `ExpiringLotsView.vue` con semáforos preventivos de caducidad a 30, 60 y 90 días.
+* **Salud y Farmacia (PHARMACY):** Extensión de productos farmacéuticos (`product-pharmas`), control de registro sanitario Invima/FDA y recetas médicas (`MedicalPrescriptionsView.vue`).
+
+---
+## [1.5.0-rc1] - 2026-09-20
+
+### Added
+* **Vertical Hotel y Hospedaje (HOTEL):** Módulos `hotel-rooms` y `hotel-reservations` con interfaces `HotelRoomsView.vue`, `HotelReservationsView.vue`, `HotelDashboardView.vue` y `HotelReportsView.vue` para control de habitaciones, check-in, check-out y estados de limpieza.
+* **Vertical Fitness y Gimnasios (GYM):** Módulos de planes de membresía (`gym-membership-plans`), suscripciones con fecha de expiración (`gym-subscriptions`), control de acceso en recepción (`GymCheckInView.vue`) y directorio de instructores (`GymInstructorsView.vue`).
+* **Vertical Boutique Studios (STUDIO):** Paquetes de clases por créditos (`studio-plans`), agendamiento y aforos (`studio-schedules`), reserva de cupos (`studio-bookings`) y validación de asistencia (`StudioCheckInView.vue`).
+
+---
+## [1.4.0-rc1] - 2026-09-10
+
+### Added
+* **Módulo de Servicios Técnicos y Órdenes de Trabajo (SERVICES):** Módulos `service-orders`, `service-order-tasks`, `service-order-materials` y `service-workers`.
+* **Comisiones y Rentabilidad:** Liquidación de comisiones por técnico (`ServiceCommissionsView.vue`) y reportes operativos de servicios (`ServiceReportsView.vue`).
+
+---
+## [1.3.0-rc1] - 2026-09-02
+
+### Added
+* **Dashboard Ejecutivo y Analítica Gerencial:** Vista `ExecutiveDashboardView.vue` con KPIs financieros en tiempo real (ingresos brutos, ticket promedio, ventas por categoría y márgenes).
+* **Reportes de Ventas:** Vista `SalesPerformanceReportView.vue` para auditoría por canales, sucursales y medios de pago.
+* **Resumen Fiscal:** Módulo `FiscalSummaryView.vue` e interfaz de impuestos `TaxesView.vue`.
+
+---
+## [1.2.0-rc1] - 2026-08-30
+
+### Added
+* **Salones y Mesas (RESTAURANT):** Vista `RoomLayoutView.vue` para distribución de salones y estado de mesas (`AVAILABLE`, `OCCUPIED`).
+* **Comandero y Pantalla de Cocina (KDS):** Interfaz para meseros (`RestaurantOrderView.vue`) y monitor de cocina en tiempo real (`KitchenView.vue`) con semáforos de tiempo y notas de preparación.
+* **Liberación Atómica de Mesa:** Integración directa con el punto de venta (POS) para cobrar la comanda, descontar el inventario y liberar la mesa en una sola transacción.
+
+---
+## [1.1.0-rc1] - 2026-08-29
+
+### Added
+* **Directorio de Clientes CRM:** Vista `CustomersView.vue` con filtrado dinámico, estado activo/inactivo y multicanales de contacto.
+* **Asistente Upsert de Clientes:** Modal con validación de tipos de documento de identificación para Latinoamérica (Cédula, NIT, Pasaporte, RUT).
+
+---
 ## [1.0.0-rc4] - 2026-08-28
 
 ### Added

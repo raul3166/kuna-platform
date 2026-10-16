@@ -1,18 +1,24 @@
 # KUNA Product Backlog
 
-> Última actualización: 2026-07-24
+> Última actualización: 2026-10-15
 
 ---
 
 # Estado del Proyecto
 
-| EPIC-01 | Core Platform | 🟢 Completado |
-| EPIC-02 | Identity & Security | 🟢 Completado |
-| EPIC-03 | Restaurant Operations | ⬜ Pendiente |
-| EPIC-04 | Reservations | ⬜ Pendiente |
-| EPIC-05 | Inventory | 🟡 En progreso |
-| EPIC-06 | Billing | 🟡 En progreso |
-| EPIC-07 | Analytics & Reports | ⬜ Pendiente |
+| EPIC | Módulo / Dominio | Estado |
+| --- | --- | :---: |
+| EPIC-01 | Core Platform (Organizations, Branches, Users, RBAC) | 🟢 Completado |
+| EPIC-02 | Identity, Security & Auth | 🟢 Completado |
+| EPIC-03 | Restaurant Operations & KDS | 🟢 Completado |
+| EPIC-04 | Reservations & Hospitality (Hotel, Studio, Gym) | 🟢 Completado |
+| EPIC-05 | Inventory Core, Kardex, Transfers & Consumptions | 🟢 Completado |
+| EPIC-06 | Commercial, Sales, POS & Cash Sessions | 🟢 Completado |
+| EPIC-07 | Analytics, BI & Executive Reports | 🟢 Completado |
+| EPIC-08 | Multi-Vertical SaaS Architecture & Vertical Catalog | 🟢 Completado |
+| EPIC-09 | Retail Industry Vertical | 🟢 Completado |
+| EPIC-10 | Automotive & Motorcycle Workshop Vertical | 🟢 Completado |
+| EPIC-11 | Beauty, Wellness & Salon Vertical | 🟡 En planificación |
 
 ---
 
@@ -300,26 +306,153 @@ IDHistoria de UsuarioPrioridadAlcanceObjetivo Técnico en KUNAKNA-075Thermal Pri
 
 | ID      | Historia                          | Estado | Alcance  |
 | ------- | --------------------------------- | :----: | -------- |
-| KNA-079 | Customers Directory Grid          |   ⏳   | Frontend |
-| KNA-080 | Customer Creation & Upsert Form   |   ⏳   | Frontend |
+| KNA-079 | Customers Directory Grid          |   ✅   | Frontend |
+| KNA-080 | Customer Creation & Upsert Form   |   ✅   | Frontend |
 
+**Sprint 14 completado al 100%.**
 
-Sprint 15 — Sales Analytics, Reports & Executive DashboardObjetivo: Proveer visibilidad estratégica sobre las operaciones comerciales, hábitos de compra y movimiento de stock consolidado por sucursal.IDHistoriaEstadoAlcanceKNA-081Executive KPI Dashboard (Ventas, Ticket Promedio, Margen Bruto)⏳Frontend/BackendKNA-082Sales & Performance Reports (Por Sucursal, Canal y Medio de Pago)⏳Frontend/BackendKNA-083Top Sellers & Inventory Turnover Analytics⏳Frontend/BackendKNA-084Executive Data Export Engine (Formatos CSV / Excel / PDF)⏳Frontend/Backend
+# Sprint 15 — Sales Analytics, Reports & Executive Dashboard
 
-Sprint 16 — Restaurant Module & Table Management (Módulo Vertical)Objetivo: Desarrollar el primer módulo de industria de KUNA para operaciones gastronómicas, integrado nativamente con el motor de POS, inventarios y caja.IDHistoriaEstadoAlcanceKNA-085Room & Table Layout Engine (Salones y Mesas)⏳Frontend/BackendKNA-086Order Taking & Waiter Interface (Comandero)⏳Frontend/BackendKNA-087Kitchen Display System — KDS (Pantalla de Cocina)⏳Frontend/BackendKNA-088Table Checkout & POS Session Integration⏳Frontend/Backend
+Objetivo: Proveer visibilidad estratégica sobre las operaciones comerciales, hábitos de compra y movimiento de stock consolidado por sucursal.
 
-Sprint 17 — Accounting, Tax Localization & CxC / CxP CoreObjetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y control de cuentas pendientes comerciales y operativas.IDHistoriaEstadoAlcanceKNA-089Latam Tax Engine & Rules (IVA, INC, Retenciones)⏳Frontend/BackendKNA-090Sales & Purchase Auxiliary Ledger (Libros Fiscales)⏳Frontend/BackendKNA-091Accounts Receivable — CxC (Crédito a Clientes CRM)⏳Frontend/BackendKNA-092Accounts Payable — CxP (Obligaciones con Proveedores)⏳Frontend/Backend
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-081 | Executive KPI Dashboard (Ventas, Ticket Promedio, Margen Bruto) | ✅ | Frontend/Backend |
+| KNA-082 | Sales & Performance Reports (Por Sucursal, Canal y Medio de Pago) | ✅ | Frontend/Backend |
+| KNA-083 | Top Sellers & Inventory Turnover Analytics | ✅ | Frontend/Backend |
+| KNA-084 | Executive Data Export Engine (Formatos CSV / Excel / PDF) | ✅ | Frontend/Backend |
 
-Sprint de Gimnasio
+**Sprint 15 completado al 100%.**
 
-Diseño del Esquema de Base de Datos (Prisma): Definir los modelos para MembershipPlan (planes de membresía), Member (socios/clientes con datos específicos del gimnasio), Subscription (membresías activas con fechas de inicio y fin) y AttendanceLog (registro de accesos y asistencias).
+# Sprint 16 — Restaurant Module & Table Management (Módulo Vertical)
 
-Desarrollo del Backend en NestJS: Crear los módulos, controladores y servicios para gestionar los planes de membresía, la inscripción de socios y la validación de accesos vigentes.
+Objetivo: Desarrollar el primer módulo de industria de KUNA para operaciones gastronómicas, integrado nativamente con el motor de POS, inventarios y caja.
 
-Implementación de Lógica de Cobro y Validación: Programar la regla de negocio para verificar si una suscripción está activa al momento del ingreso y manejar los estados de pago o renovaciones.
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-085 | Room & Table Layout Engine (Salones y Mesas) | ✅ | Frontend/Backend |
+| KNA-086 | Order Taking & Waiter Interface (Comandero) | ✅ | Frontend/Backend |
+| KNA-087 | Kitchen Display System — KDS (Pantalla de Cocina) | ✅ | Frontend/Backend |
+| KNA-088 | Table Checkout & POS Session Integration | ✅ | Frontend/Backend |
 
-Diseño del Frontend (Vistas en Vue): Construir la interfaz de usuario para la administración de planes, el listado de socios y la pantalla de control de acceso / check-in.
+**Sprint 16 completado al 100%.**
 
-Configuración de Permisos y Semillas: Agregar los códigos de permisos correspondientes al módulo de gimnasio en el script de semillas de Prisma y asociarlos al rol de administrador.
+# Sprint 17 — Accounting, Tax Localization & CxC / CxP Core
+
+Objetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y control de cuentas pendientes comerciales y operativas.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-089 | Latam Tax Engine & Rules (IVA, INC, Retenciones) | ✅ | Frontend/Backend |
+| KNA-090 | Sales & Purchase Auxiliary Ledger (Libros Fiscales) | ✅ | Frontend/Backend |
+| KNA-091 | Accounts Receivable — CxC (Crédito a Clientes CRM) | ⏳ | Frontend/Backend |
+| KNA-092 | Accounts Payable — CxP (Obligaciones con Proveedores) | ⏳ | Frontend/Backend |
+
+---
+
+# Sprint de Gimnasio & Boutique Studios
+
+- **Diseño del Esquema de Base de Datos (Prisma):** Modelos `MembershipPlan`, `Member`/`Customer`, `Subscription`, `AttendanceLog`, `StudioPlan`, `StudioSchedule` y `StudioBooking`.
+- **Desarrollo del Backend en NestJS:** Módulos, controladores y servicios para gestionar planes de membresía, inscripción de socios y validación de accesos vigentes.
+- **Implementación de Lógica de Cobro y Validación:** Regla de negocio para verificar si una suscripción está activa al momento del ingreso y manejar estados de pago.
+- **Diseño del Frontend (Vistas en Vue):** Vistas `GymMembershipPlansView`, `GymSubscriptionsView`, `GymCheckInView`, `StudioPlansView`, `StudioSchedulesView`, `StudioBookingsView` y `StudioCheckInView`.
+- **Configuración de Permisos y Semillas:** Códigos de permisos correspondientes al módulo en el script de semillas de Prisma.
+
+---
+
+# Sprint 18 — Technical Services & Work Orders (Módulo Vertical SERVICES)
+
+Objetivo: Gestionar órdenes de servicio técnico, asignación de tareas, operarios y consumo de repuestos.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-093 | Service Orders Core & Status Engine | ✅ | Backend/Frontend |
+| KNA-094 | Service Tasks & Labor Breakdown | ✅ | Backend/Frontend |
+| KNA-095 | Service Order Materials & Inventory Depletion | ✅ | Backend/Frontend |
+| KNA-096 | Service Technicians Directory & Commissions Ledger | ✅ | Backend/Frontend |
+| KNA-097 | Service Profitability & Execution Time Reports | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 19 — Hospitality & Wellness Verticals (HOTEL, GYM, STUDIO)
+
+Objetivo: Habilitar motores específicos para hospedaje hotelero, gestión de gimnasios y boutique studios.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-098 | Hotel Rooms & Layout Management | ✅ | Backend/Frontend |
+| KNA-099 | Hotel Reservations & Guest Check-In/Check-Out | ✅ | Backend/Frontend |
+| KNA-100 | Gym Membership Plans & Subscriptions | ✅ | Backend/Frontend |
+| KNA-101 | Gym Frontdesk Access Control | ✅ | Backend/Frontend |
+| KNA-102 | Studio Credit Plans & Class Schedules | ✅ | Backend/Frontend |
+| KNA-103 | Studio Class Booking & Attendance | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 20 — Healthcare & Pharmacy Compliance (Módulo Vertical PHARMACY)
+
+Objetivo: Control de inventario farmacéutico, trazabilidad de lotes, alertas preventivas y recetas.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-104 | Pharmaceutical Metadata & Sanitary Registration | ✅ | Backend/Frontend |
+| KNA-105 | Product Lots & Batch Tracking Architecture | ✅ | Backend/Frontend |
+| KNA-106 | Expiration Date Semaphores & Early Alert Dashboard | ✅ | Backend/Frontend |
+| KNA-107 | Medical Prescriptions Ledger & Customer Link | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 21 — Multi-Vertical SaaS Platform Architecture (Fase 0)
+
+Objetivo: Arquitectura de verticales desacoplados sobre el Core Empresarial Común.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-108 | Master Verticals Catalog Model & Seed (14 Verticales) | ✅ | Backend |
+| KNA-109 | OrganizationVertical Pivot Table with Custom JSON Settings | ✅ | Backend |
+| KNA-110 | Backend Security Guards (`@RequiresVertical()` & `VerticalGuard`) | ✅ | Backend |
+| KNA-111 | Reactive Verticals Store in Pinia & Dynamic Sidebar Navigation Filter | ✅ | Frontend |
+| KNA-112 | Tenant Verticals Management Tab & Config Modal in Organizations UI | ✅ | Frontend |
+
+---
+
+# Sprint 22 — Retail Industry Vertical (Fase 1)
+
+Objetivo: Capacidades para tiendas y retail, dashboard de márgenes y ventas rápidas.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-113 | Retail Controller & Service (`/retail/dashboard`, `/retail/config`) | ✅ | Backend |
+| KNA-114 | Retail Dashboard View with Stock-Out & Margin Alerts | ✅ | Frontend |
+| KNA-115 | Transparent Tenant Header Injection (`x-organization-id`, `x-branch-id`) | ✅ | Frontend/Backend |
+| KNA-116 | Quick POS Access & Minimum Margin Enforcement | ✅ | Frontend/Backend |
+
+---
+
+# Sprint 23 — Automotive & Motorcycle Workshop Vertical (Fase 2)
+
+Objetivo: Módulo especializado para talleres automotrices y motos.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-117 | Vehicle & VehicleCheckIn Relational Prisma Models | ✅ | Backend |
+| KNA-118 | Fleet & Patient Clinical Service History Directory (`VehiclesView.vue`) | ✅ | Frontend/Backend |
+| KNA-119 | Interactive Technical Reception Sheet with Fuel & Damage Mapping | ✅ | Frontend/Backend |
+| KNA-120 | Workshop Yard & Workbays Kanban Board (`AutomotiveDashboardView.vue`) | ✅ | Frontend/Backend |
+| KNA-121 | Anti-Double Inventory Deduction Engine between Work Orders and POS | ✅ | Backend |
+| KNA-122 | Strict TypeScript Build Sanitization (`vue-tsc` & `nest build` exit 0) | ✅ | Fullstack |
+
+---
+
+# Sprint 24 (Fase 3) — Beauty & Salon Vertical (En Planificación)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-123 | Stylist & Staff Availability Calendar (`StylistSchedule`) | 📋 Planificado | Backend/Frontend |
+| KNA-124 | Appointments & Booking Grid (`Appointment`) | 📋 Planificado | Backend/Frontend |
+| KNA-125 | Beauty Service Catalog & Professional Commissions | 📋 Planificado | Backend/Frontend |
+| KNA-126 | Customer Beauty History & Formula Notes | 📋 Planificado | Backend/Frontend |
+| KNA-127 | POS Checkout Integration with Reusable `Sale` & `CashSession` | 📋 Planificado | Backend/Frontend |
+
 
 

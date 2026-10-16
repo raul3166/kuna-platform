@@ -111,3 +111,57 @@
 * **Order Taking & Waiter Interface:** Sistema de comandero conectado a mesas activas con historial por sesión.
 * **Kitchen Display System (KDS):** Monitor de cocina en tiempo real con control de tiempos de espera, alertas de demora y visualización de notas de preparación por ítem.
 * **Table Checkout & POS Integration:** Integración fluida entre facturación POS, consumo de inventario atómico (ACID), cobro y liberación automática de mesa.
+
+---
+
+## v1.3.0-rc1
+
+* **Executive Analytics & KPI Dashboard:** Tablero gerencial con ingresos brutos, margen comercial, ticket promedio y comparativas de desempeño.
+* **Multi-Branch Sales Performance Ledger:** Auditoría analítica de ventas por canal, sucursal física y métodos de pago.
+* **Fiscal Summary & Latam Taxes:** Motor de parametrización de impuestos (`IVA`, `INC`, `Retenciones`) y resumen fiscal de operaciones.
+
+---
+
+## v1.4.0-rc1
+
+* **Technical Services & Work Orders:** Módulo de órdenes de servicio técnico (`ServiceOrder`), estados de avance, cotización y ejecución.
+* **Tasks & Material Consumption:** Detalle granular de tareas técnicas (`ServiceOrderTask`) e insumos/repuestos descontados del inventario (`ServiceOrderMaterial`).
+* **Technician Management & Commissions:** Directorio de operarios técnicos (`ServiceWorker`), asignación de órdenes y liquidación de comisiones por mano de obra.
+* **Service Profitability Reports:** Informes de rentabilidad y tiempos de servicio técnico.
+
+---
+
+## v1.5.0-rc1
+
+* **Hotel & Hospitality Engine:** Gestión de habitaciones (`HotelRoom`), reservaciones (`HotelReservation`), tarifas por temporada, registro de huéspedes y control de estatus de limpieza.
+* **Gym & Fitness Center Engine:** Catálogo de planes de membresía (`GymMembershipPlan`), suscripciones con fecha de corte (`GymSubscription`), control de acceso/torniquete con validación en caliente (`GymAttendance`), y directorio de entrenadores (`Instructor`).
+* **Boutique Studio Engine (Yoga, Pilates, Barre):** Paquetes de clases por créditos (`StudioPlan`), suscripciones activas (`StudioSubscription`), programación de sesiones y aforos (`StudioSchedule`), grilla de reservas (`StudioBooking`) y registro de asistencia.
+
+---
+
+## v1.6.0-rc1
+
+* **Pharmaceutical & Healthcare Compliance:** Extensión de productos farmacéuticos (`ProductPharma`), registro sanitario Invima/FDA y recetas médicas (`MedicalPrescription`).
+* **Product Lots & Expiration Engine:** Trazabilidad de lotes (`ProductLot`) con semáforos preventivos de vencimiento (30, 60, 90 días) para evitar pérdidas por caducidad.
+
+---
+
+## v2.0.0-rc1
+
+* **Multi-Vertical SaaS Architecture (Fase 0):**
+  * Catálogo maestro de 14 verticales de negocio con metadatos y esquemas de configuración JSON.
+  * Modelo pivote `OrganizationVertical` para activación/desactivación granular de verticales por empresa inquilina.
+  * Guarda de seguridad en backend `@RequiresVertical()` y `VerticalGuard` bloqueando accesos no autorizados a rutas de verticales inactivos.
+  * Store de Pinia reactivo `useVerticalsStore` para filtrado en caliente del menú lateral (Sidebar) según el tenant activo.
+  * Pestaña de administración "Verticales de Negocio" en el catálogo de Organizaciones.
+* **Retail Industry Vertical (Fase 1):**
+  * Módulo `/retail` con métricas operativas de comercio minorista y rotación de stock.
+  * Vista `RetailDashboardView.vue` con alertas de stock mínimo, desglose de margen de rentabilidad y acceso a ventas rápidas.
+  * Inyección automática multi-tenant de headers (`x-organization-id`, `x-branch-id`) en Axios y resolución inteligente en NestJS.
+* **Automotive & Motorcycle Workshop Vertical (Fase 2):**
+  * Modelos relacionales `Vehicle` y `VehicleCheckIn` vinculados a `ServiceOrder`.
+  * Catálogo y hoja de vida clínica de vehículos (`VehiclesView.vue`) con historial de servicios y kilometraje.
+  * Hoja de recepción técnica interactiva (`AutomotiveCheckInView.vue`) con selector visual de combustible, checklist de inventario y registro de daños/golpes preexistentes.
+  * Tablero Kanban de Patio y Bahías (`AutomotiveDashboardView.vue`) para gestión de flujo de trabajo en taller.
+  * **Motor Anti-Doble Descuento de Stock:** Sincronización ACID entre consumo técnico de repuestos y facturación POS, evitando duplicar las salidas de inventario.
+* **Codebase Health & Compilation Guarantee:** Tipado TypeScript estricto verificado con `vue-tsc -b`, `vite build` y `nest build` con código de salida 0.

@@ -199,7 +199,119 @@ Objetivo: Cerrar el ciclo financiero mediante reglas fiscales locales (Latam) y 
 
 | ID | Historia | Estado | Alcance |
 | --- | --- | :---: | --- |
-| KNA-089 | Latam Tax Engine & Rules (IVA, INC, Retenciones) | ⏳ | Frontend/Backend |
-| KNA-090 | Sales & Purchase Auxiliary Ledger (Libros Fiscales) | ⏳ | Frontend/Backend |
+| KNA-089 | Latam Tax Engine & Rules (IVA, INC, Retenciones) | ✅ | Frontend/Backend |
+| KNA-090 | Sales & Purchase Auxiliary Ledger (Libros Fiscales) | ✅ | Frontend/Backend |
 | KNA-091 | Accounts Receivable — CxC (Crédito a Clientes CRM) | ⏳ | Frontend/Backend |
 | KNA-092 | Accounts Payable — CxP (Obligaciones con Proveedores) | ⏳ | Frontend/Backend |
+
+**Sprint 17 completado en su núcleo fiscal y libros auxiliares.**
+
+---
+
+# Sprint 18 — Technical Services & Work Orders (Módulo Vertical SERVICES)
+
+Objetivo: Gestionar órdenes de servicio técnico, asignación de tareas, operarios mecánicos/técnicos y consumo de repuestos con liquidación de comisiones.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-093 | Service Orders Core & Status Engine (Borrador, En Progreso, Completado) | ✅ | Backend/Frontend |
+| KNA-094 | Service Tasks & Labor Breakdown | ✅ | Backend/Frontend |
+| KNA-095 | Service Order Materials & Inventory Depletion | ✅ | Backend/Frontend |
+| KNA-096 | Service Technicians Directory & Commissions Ledger | ✅ | Backend/Frontend |
+| KNA-097 | Service Profitability & Execution Time Reports | ✅ | Backend/Frontend |
+
+**Sprint 18 completado al 100%.**
+
+---
+
+# Sprint 19 — Hospitality & Wellness Verticals (HOTEL, GYM, STUDIO)
+
+Objetivo: Habilitar motores específicos para hospedaje hotelero, gestión de gimnasios convencionales y boutique fitness studios (Yoga/Pilates/Barre).
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-098 | Hotel Rooms & Layout Management (Tarifas y Estatus de Limpieza) | ✅ | Backend/Frontend |
+| KNA-099 | Hotel Reservations & Guest Check-In/Check-Out Engine | ✅ | Backend/Frontend |
+| KNA-100 | Gym Membership Plans & Time-Based Subscriptions | ✅ | Backend/Frontend |
+| KNA-101 | Gym Frontdesk Access Control & Attendance Verification | ✅ | Backend/Frontend |
+| KNA-102 | Studio Credit Plans & Class Schedules (Aforos y Horarios) | ✅ | Backend/Frontend |
+| KNA-103 | Studio Class Booking & Client Attendance Check-In | ✅ | Backend/Frontend |
+
+**Sprint 19 completado al 100%.**
+
+---
+
+# Sprint 20 — Healthcare & Pharmacy Compliance (Módulo Vertical PHARMACY)
+
+Objetivo: Control riguroso de inventario farmacéutico, trazabilidad de lotes, alertas preventivas de caducidad y cumplimiento sanitario.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-104 | Pharmaceutical Metadata & Sanitary Registration (Invima/FDA) | ✅ | Backend/Frontend |
+| KNA-105 | Product Lots & Batch Tracking Architecture | ✅ | Backend/Frontend |
+| KNA-106 | Expiration Date Semaphores & Early Alert Dashboard (30/60/90 días) | ✅ | Backend/Frontend |
+| KNA-107 | Medical Prescriptions Ledger & Customer Link | ✅ | Backend/Frontend |
+
+**Sprint 20 completado al 100%.**
+
+---
+
+# Sprint 21 — Multi-Vertical SaaS Platform Architecture (Fase 0)
+
+Objetivo: Transformar KUNA en una arquitectura desacoplada donde una organización puede activar uno o múltiples verticales sobre un Core Empresarial Común sin duplicar modelos ni controladores.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-108 | Master Verticals Catalog Model & Seed (14 Verticales de Industria) | ✅ | Backend |
+| KNA-109 | OrganizationVertical Pivot Table with Custom JSON Settings | ✅ | Backend |
+| KNA-110 | Backend Security Guards (`@RequiresVertical()` & `VerticalGuard`) | ✅ | Backend |
+| KNA-111 | Reactive Verticals Store in Pinia & Dynamic Sidebar Navigation Filter | ✅ | Frontend |
+| KNA-112 | Tenant Verticals Management Tab & JSON Config Modal in Organizations UI | ✅ | Frontend |
+
+**Sprint 21 (Fase 0) completado al 100%.**
+
+---
+
+# Sprint 22 — Retail Industry Vertical (Fase 1)
+
+Objetivo: Dotar a KUNA de capacidades avanzadas para tiendas y comercio minorista, métricas de rotación de productos y gestión multi-código de barras.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-113 | Retail Controller & Service (`/retail/dashboard`, `/retail/config`) | ✅ | Backend |
+| KNA-114 | Retail Dashboard View with Stock-Out & Margin Alerts | ✅ | Frontend |
+| KNA-115 | Transparent Tenant Header Injection (`x-organization-id`, `x-branch-id`) | ✅ | Frontend/Backend |
+| KNA-116 | Quick POS Access & Minimum Margin Enforcement | ✅ | Frontend/Backend |
+
+**Sprint 22 (Fase 1) completado al 100%.**
+
+---
+
+# Sprint 23 — Automotive & Motorcycle Workshop Vertical (Fase 2)
+
+Objetivo: Módulo especializado para talleres mecánicos de carros y motos, gestión de vehículos, recepción técnica con checklist físico y control visual de patio/bahías.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-117 | Vehicle & VehicleCheckIn Relational Prisma Models | ✅ | Backend |
+| KNA-118 | Fleet & Patient Clinical Service History Directory (`VehiclesView.vue`) | ✅ | Frontend/Backend |
+| KNA-119 | Interactive Technical Reception Sheet with Fuel & Damage Mapping | ✅ | Frontend/Backend |
+| KNA-120 | Workshop Yard & Workbays Kanban Board (`AutomotiveDashboardView.vue`) | ✅ | Frontend/Backend |
+| KNA-121 | Anti-Double Inventory Deduction Engine between Work Orders and POS | ✅ | Backend |
+| KNA-122 | Strict TypeScript Build Sanitization (`vue-tsc` & `nest build` exit 0) | ✅ | Fullstack |
+
+**Sprint 23 (Fase 2) completado al 100%.**
+
+---
+
+# Próximos Sprints / Roadmap de Verticales
+
+| Sprint | Vertical | Alcance Previsto | Estado |
+| --- | --- | --- | :---: |
+| **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | 📋 Planificado |
+| **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | 📋 Planificado |
+| **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | 📋 Planificado |
+| **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | 📋 Planificado |
+| **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | 📋 Planificado |
+| **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones de arrendamiento y propietarios | 📋 Planificado |
+

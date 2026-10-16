@@ -228,3 +228,46 @@ N ---- N Permission
 - Multi zona horaria
 - API pública
 - Integraciones externas
+
+---
+
+# Arquitectura de Verticales de Negocio (Implementada)
+
+KUNA estructura su dominio separando conceptualmente el **Core Empresarial Común** de los **Verticales de Negocio Especializados**:
+
+```
+Organization
+    │
+    ├── 1:N ── OrganizationVertical ── N:1 ── Vertical
+    │                                             │
+    │                                             ├── RETAIL
+    │                                             ├── AUTOMOTIVE
+    │                                             ├── RESTAURANT
+    │                                             ├── SERVICES
+    │                                             ├── HOTEL
+    │                                             ├── GYM
+    │                                             ├── STUDIO
+    │                                             ├── PHARMACY
+    │                                             └── Otras industrias...
+    │
+    ├── 1:N ── Branch (Multi-sucursal)
+    │             │
+    │             ├── BranchProductStock
+    │             └── CashSession (Cajas y turnos)
+    │
+    ├── 1:N ── Customer (Clientes comunes a todos los verticales)
+    ├── 1:N ── Product (Catálogo unificado de bienes y servicios)
+    ├── 1:N ── Supplier (Proveedores de compras y repuestos)
+    ├── 1:N ── PurchaseOrder (Cadena de suministro)
+    ├── 1:N ── Sale (Ventas y facturación unificada)
+    └── 1:N ── InventoryMovement (Kardex y balance único)
+```
+
+## Reglas de Integridad de Verticales
+
+1. **Aislamiento Multi-Tenant Estricto:** Toda operación de negocio debe validar `organizationId` y, cuando aplique, `branchId`.
+2. **Reutilización Obligatoria del Core:** Ningún vertical crea modelos duplicados de clientes, inventarios o ventas.
+   - Un taller automotriz asocia `Vehicle` a `Customer`, y consume repuestos descontando `BranchProductStock` mediante `InventoryMovement`.
+   - Un restaurante asocia las cuentas de mesa a `Sale` y descuenta ingredientes o platos de `Product`.
+   - Un hotel asocia el huésped a `Customer` y liquida la reserva en `Sale`.
+3. **Seguridad y Control de Acceso:** Los endpoints de verticales están protegidos por `@RequiresVertical('CODIGO')` a través de `VerticalGuard`. Si una organización no tiene contratado o activo el vertical, la solicitud es rechazada con `403 Forbidden`.

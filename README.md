@@ -347,3 +347,98 @@ v1.2.0-rc1
 ## 🎯 Próximo Módulo (Current Module)
 
 Sprint 17 — Accounting, Tax Localization & CxC / CxP Core
+
+---
+
+## 🚀 Estado del proyecto (Actualización v2.0.0-rc1)
+
+KUNA ha evolucionado hacia una **Arquitectura de Verticales de Negocio sobre un Core Empresarial Común**. Una organización puede activar uno o múltiples tipos de industria compartiendo un núcleo unificado sin duplicar modelos ni datos:
+
+* **Core & Multi-Tenancy:** Organizaciones, sucursales, usuarios, roles, permisos granulares (RBAC) y aislamiento estricto multi-inquilino (`organizationId` y `branchId`).
+* **Comercial & POS:** Clientes unificados (`Customer`), catálogo de productos (`Product`), punto de venta (POS), sesiones de caja y arqueo (`CashSession`), facturación (`Sale`), notas de crédito (`SaleReturn`) e impresión térmica legal de 80mm.
+* **Inventario Core:** Stock por sucursal, movimientos atómicos (`InventoryMovement`), ajustes manuales, transferencias inter-sucursales, Kardex analítico y consumos internos.
+* **Compras & Cadena de Suministro:** Directorio de proveedores (`Supplier`), órdenes de compra (`PurchaseOrder`), actas de recibo de mercancía (`GoodsReceipt`), facturas de compras y devoluciones.
+* **Analítica & BI:** Tablero gerencial ejecutivo (`ExecutiveDashboard`), reportes de rendimiento comercial, libros fiscales y parametrización de impuestos Latam (`Taxes`).
+* **Verticales de Negocio Activables:**
+  - 🛒 **Retail / Tienda (`RETAIL`):** Dashboard de rotación, alertas de stock mínimo, gestión de márgenes y ventas rápidas.
+  - 🚗 **Taller Automotriz y Motos (`AUTOMOTIVE`):** Hoja de vida de vehículos (`Vehicle`), recepción técnica con checklist físico e inventario (`VehicleCheckIn`), tablero Kanban de patio y bahías, y **motor anti-doble descuento de stock** coordinado con facturación.
+  - 🍽️ **Restaurante (`RESTAURANT`):** Salones y mesas interactivas, comandero móvil para meseros, monitor de cocina KDS con semáforos y cobro con liberación de mesa.
+  - 🛠️ **Servicios Técnicos (`SERVICES`):** Órdenes de servicio técnico (`ServiceOrder`), tareas, insumos/repuestos, técnicos asignados y liquidación de comisiones.
+  - 🏨 **Hotel / Hospedaje (`HOTEL`):** Catálogo de habitaciones, reservaciones por calendario, check-in/check-out y tarifas.
+  - 🏋️ **Gimnasio (`GYM`):** Planes de membresía, suscripciones con control de vigencia, control de acceso/torniquete en recepción e instructores.
+  - 🧘 **Studio Yoga / Pilates / Barre (`STUDIO`):** Planes por créditos de clases, programación de horarios, aforos, reserva de cupos y asistencia.
+  - 💊 **Farmacia (`PHARMACY`):** Trazabilidad de lotes (`ProductLot`), control de registro sanitario Invima/FDA, recetas médicas y semáforo preventivo de vencimientos a 30, 60 y 90 días.
+
+## 📦 Versión actual
+
+**v2.0.0-rc1**
+
+## 📋 Sprints completados
+
+* ✅ **Sprint 1 a 8:** Base Core, Autenticación JWT, RBAC, Catálogos, Inventario Core y Compras.
+* ✅ **Sprint 9 a 14:** Motor de Ventas Backend, POS Frontend, Control de Caja, Devoluciones, Impresión Térmica y CRM Clientes.
+* ✅ **Sprint 16:** Vertical Restaurante & Mesas / KDS.
+* ✅ **Sprint 17:** Resumen Fiscal, Libros Auxiliares e Impuestos Latam.
+* ✅ **Sprint 18:** Vertical Servicios Técnicos, Órdenes de Trabajo y Comisiones.
+* ✅ **Sprint 19:** Verticales de Hospitalidad y Bienestar (Hotel, Gimnasio y Boutique Studio).
+* ✅ **Sprint 20:** Vertical Farmacia, Lotes y Bitácora Preventiva de Vencimientos.
+* ✅ **Sprint 21 (Fase 0):** Arquitectura Base de Verticales Multi-Tenant (`Vertical`, `OrganizationVertical`, `VerticalGuard`, navegación dinámica por tenant y configuración JSON).
+* ✅ **Sprint 22 (Fase 1):** Vertical Retail (Controlador, métricas de tienda, dashboard y resolución de headers multi-inquilino).
+* ✅ **Sprint 23 (Fase 2):** Vertical Automotive / Taller (Vehículos, recepción técnica, tablero Kanban de bahías, motor anti-doble descuento de inventario y saneamiento de compilación TypeScript).
+
+## 🎯 Próximo Bloque de Desarrollo
+
+* **Sprint 24 (Fase 3):** Vertical BEAUTY / Salón de Belleza, Barbería y Spa (Agenda de citas `Appointment`, turnos de estilistas y servicios cosméticos).
+
+---
+
+## 🏛️ Arquitectura de Verticales de Negocio
+
+KUNA sigue el principio de **Core Empresarial Común + Verticales Especializados**:
+
+```
+KUNA PLATFORM
+│
+├── 🏢 CORE (Compartido)
+│   ├── Organizations & Branches (Multi-Tenant)
+│   ├── Users, Roles & Permissions (RBAC)
+│   └── Configuración Global
+│
+├── 💼 COMERCIAL (Compartido)
+│   ├── Customers (Clientes naturales y empresas)
+│   ├── Products & Categories
+│   ├── Sales & Point of Sale (POS)
+│   ├── Payments & Treasury (CashSessions)
+│   └── Invoicing & Credit Notes
+│
+├── 📦 INVENTARIO CORE (Compartido)
+│   ├── Stock por Sucursal
+│   ├── InventoryMovements (Fuente única de verdad)
+│   ├── Adjustments & Transfers
+│   ├── Kardex analítico
+│   └── Consumos Internos
+│
+├── 🚚 COMPRAS & CADENA DE SUMINISTRO (Compartido)
+│   ├── Suppliers
+│   ├── Purchase Orders & Items
+│   ├── Goods Receipts (Ingresos físicos)
+│   └── Purchase Invoices & Returns
+│
+└── 🧩 VERTICALES ACTIVABLES (Por Organización)
+    ├── RETAIL (Comercio minorista y tiendas)
+    ├── AUTOMOTIVE (Talleres mecánicos y motos)
+    ├── RESTAURANT (Gastronomía, salones y KDS)
+    ├── SERVICES (Mantenimiento y servicios técnicos)
+    ├── HOTEL (Habitaciones y reservaciones)
+    ├── GYM (Membresías y control de acceso)
+    ├── STUDIO (Clases, aforos y reservas)
+    ├── PHARMACY (Lotes, recetas y vencimientos)
+    └── Futuras: BEAUTY, VETERINARY, LAUNDRY, BAKERY, ACADEMY, REAL ESTATE
+```
+
+### Regla Fundamental de Arquitectura
+
+**NO duplicar funcionalidad existente.**
+- Un taller **no** crea otro inventario ni otro catálogo de clientes: reutiliza `Product`, `Customer`, `Sale`, `InventoryMovement` y `Supplier`.
+- Un gimnasio o barbería **no** crea otro sistema de cobro: reutiliza `Customer`, `CashSession`, `Sale` y `Payment`.
+- Las entidades del vertical (`Vehicle`, `VehicleCheckIn`, `HotelRoom`, `GymSubscription`, etc.) extienden y referencian las tablas maestras del Core.
