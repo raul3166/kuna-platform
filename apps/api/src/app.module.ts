@@ -61,6 +61,7 @@ import { InternalConsumptionsModule } from './modules/internal-consumptions/inte
 import { VerticalsModule } from './modules/verticals/verticals.module';
 import { RetailModule } from './modules/retail/retail.module';
 import { AutomotiveModule } from './modules/automotive/automotive.module';
+import { BeautyModule } from './modules/beauty/beauty.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -123,6 +124,7 @@ import { AutomotiveModule } from './modules/automotive/automotive.module';
     VerticalsModule,
     RetailModule,
     AutomotiveModule,
+    BeautyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

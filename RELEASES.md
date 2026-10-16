@@ -165,3 +165,16 @@
   * Tablero Kanban de Patio y Bahías (`AutomotiveDashboardView.vue`) para gestión de flujo de trabajo en taller.
   * **Motor Anti-Doble Descuento de Stock:** Sincronización ACID entre consumo técnico de repuestos y facturación POS, evitando duplicar las salidas de inventario.
 * **Codebase Health & Compilation Guarantee:** Tipado TypeScript estricto verificado con `vue-tsc -b`, `vite build` y `nest build` con código de salida 0.
+
+---
+
+## v2.1.0-rc1
+
+* **Beauty / Salon / Barbershop / Spa Vertical (Fase 3):**
+  * Appointment engine (`Appointment`, `AppointmentItem`) with status workflow: scheduled, confirmed, in service, completed, cancelled, no-show.
+  * Availability engine validating weekly work schedule, time-off and overlapping appointments; free-slot lookup by total service duration.
+  * Per-professional weekly schedules and time-off management.
+  * Customer beauty history (visits, spend, no-shows) and technical notes / color formulas.
+  * Core reuse: `ServiceWorker` as stylists, `ServiceItem` as service catalog, `Customer`, and `ServiceOrder` for execution, commissions and POS billing.
+  * New views: Agenda (`/beauty-agenda`), Team & Schedules (`/beauty-staff`), Clients & Formulas (`/beauty-clients`).
+  * Per-organization agenda configuration (slot length, working hours, overlap policy).

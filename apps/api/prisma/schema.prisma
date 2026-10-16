@@ -197,6 +197,11 @@ model Organization {
   organizationVerticals OrganizationVertical[]
   vehicles             Vehicle[]
   vehicleCheckIns      VehicleCheckIn[]
+  appointments         Appointment[]
+  appointmentItems     AppointmentItem[]
+  beautyNotes          BeautyClientNote[]
+  beautyWorkerSchedules BeautyWorkerSchedule[]
+  beautyTimeOffs       BeautyTimeOff[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -243,6 +248,8 @@ model Branch {
   hotelRooms           HotelRoom[]
   internalConsumptions InternalConsumption[]
   vehicleCheckIns      VehicleCheckIn[]
+  appointments         Appointment[]
+  beautyWorkerSchedules BeautyWorkerSchedule[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -979,6 +986,11 @@ model ServiceWorker {
   branch         Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
   assignedOrders ServiceOrder[]     @relation("ServiceOrderAssignedWorker")
   assignedTasks  ServiceOrderTask[] @relation("ServiceTaskAssignedWorker")
+  appointments   Appointment[]
+  appointmentItems AppointmentItem[]
+  beautyNotes    BeautyClientNote[]
+  workerSchedules BeautyWorkerSchedule[]
+  timeOffs       BeautyTimeOff[]
 
   @@unique([organizationId, identification])
   @@index([organizationId])
@@ -1002,6 +1014,7 @@ model ServiceItem {
   organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   tasks            ServiceOrderTask[]
   saleServiceItems SaleServiceItem[]
+  appointmentItems AppointmentItem[]
   serviceOrders  ServiceOrder[]
   product   Product? @relation(fields: [productId], references: [id])
 
@@ -1042,6 +1055,7 @@ model ServiceOrder {
   serviceItem        ServiceItem?    @relation(fields: [serviceItemId], references: [id])
   vehicle            Vehicle?               @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   vehicleCheckIn     VehicleCheckIn?
+  appointment        Appointment?
   tasks              ServiceOrderTask[]
   materials          ServiceOrderMaterial[]
   inventoryMovements InventoryMovement[]
@@ -1240,6 +1254,8 @@ model Customer {
   serviceOrders        ServiceOrder[]
   hotelReservations     HotelReservation[]
   vehicles             Vehicle[]
+  appointments         Appointment[]
+  beautyNotes          BeautyClientNote[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -1774,3 +1790,124 @@ model VehicleCheckIn {
   @@index([vehicleId])
 }
 
+
+// ============================================================
+// VERTICAL BEAUTY / SALON / BARBERIA / SPA
+// Reutiliza: Customer, ServiceWorker (estilistas), ServiceItem (catalogo),
+// ServiceOrder (ejecucion, comisiones y cobro POS).
+// ============================================================
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_SERVICE
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  organizationId    String
+  branchId          String
+  customerId        String
+  workerId          String?
+  serviceOrderId    String?           @unique
+  appointmentNumber String
+  startAt           DateTime
+  endAt             DateTime
+  status            AppointmentStatus @default(SCHEDULED)
+  totalEstimated    Decimal           @default(0) @db.Decimal(12, 2)
+  notes             String?
+  cancelReason      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customer     Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  worker       ServiceWorker?    @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  serviceOrder ServiceOrder?     @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  items        AppointmentItem[]
+
+  @@unique([organizationId, appointmentNumber])
+  @@index([organizationId])
+  @@index([branchId, startAt])
+  @@index([workerId, startAt])
+  @@index([customerId])
+  @@index([status])
+}
+
+model AppointmentItem {
+  id              String   @id @default(cuid())
+  organizationId  String
+  appointmentId   String
+  serviceItemId   String
+  workerId        String?
+  price           Decimal  @db.Decimal(12, 2)
+  durationMinutes Int      @default(30)
+  createdAt       DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointment  Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  serviceItem  ServiceItem    @relation(fields: [serviceItemId], references: [id])
+  worker       ServiceWorker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([appointmentId])
+}
+
+model BeautyWorkerSchedule {
+  id             String   @id @default(cuid())
+  organizationId String
+  branchId       String
+  workerId       String
+  dayOfWeek      Int // 0 = domingo ... 6 = sabado
+  startTime      String // "09:00"
+  endTime        String // "18:00"
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  worker       ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([workerId, branchId, dayOfWeek])
+  @@index([organizationId])
+  @@index([branchId])
+}
+
+model BeautyTimeOff {
+  id             String   @id @default(cuid())
+  organizationId String
+  workerId       String
+  startAt        DateTime
+  endAt          DateTime
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  worker       ServiceWorker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([workerId, startAt])
+}
+
+model BeautyClientNote {
+  id             String   @id @default(cuid())
+  organizationId String
+  customerId     String
+  workerId       String?
+  title          String
+  content        String // Formula de color, preferencias, alergias, etc.
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  worker       ServiceWorker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([customerId])
+}

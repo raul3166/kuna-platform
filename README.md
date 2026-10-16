@@ -442,3 +442,13 @@ KUNA PLATFORM
 - Un taller **no** crea otro inventario ni otro catálogo de clientes: reutiliza `Product`, `Customer`, `Sale`, `InventoryMovement` y `Supplier`.
 - Un gimnasio o barbería **no** crea otro sistema de cobro: reutiliza `Customer`, `CashSession`, `Sale` y `Payment`.
 - Las entidades del vertical (`Vehicle`, `VehicleCheckIn`, `HotelRoom`, `GymSubscription`, etc.) extienden y referencian las tablas maestras del Core.
+
+---
+
+## Sprint 24 (Fase 3) — Estado: Completado
+
+La Fase 3 (BEAUTY / Salón / Barbería / Spa) fue implementada en la versión **v2.1.0-rc1**. Detalle en la sección "Sprint 24" de `ROADMAP.md`.
+
+### Próximo bloque
+
+* **Sprint 25 (Fase 4):** Vertical VETERINARY / Veterinaria y Pet Shop.

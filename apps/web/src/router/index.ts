@@ -303,6 +303,24 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/VehiclesView.vue'),
     meta: { requiresAuth: true, requiredVertical: 'AUTOMOTIVE' },
   },
+  {
+    path: '/beauty-agenda',
+    name: 'beauty-agenda',
+    component: () => import('../views/BeautyAgendaView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'BEAUTY' },
+  },
+  {
+    path: '/beauty-staff',
+    name: 'beauty-staff',
+    component: () => import('../views/BeautyStaffView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'BEAUTY' },
+  },
+  {
+    path: '/beauty-clients',
+    name: 'beauty-clients',
+    component: () => import('../views/BeautyClientsView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'BEAUTY' },
+  },
 {
   path: '/hotel-dashboard',
   name: 'hotel-dashboard',

@@ -7,6 +7,27 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.1.0-rc1] - 2026-10-15
+
+### Added
+
+#### Vertical BEAUTY / Salón, Barbería y Spa (Fase 3)
+* **Modelos nuevos mínimos:** `Appointment`, `AppointmentItem`, `BeautyWorkerSchedule`, `BeautyTimeOff`, `BeautyClientNote` y enum `AppointmentStatus`. Todos con `organizationId` (y `branchId` cuando aplica).
+* **Reutilización del Core (sin duplicar):** estilistas = `ServiceWorker`, catálogo de servicios = `ServiceItem`, clientes = `Customer`, ejecución/comisiones = `ServiceOrder` + `ServiceOrderTask`, cobro = POS existente (`/pos?serviceOrderId=`).
+* **Módulo backend `beauty`** (`@RequiresVertical('BEAUTY')`): dashboard diario, listado de citas, agendamiento, reprogramación, confirmar/cancelar/no-show, `start` (genera la Orden de Servicio con una tarea por servicio) y `complete` (reutiliza `ServiceOrdersService` para descontar insumos una sola vez).
+* **Motor de disponibilidad:** valida horario semanal del profesional, ausencias y cruces de citas; endpoint `GET /beauty/availability` que devuelve huecos libres según la duración total de los servicios.
+* **Horarios y ausencias por profesional**, **historial del cliente** (visitas, gasto, no-shows) y **notas/fórmulas** (color, preferencias, alergias).
+* **Configuración por organización** (`slotMinutes`, `dayStart`, `dayEnd`, `allowOverlap`) persistida en `OrganizationVertical.config`.
+* **Frontend:** `BeautyAgendaView.vue` (KPIs, columnas por profesional, nueva cita con huecos, reprogramar, cobrar en POS), `BeautyStaffView.vue` (horarios y ausencias), `BeautyClientsView.vue` (historial y fórmulas). Sección "Belleza / Salón / Spa" en el sidebar y rutas con `requiredVertical: 'BEAUTY'`.
+
+### Changed
+* `ServiceOrdersModule` ahora exporta `ServiceOrdersService` para que los verticales lo reutilicen.
+* El seed activa `BEAUTY` por defecto en las organizaciones existentes (como el resto de verticales).
+
+### Fixed
+* Interpretación de fechas `YYYY-MM-DD` como fecha local en la agenda para evitar desfases de un día en zonas horarias UTC negativas.
+
+---
 ## [2.0.0-rc1] - 2026-10-15
 
 ### Added

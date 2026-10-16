@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permissions, PermissionsAny } from '../auth/decorators/permissions.decorator';
 import { VerticalsService } from './verticals.service';
 import { ToggleVerticalDto } from './dto/toggle-vertical.dto';
 import { UpdateVerticalConfigDto } from './dto/update-vertical-config.dto';
@@ -49,7 +49,7 @@ export class VerticalsController {
   }
 
   @Post('organization/:organizationId/toggle')
-  @Permissions('organizations.update')
+  @PermissionsAny('organizations.update', 'verticals.update')
   @ApiOperation({
     summary: 'Activar o desactivar un vertical de negocio para una organización',
   })
@@ -65,7 +65,7 @@ export class VerticalsController {
   }
 
   @Patch('organization/:organizationId/:verticalCode/config')
-  @Permissions('organizations.update')
+  @PermissionsAny('organizations.update', 'verticals.update')
   @ApiOperation({
     summary: 'Actualizar configuración JSON de un vertical para una organización',
   })

@@ -195,6 +195,24 @@ async function main() {
     // --- MODULE: INTERNAL-CONSUMPTIONS ---
     { module: 'internal-consumptions', code: 'internal-consumptions.create', name: 'Create internal consumption', description: 'Allows registering internal department consumptions and stock deductions' },
     { module: 'internal-consumptions', code: 'internal-consumptions.read', name: 'Read internal consumptions', description: 'Allows reading internal consumptions history and details' },
+
+    // --- MODULE: ORGANIZATIONS & VERTICALS ---
+    { module: 'organizations', code: 'organizations.create', name: 'Create organizations', description: 'Allows creating new organizations' },
+    { module: 'organizations', code: 'organizations.read', name: 'Read organizations', description: 'Allows viewing organizations and corporate settings' },
+    { module: 'organizations', code: 'organizations.update', name: 'Update organizations & verticals', description: 'Allows updating organization settings and toggling business verticals' },
+    { module: 'verticals', code: 'verticals.read', name: 'Read verticals', description: 'Allows viewing business verticals catalog and status' },
+    { module: 'verticals', code: 'verticals.update', name: 'Update verticals', description: 'Allows activating/deactivating verticals and updating their configuration' },
+
+    // --- MODULE: AUTOMOTIVE ---
+    { module: 'automotive', code: 'automotive.create', name: 'Create automotive records', description: 'Allows registering vehicles and reception check-ins' },
+    { module: 'automotive', code: 'automotive.read', name: 'Read automotive data', description: 'Allows viewing workshop yard, vehicles and history' },
+    { module: 'automotive', code: 'automotive.update', name: 'Update automotive data', description: 'Allows updating vehicles and workshop settings' },
+
+    // --- MODULE: BEAUTY ---
+    { module: 'beauty', code: 'beauty.create', name: 'Create beauty records', description: 'Allows scheduling appointments, time-off and client notes' },
+    { module: 'beauty', code: 'beauty.read', name: 'Read beauty data', description: 'Allows viewing beauty agenda, availability and client formulas' },
+    { module: 'beauty', code: 'beauty.update', name: 'Update beauty data', description: 'Allows rescheduling appointments, updating statuses and staff schedules' },
+    { module: 'beauty', code: 'beauty.delete', name: 'Delete beauty data', description: 'Allows removing time-off and client notes' },
   ];
 
   await prisma.permission.createMany({
@@ -272,21 +290,26 @@ async function main() {
     },
   });
 
-  // Asignar todos los permisos al rol de Administrador
-  for (const perm of allPermissions) {
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: {
-          roleId: adminRole.id,
+  // Asignar todos los permisos a todos los roles de Administrador de todas las organizaciones
+  const allAdminRoles = await prisma.role.findMany({
+    where: { code: 'ADMIN' },
+  });
+  for (const r of allAdminRoles) {
+    for (const perm of allPermissions) {
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: r.id,
+            permissionId: perm.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: r.id,
           permissionId: perm.id,
         },
-      },
-      update: {},
-      create: {
-        roleId: adminRole.id,
-        permissionId: perm.id,
-      },
-    });
+      });
+    }
   }
 
   // 5. Hash de Contraseña común ("MiPassword123")
@@ -608,7 +631,7 @@ async function main() {
   // Activar verticales por defecto a todas las organizaciones existentes para retrocompatibilidad
   const allOrganizations = await prisma.organization.findMany();
   const allVerticals = await prisma.vertical.findMany();
-  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE'];
+  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE', 'BEAUTY'];
 
   for (const org of allOrganizations) {
     for (const vert of allVerticals) {

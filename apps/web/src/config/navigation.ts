@@ -134,6 +134,18 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    key: 'beauty',
+    label: 'Belleza / Salón / Spa',
+    requiredVertical: 'BEAUTY',
+    items: [
+      { label: 'Agenda de Citas', icon: '💇', to: '/beauty-agenda' },
+      { label: 'Equipo y Horarios', icon: '👥', to: '/beauty-staff' },
+      { label: 'Clientes y Fórmulas', icon: '📒', to: '/beauty-clients' },
+      { label: 'Catálogo de Servicios', icon: '📋', to: '/service-items' },
+      { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
+    ],
+  },
+  {
     key: 'hotel',
     label: 'Recepción Hotel',
     requiredVertical: 'HOTEL',

@@ -304,11 +304,28 @@ Objetivo: Módulo especializado para talleres mecánicos de carros y motos, gest
 
 ---
 
+---
+
+# Sprint 24 — Beauty / Salón / Barbería / Spa (Fase 3)
+
+Objetivo: Agenda de citas con profesionales, horarios y fórmulas de cliente, reutilizando `Customer`, `ServiceWorker`, `ServiceItem`, `ServiceOrder` y el POS.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-123 | Horarios y ausencias de profesionales (`BeautyWorkerSchedule`, `BeautyTimeOff`) | ✅ | Backend/Frontend |
+| KNA-124 | Citas y motor de disponibilidad (`Appointment`, `/beauty/availability`) | ✅ | Backend/Frontend |
+| KNA-125 | Servicios de belleza y comisiones vía `ServiceItem` / `ServiceOrderTask` | ✅ | Backend/Frontend |
+| KNA-126 | Historial del cliente y fórmulas (`BeautyClientNote`) | ✅ | Backend/Frontend |
+| KNA-127 | Cobro integrado: cita → Orden de Servicio → POS (`Sale`, `CashSession`) | ✅ | Backend/Frontend |
+
+**Sprint 24 (Fase 3) completado al 100%.**
+---
+
 # Próximos Sprints / Roadmap de Verticales
 
 | Sprint | Vertical | Alcance Previsto | Estado |
 | --- | --- | --- | :---: |
-| **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | 📋 Planificado |
+| **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | ✅ Completado |
 | **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | 📋 Planificado |
 | **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | 📋 Planificado |
 | **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | 📋 Planificado |

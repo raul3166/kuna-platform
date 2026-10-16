@@ -18,7 +18,7 @@
 | EPIC-08 | Multi-Vertical SaaS Architecture & Vertical Catalog | 🟢 Completado |
 | EPIC-09 | Retail Industry Vertical | 🟢 Completado |
 | EPIC-10 | Automotive & Motorcycle Workshop Vertical | 🟢 Completado |
-| EPIC-11 | Beauty, Wellness & Salon Vertical | 🟡 En planificación |
+| EPIC-11 | Beauty, Wellness & Salon Vertical | 🟢 Completado |
 
 ---
 
@@ -444,15 +444,15 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 
 ---
 
-# Sprint 24 (Fase 3) — Beauty & Salon Vertical (En Planificación)
+# Sprint 24 (Fase 3) — Beauty & Salon Vertical (Completado)
 
 | ID | Historia | Estado | Alcance |
 | --- | --- | :---: | --- |
-| KNA-123 | Stylist & Staff Availability Calendar (`StylistSchedule`) | 📋 Planificado | Backend/Frontend |
-| KNA-124 | Appointments & Booking Grid (`Appointment`) | 📋 Planificado | Backend/Frontend |
-| KNA-125 | Beauty Service Catalog & Professional Commissions | 📋 Planificado | Backend/Frontend |
-| KNA-126 | Customer Beauty History & Formula Notes | 📋 Planificado | Backend/Frontend |
-| KNA-127 | POS Checkout Integration with Reusable `Sale` & `CashSession` | 📋 Planificado | Backend/Frontend |
+| KNA-123 | Stylist & Staff Availability Calendar (`StylistSchedule`) | ✅ | Backend/Frontend |
+| KNA-124 | Appointments & Booking Grid (`Appointment`) | ✅ | Backend/Frontend |
+| KNA-125 | Beauty Service Catalog & Professional Commissions | ✅ | Backend/Frontend |
+| KNA-126 | Customer Beauty History & Formula Notes | ✅ | Backend/Frontend |
+| KNA-127 | POS Checkout Integration with Reusable `Sale` & `CashSession` | ✅ | Backend/Frontend |
 
 
 
