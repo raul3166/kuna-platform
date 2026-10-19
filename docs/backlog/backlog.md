@@ -466,6 +466,54 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-131 | Carnet de Vacunación, Desparasitación y Alertas de Refuerzos Próximos | ✅ | Backend/Frontend |
 | KNA-132 | Integración Clínica → Orden de Servicio → Descarga de Medicamentos y Cobro POS | ✅ | Backend/Frontend |
 
+---
+
+# Sprint 26 (Fase 5) — Laundry & Dry Cleaning Vertical (Completado)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-133 | Modelos de Tickets y Prendas (`LaundryTicket`, `LaundryTicketItem`, `LaundryPricingMode`) | ✅ | Backend |
+| KNA-134 | Recepción de Prendas, Pesaje en Báscula, Recargo Express e Inspección de Manchas (`LaundryIntakeView.vue`) | ✅ | Backend/Frontend |
+| KNA-135 | Tablero Kanban de Planta en 5 Etapas: Recibido → Lavado → Secado → Planchado → Perchero (`LaundryDashboardView.vue`) | ✅ | Backend/Frontend |
+| KNA-136 | Asignación de Perchero/Estante (`rackLocation`) y Sincronización con `ServiceOrder` y POS | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 27 (Fase 6) — Bakery & Pastry Production Vertical (Completado)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-137 | Modelos de Recetas, Ingredientes y Órdenes de Horneado (`BakeryRecipe`, `BakeryRecipeIngredient`, `BakeryProductionOrder`) | ✅ | Backend |
+| KNA-138 | Recetario Técnico con Costeo en Vivo de Insumos y Lanzador de Tandas (`BakeryRecipesView.vue`) | ✅ | Backend/Frontend |
+| KNA-139 | Tablero Kanban de Hornos (Programada → Amasado → Fermentación → Horno → Decorado → Vitrina) (`BakeryDashboardView.vue`) | ✅ | Backend/Frontend |
+| KNA-140 | Transacción ACID de Salida de Horno: Descarga de Insumos + Entrada de Producto Terminado + Creación de Lote Fresco FEFO (`ProductLot`) | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 28 (Fase 7) — Academy & Education Center Vertical (Completado)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-141 | Modelos Académicos (`AcademyCourse`, `AcademyCohort`, `AcademyEnrollment`, `AcademyAttendance`) | ✅ | Backend |
+| KNA-142 | Catálogo de Programas, Apertura de Grupos/Horarios y Asignación de Docentes (`AcademyProgramsView.vue`) | ✅ | Backend/Frontend |
+| KNA-143 | Admisión y Matrícula de Estudiantes con Becas, Kits de Estudio e Integración a `ServiceOrder` y POS | ✅ | Backend/Frontend |
+| KNA-144 | Planilla de Asistencia por Sesión y Cálculo Automático de Porcentaje de Asistencia y Promedio (`AcademyDashboardView.vue`) | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 29 (Fase 8) — Real Estate & Property Management Vertical (Completado)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-145 | Modelos Inmobiliarios (`RealEstateProperty`, `RealEstateLease`, `RealEstateRentCharge`) | ✅ | Backend |
+| KNA-146 | Captación de Inmuebles, Estados de Ocupación y Vínculo con Propietarios (`RealEstateLeasesView.vue`) | ✅ | Backend/Frontend |
+| KNA-147 | Formalización de Contratos de Arrendamiento y Emisión Automática de Cánones Mensuales | ✅ | Backend/Frontend |
+| KNA-148 | Recaudo de Cánones en POS, Liquidación de Comisión Inmobiliaria y Control de Giro Neto a Propietarios (`RealEstateDashboardView.vue`) | ✅ | Backend/Frontend |
+
+
+
+
+
 
 
 

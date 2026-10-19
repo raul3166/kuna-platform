@@ -462,3 +462,39 @@ La Fase 4 (VETERINARY / Clínica Veterinaria, Grooming & Pet Shop) fue implement
 ### Próximo bloque
 
 * **Sprint 26 (Fase 5):** Vertical LAUNDRY / Lavandería y Tintorería.
+
+---
+
+## Sprint 26 (Fase 5) — Estado: Completado
+
+La Fase 5 (LAUNDRY / Lavandería, Planchado & Tintorería) fue implementada en la versión **v2.3.0-rc1**, incorporando recepción híbrida por peso (kg) y por prenda (`LaundryTicket`, `LaundryTicketItem`), tablero Kanban de planta en 5 etapas (`RECEIVED` → `WASHING` → `DRYING` → `IRONING` → `READY`), control de percheros/estantes (`rackLocation`) e integración directa con `ServiceOrder` y cobro en POS.
+
+### Próximo bloque
+
+* **Sprint 27 (Fase 6):** Vertical BAKERY / Panadería y Pastelería.
+
+---
+
+## Sprint 27 (Fase 6) — Estado: Completado
+
+La Fase 6 (BAKERY / Panadería, Pastelería & Repostería) fue implementada en la versión **v2.4.0-rc1**, incorporando recetario y fórmulas técnicas (`BakeryRecipe`, `BakeryRecipeIngredient`), órdenes y tandas de horneado en 6 etapas (`BakeryProductionOrder`), registro de mermas, descuento automático de materias primas (`InventoryMovement` `SERVICE_CONSUMPTION`), ingreso automático de producto horneado a vitrina y generación de lotes frescos con vencimiento FEFO (`ProductLot`).
+
+### Próximo bloque
+
+* **Sprint 28 (Fase 7):** Vertical ACADEMY / Academia y Centro Educativo.
+
+---
+
+## Sprint 28 (Fase 7) — Estado: Completado
+
+La Fase 7 (ACADEMY / Academia, Instituto & Centro Educativo) fue implementada en la versión **v2.5.0-rc1**, incorporando catálogo de cursos y programas (`AcademyCourse`), cohortes y horarios con asignación docente (`AcademyCohort`), matrículas de estudiantes con becas y kits de estudio (`AcademyEnrollment`), planilla de asistencia y calificación por sesión (`AcademyAttendance`) e integración directa con `ServiceOrder` y cobro en POS.
+
+### Próximo bloque
+
+* **Sprint 29 (Fase 8):** Vertical REAL ESTATE / Inmobiliaria y Administración de Propiedades.
+
+---
+
+## Sprint 29 (Fase 8) — Estado: Completado (14/14 Verticales Operativas)
+
+La Fase 8 (REAL_ESTATE / Inmobiliaria & Administración de Propiedades) fue implementada en la versión **v2.6.0-rc1**, incorporando captación de inmuebles (`RealEstateProperty`), contratos de arrendamiento (`RealEstateLease`), facturación de cánones mensuales con cálculo automático de comisión de agencia y neto a dispersar al propietario (`RealEstateRentCharge`), e integración directa con `ServiceOrder` y el POS. Con este hito quedan completadas las **14 verticales de negocio** sobre el Core Empresarial Común de KUNA.

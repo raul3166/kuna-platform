@@ -205,6 +205,16 @@ model Organization {
   pets                 Pet[]
   vetMedicalRecords    VetMedicalRecord[]
   petVaccinations      PetVaccination[]
+  laundryTickets       LaundryTicket[]
+  bakeryRecipes        BakeryRecipe[]
+  bakeryProductionOrders BakeryProductionOrder[]
+  academyCourses       AcademyCourse[]
+  academyCohorts       AcademyCohort[]
+  academyEnrollments   AcademyEnrollment[]
+  academyAttendances   AcademyAttendance[]
+  realEstateProperties RealEstateProperty[]
+  realEstateLeases     RealEstateLease[]
+  realEstateRentCharges RealEstateRentCharge[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -255,6 +265,13 @@ model Branch {
   beautyWorkerSchedules BeautyWorkerSchedule[]
   vetMedicalRecords    VetMedicalRecord[]
   petVaccinations      PetVaccination[]
+  laundryTickets       LaundryTicket[]
+  bakeryProductionOrders BakeryProductionOrder[]
+  academyCohorts       AcademyCohort[]
+  academyEnrollments   AcademyEnrollment[]
+  realEstateProperties RealEstateProperty[]
+  realEstateLeases     RealEstateLease[]
+  realEstateRentCharges RealEstateRentCharge[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -340,6 +357,9 @@ model Product {
   serviceMaterials  ServiceOrderMaterial[]
   serviceItems       ServiceItem[] // Relación con los servicios que utilizan este producto como material
   petVaccinations   PetVaccination[]
+  bakeryRecipesAsFinished BakeryRecipe[] @relation("BakeryFinishedProduct")
+  bakeryRecipeIngredients BakeryRecipeIngredient[] @relation("BakeryIngredientProduct")
+  bakeryProductionOrders  BakeryProductionOrder[] @relation("BakeryProductionFinishedProduct")
 
   @@unique([organizationId, sku])
   @@index([categoryId])
@@ -999,6 +1019,11 @@ model ServiceWorker {
   timeOffs       BeautyTimeOff[]
   vetMedicalRecords VetMedicalRecord[]
   petVaccinations   PetVaccination[]
+  laundryTickets    LaundryTicket[]
+  bakeryProductionOrders BakeryProductionOrder[]
+  academyCohorts    AcademyCohort[]
+  realEstateProperties RealEstateProperty[]
+  realEstateLeases  RealEstateLease[]
 
   @@unique([organizationId, identification])
   @@index([organizationId])
@@ -1023,6 +1048,8 @@ model ServiceItem {
   tasks            ServiceOrderTask[]
   saleServiceItems SaleServiceItem[]
   appointmentItems AppointmentItem[]
+  laundryTicketItems LaundryTicketItem[]
+  academyCourses   AcademyCourse[]
   serviceOrders  ServiceOrder[]
   product   Product? @relation(fields: [productId], references: [id])
 
@@ -1067,6 +1094,9 @@ model ServiceOrder {
   appointment        Appointment?
   pet                Pet?                   @relation(fields: [petId], references: [id], onDelete: SetNull)
   vetMedicalRecord   VetMedicalRecord?
+  laundryTicket      LaundryTicket?
+  academyEnrollment  AcademyEnrollment?
+  realEstateRentCharge RealEstateRentCharge?
   tasks              ServiceOrderTask[]
   materials          ServiceOrderMaterial[]
   inventoryMovements InventoryMovement[]
@@ -1269,6 +1299,10 @@ model Customer {
   appointments         Appointment[]
   beautyNotes          BeautyClientNote[]
   pets                 Pet[]
+  laundryTickets       LaundryTicket[]
+  academyEnrollments   AcademyEnrollment[]
+  realEstateOwnedProperties RealEstateProperty[] @relation("RealEstatePropertyOwner")
+  realEstateTenantLeases    RealEstateLease[]    @relation("RealEstateLeaseTenant")
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -2052,4 +2086,432 @@ model PetVaccination {
   @@index([branchId])
   @@index([petId, appliedAt])
   @@index([organizationId, nextDueDate])
+}
+
+// ==========================================
+// FASE 5: VERTICAL LAUNDRY (LAVANDERÍA & TINTORERÍA)
+// ==========================================
+
+enum LaundryTicketStatus {
+  RECEIVED
+  WASHING
+  DRYING
+  IRONING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum LaundryPricingMode {
+  BY_WEIGHT
+  BY_GARMENT
+  MIXED
+}
+
+model LaundryTicket {
+  id               String              @id @default(cuid())
+  organizationId   String
+  branchId         String
+  customerId       String
+  workerId         String?
+  serviceOrderId   String?             @unique
+  ticketNumber     String
+  status           LaundryTicketStatus @default(RECEIVED)
+  pricingMode      LaundryPricingMode  @default(MIXED)
+  totalWeightKg    Decimal?            @db.Decimal(8, 2)
+  pricePerKg       Decimal?            @db.Decimal(12, 2)
+  totalPieces      Int                 @default(0)
+  rackLocation     String? // Ej: "Perchero B-04" o "Estante 12"
+  isExpress        Boolean             @default(false)
+  promisedAt       DateTime?
+  deliveredAt      DateTime?
+  subtotal         Decimal             @default(0) @db.Decimal(12, 2)
+  expressSurcharge Decimal             @default(0) @db.Decimal(12, 2)
+  total            Decimal             @default(0) @db.Decimal(12, 2)
+  notes            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer     Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  worker       ServiceWorker?      @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  serviceOrder ServiceOrder?       @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  items        LaundryTicketItem[]
+
+  @@unique([organizationId, ticketNumber])
+  @@index([organizationId, branchId, status])
+  @@index([customerId])
+  @@index([workerId])
+}
+
+model LaundryTicketItem {
+  id            String   @id @default(cuid())
+  ticketId      String
+  serviceItemId String?
+  garmentType   String // Ej: "Camisa", "Pantalón", "Edredón Queen", "Ropa de color por kg"
+  processType   String   @default("WASH_AND_FOLD") // WASH_AND_FOLD, DRY_CLEAN, IRON_ONLY, STAIN_REMOVAL, DYEING
+  color         String?
+  brand         String?
+  defectsNotes  String? // Manchas previas, roturas, botones faltantes
+  quantity      Int      @default(1)
+  weightKg      Decimal? @db.Decimal(8, 2)
+  unitPrice     Decimal  @db.Decimal(12, 2)
+  subtotal      Decimal  @db.Decimal(12, 2)
+  createdAt     DateTime @default(now())
+
+  ticket      LaundryTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  serviceItem ServiceItem?  @relation(fields: [serviceItemId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([serviceItemId])
+}
+
+// ==========================================
+// FASE 6: VERTICAL BAKERY (PANADERÍA & PASTELERÍA)
+// ==========================================
+
+enum BakeryProductionStatus {
+  PLANNED
+  MIXING
+  FERMENTING
+  BAKING
+  COOLING_DECORATING
+  COMPLETED
+  CANCELLED
+}
+
+model BakeryRecipe {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  finishedProductId   String
+  name                String // Ej: "Tanda Pan Francés Artesanal x 50 und"
+  code                String?
+  yieldQuantity       Decimal  @db.Decimal(12, 3) // Rendimiento esperado por tanda
+  yieldUnit           String   @default("UND") // UND, KG, LB, BANDEJA
+  prepMinutes         Int      @default(45)
+  bakeMinutes         Int      @default(25)
+  ovenTempC           Int? // Temperatura de horneado (°C)
+  shelfLifeDays       Int      @default(3) // Días de frescura para crear ProductLot automático
+  estimatedBatchCost  Decimal  @default(0) @db.Decimal(12, 2)
+  estimatedUnitCost   Decimal  @default(0) @db.Decimal(12, 2)
+  instructions        String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finishedProduct  Product                  @relation("BakeryFinishedProduct", fields: [finishedProductId], references: [id], onDelete: Restrict)
+  ingredients      BakeryRecipeIngredient[]
+  productionOrders BakeryProductionOrder[]
+
+  @@index([organizationId])
+  @@index([finishedProductId])
+}
+
+model BakeryRecipeIngredient {
+  id                  String   @id @default(cuid())
+  recipeId            String
+  ingredientProductId String
+  quantity            Decimal  @db.Decimal(12, 3) // Cantidad requerida por 1 tanda base
+  unit                String   @default("KG") // KG, GR, LT, ML, UND
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  recipe            BakeryRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientProduct Product      @relation("BakeryIngredientProduct", fields: [ingredientProductId], references: [id], onDelete: Restrict)
+
+  @@index([recipeId])
+  @@index([ingredientProductId])
+}
+
+model BakeryProductionOrder {
+  id                   String                 @id @default(cuid())
+  organizationId       String
+  branchId             String
+  recipeId             String
+  finishedProductId    String
+  bakerWorkerId        String?
+  batchNumber          String // Ej: "HOR-482910"
+  status               BakeryProductionStatus @default(PLANNED)
+  batchesMultiplier    Decimal                @default(1) @db.Decimal(8, 2) // Ej: 1 tanda, 2 tandas
+  plannedQuantity      Decimal                @db.Decimal(12, 3)
+  actualQuantity       Decimal?               @db.Decimal(12, 3)
+  wasteQuantity        Decimal                @default(0) @db.Decimal(12, 3)
+  wasteReason          String?
+  totalIngredientsCost Decimal                @default(0) @db.Decimal(12, 2)
+  unitProductionCost   Decimal                @default(0) @db.Decimal(12, 2)
+  ovenNumber           String? // Ej: "Horno Rotativo #1"
+  scheduledAt          DateTime               @default(now())
+  startedAt            DateTime?
+  completedAt          DateTime?
+  notes                String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch          Branch         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  recipe          BakeryRecipe   @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  finishedProduct Product        @relation("BakeryProductionFinishedProduct", fields: [finishedProductId], references: [id], onDelete: Restrict)
+  bakerWorker     ServiceWorker? @relation(fields: [bakerWorkerId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, batchNumber])
+  @@index([organizationId, branchId, status])
+  @@index([recipeId])
+  @@index([finishedProductId])
+}
+
+// ==========================================
+// FASE 7: VERTICAL ACADEMY (ACADEMIA / CENTRO EDUCATIVO)
+// ==========================================
+
+enum AcademyEnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  DROPPED
+}
+
+enum AcademyAttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+}
+
+model AcademyCourse {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String // Ej: "CUR-ING-B1", "CUR-PIA-01"
+  name           String // Ej: "Inglés Conversacional B1", "Piano Básico"
+  category       String   @default("IDIOMAS") // IDIOMAS, MUSICA_ARTES, TECNOLOGIA, TUTORIA_ESCOLAR, DEPORTES, OTRO
+  level          String   @default("BASICO") // INICIAL, BASICO, INTERMEDIO, AVANZADO, CERTIFICACION
+  durationWeeks  Int      @default(12)
+  totalHours     Int      @default(48)
+  tuitionFee     Decimal  @default(0) @db.Decimal(12, 2) // Valor inscripción/matrícula
+  monthlyFee     Decimal  @default(0) @db.Decimal(12, 2) // Valor pensión/mensualidad o módulo
+  serviceItemId  String? // Vínculo opcional con ServiceItem para cobro y comisiones
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  serviceItem  ServiceItem?    @relation(fields: [serviceItemId], references: [id], onDelete: SetNull)
+  cohorts      AcademyCohort[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model AcademyCohort {
+  id              String    @id @default(cuid())
+  organizationId  String
+  branchId        String
+  courseId        String
+  teacherWorkerId String?
+  code            String // Ej: "GRP-2026-01"
+  name            String // Ej: "Grupo Sabatino Mañana - Aula 102"
+  classroom       String? // Ej: "Aula 102 / Virtual Zoom"
+  scheduleLabel   String // Ej: "Lun-Mié-Vie 6:00 PM - 8:00 PM"
+  startDate       DateTime
+  endDate         DateTime?
+  maxCapacity     Int       @default(20)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization  Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch        Branch              @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  course        AcademyCourse       @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  teacherWorker ServiceWorker?      @relation(fields: [teacherWorkerId], references: [id], onDelete: SetNull)
+  enrollments   AcademyEnrollment[]
+  attendances   AcademyAttendance[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, branchId])
+  @@index([courseId])
+  @@index([teacherWorkerId])
+}
+
+model AcademyEnrollment {
+  id                String                  @id @default(cuid())
+  organizationId    String
+  branchId          String
+  cohortId          String
+  studentCustomerId String
+  serviceOrderId    String?                 @unique
+  enrollmentNumber  String // Ej: "MAT-839201"
+  status            AcademyEnrollmentStatus @default(ACTIVE)
+  scholarshipPct    Decimal                 @default(0) @db.Decimal(5, 2)
+  agreedTotalAmount Decimal                 @db.Decimal(12, 2)
+  finalGrade        Decimal?                @db.Decimal(5, 2)
+  attendancePct     Decimal                 @default(100) @db.Decimal(5, 2)
+  guardianName      String?
+  guardianPhone     String?
+  notes             String?
+  enrolledAt        DateTime                @default(now())
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch          Branch              @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  cohort          AcademyCohort       @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  studentCustomer Customer            @relation(fields: [studentCustomerId], references: [id], onDelete: Restrict)
+  serviceOrder    ServiceOrder?       @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  attendances     AcademyAttendance[]
+
+  @@unique([organizationId, enrollmentNumber])
+  @@index([organizationId, branchId])
+  @@index([cohortId])
+  @@index([studentCustomerId])
+}
+
+model AcademyAttendance {
+  id             String                  @id @default(cuid())
+  organizationId String
+  cohortId       String
+  enrollmentId   String
+  sessionDate    DateTime                @default(now())
+  topic          String?
+  status         AcademyAttendanceStatus @default(PRESENT)
+  gradeScore     Decimal?                @db.Decimal(5, 2)
+  notes          String?
+  createdAt      DateTime                @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cohort       AcademyCohort     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  enrollment   AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, cohortId, sessionDate])
+  @@index([enrollmentId])
+}
+
+// ==========================================
+// FASE 8: VERTICAL REAL_ESTATE (INMOBILIARIA & PROPIEDADES)
+// ==========================================
+
+enum RealEstatePropertyType {
+  APARTMENT
+  HOUSE
+  COMMERCIAL_LOCAL
+  OFFICE
+  WAREHOUSE
+  LAND
+}
+
+enum RealEstatePropertyStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  RESERVED
+  SOLD
+}
+
+enum RealEstateLeaseStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  PENDING_SIGNATURE
+}
+
+model RealEstateProperty {
+  id                  String                   @id @default(cuid())
+  organizationId      String
+  branchId            String
+  ownerCustomerId     String
+  agentWorkerId       String?
+  code                String // Ej: "INM-4012"
+  title               String // Ej: "Apto 802 Mirador del Parque"
+  propertyType        RealEstatePropertyType   @default(APARTMENT)
+  status              RealEstatePropertyStatus @default(AVAILABLE)
+  address             String
+  city                String                   @default("Medellín")
+  neighborhood        String?
+  areaM2              Decimal?                 @db.Decimal(10, 2)
+  bedrooms            Int                      @default(0)
+  bathrooms           Int                      @default(0)
+  parkingSpots        Int                      @default(0)
+  monthlyRentPrice    Decimal                  @db.Decimal(12, 2)
+  adminFeePrice       Decimal                  @default(0) @db.Decimal(12, 2)
+  salePrice           Decimal?                 @db.Decimal(14, 2)
+  agencyCommissionPct Decimal                  @default(10) @db.Decimal(5, 2)
+  notes               String?
+  isActive            Boolean                  @default(true)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch        Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  ownerCustomer Customer          @relation("RealEstatePropertyOwner", fields: [ownerCustomerId], references: [id], onDelete: Restrict)
+  agentWorker   ServiceWorker?    @relation(fields: [agentWorkerId], references: [id], onDelete: SetNull)
+  leases        RealEstateLease[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, branchId, status])
+  @@index([ownerCustomerId])
+}
+
+model RealEstateLease {
+  id                  String                @id @default(cuid())
+  organizationId      String
+  branchId            String
+  propertyId          String
+  tenantCustomerId    String
+  agentWorkerId       String?
+  contractNumber      String // Ej: "ARR-2026-0041"
+  status              RealEstateLeaseStatus @default(ACTIVE)
+  startDate           DateTime
+  endDate             DateTime
+  paymentDay          Int                   @default(5) // Día límite de pago de cada mes
+  monthlyRent         Decimal               @db.Decimal(12, 2)
+  adminFee            Decimal               @default(0) @db.Decimal(12, 2)
+  securityDeposit     Decimal               @default(0) @db.Decimal(12, 2)
+  agencyCommissionPct Decimal               @default(10) @db.Decimal(5, 2)
+  coSignerName        String?
+  coSignerPhone       String?
+  notes               String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  property       RealEstateProperty     @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  tenantCustomer Customer               @relation("RealEstateLeaseTenant", fields: [tenantCustomerId], references: [id], onDelete: Restrict)
+  agentWorker    ServiceWorker?         @relation(fields: [agentWorkerId], references: [id], onDelete: SetNull)
+  rentCharges    RealEstateRentCharge[]
+
+  @@unique([organizationId, contractNumber])
+  @@index([organizationId, branchId, status])
+  @@index([propertyId])
+  @@index([tenantCustomerId])
+}
+
+model RealEstateRentCharge {
+  id                     String   @id @default(cuid())
+  organizationId         String
+  branchId               String
+  leaseId                String
+  serviceOrderId         String?  @unique
+  periodLabel            String // Ej: "2026-10"
+  dueDate                DateTime
+  rentAmount             Decimal  @db.Decimal(12, 2)
+  adminFeeAmount         Decimal  @default(0) @db.Decimal(12, 2)
+  lateFeeAmount          Decimal  @default(0) @db.Decimal(12, 2)
+  totalAmount            Decimal  @db.Decimal(12, 2)
+  agencyCommissionAmount Decimal  @default(0) @db.Decimal(12, 2)
+  ownerNetAmount         Decimal  @default(0) @db.Decimal(12, 2)
+  isOwnerDisbursed       Boolean  @default(false)
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch          @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  lease        RealEstateLease @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  serviceOrder ServiceOrder?   @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+
+  @@unique([leaseId, periodLabel])
+  @@index([organizationId, branchId])
+  @@index([leaseId])
 }

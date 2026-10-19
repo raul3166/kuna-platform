@@ -189,3 +189,40 @@
   * Sanitary vaccination & deworming card (`PetVaccination`) with batch tracking, optional direct stock deduction (`SERVICE_CONSUMPTION`), and upcoming booster alerts.
   * Strict Core reuse: `Customer` (pet owners/tutors), `ServiceWorker` (veterinarians/groomers), `ServiceItem` (clinical & grooming services), `Product` (medicines, vaccines, pet food), `ServiceOrder` (clinical attention & supplies), and POS (`/pos?serviceOrderId=...`).
   * New views: Veterinary Clinical Hub (`/veterinary-dashboard`), Patients & Clinical Dossier (`/veterinary-pets`), and Consultation, Grooming & Vaccination Console (`/veterinary-consultations`).
+
+---
+
+## v2.3.0-rc1
+
+* **Laundry & Dry Cleaning Vertical (Fase 5):**
+  * Relational models `LaundryTicket` and `LaundryTicketItem` supporting pricing by weight (`BY_WEIGHT`), per garment (`BY_GARMENT`), or hybrid (`MIXED`), with Express surcharge calculation and rack/hanger location tracking (`rackLocation`).
+  * 5-stage plant Kanban workflow (`RECEIVED` → `WASHING` → `DRYING` → `IRONING` → `READY` → `DELIVERED`) synchronized with `ServiceOrder` so supplies (detergent, garment bags, hangers) are deducted once upon completion and billed via POS (`/pos?serviceOrderId=...`).
+  * New views: Laundry Plant & Rack Kanban Hub (`/laundry-dashboard`) and Garment Intake, Weighing & Ticket Directory (`/laundry-intake`).
+
+---
+
+## v2.4.0-rc1
+
+* **Bakery & Pastry Production Vertical (Fase 6):**
+  * Relational models `BakeryRecipe`, `BakeryRecipeIngredient`, and `BakeryProductionOrder` with automatic batch and unit cost calculation (`estimatedBatchCost`, `estimatedUnitCost`).
+  * 6-stage oven & production Kanban (`PLANNED` → `MIXING` → `FERMENTING` → `BAKING` → `COOLING_DECORATING` → `COMPLETED`) with waste tracking (`wasteQuantity`, `wasteReason`).
+  * Atomic ACID transaction on batch completion: deducts raw ingredients (`Product`, `BranchProductStock`, `InventoryMovement` as `SERVICE_CONSUMPTION`), increments finished bakery product stock (`ADJUSTMENT`), and creates a fresh `ProductLot` with shelf-life expiration (`shelfLifeDays`) for FEFO rotation.
+  * New views: Oven & Fresh Showcase Kanban Hub (`/bakery-dashboard`) and Technical Recipe Book, Costing & Batch Launcher (`/bakery-recipes`).
+
+---
+
+## v2.5.0-rc1
+
+* **Academy & Education Center Vertical (Fase 7):**
+  * Relational models `AcademyCourse`, `AcademyCohort`, `AcademyEnrollment`, and `AcademyAttendance` supporting courses, classroom/virtual cohorts, scholarships (`scholarshipPct`), attendance tracking (`attendancePct`), and session grading (`gradeScore`, `finalGrade`).
+  * Strict Core reuse: `Customer` (students), `ServiceWorker` (teachers/professors), `Product` (study kits, books, uniforms), and `ServiceOrder` for POS tuition/monthly billing (`/pos?serviceOrderId=...`) and teacher commissions.
+  * New views: Academic Campus & Attendance Sheet Hub (`/academy-dashboard`) and Academic Offer, Cohorts & Enrollment Console (`/academy-programs`).
+
+---
+
+## v2.6.0-rc1
+
+* **Real Estate & Property Management Vertical (Fase 8 — 14/14 Verticals Complete):**
+  * Relational models `RealEstateProperty`, `RealEstateLease`, and `RealEstateRentCharge` supporting property intake, lease contracts, monthly rent + HOA/admin fee billing, automatic agency commission calculation (`agencyCommissionAmount`), and owner net disbursement tracking (`ownerNetAmount`, `isOwnerDisbursed`).
+  * Strict Core reuse: `Customer` (property owners & tenants), `ServiceWorker` (real estate agents/advisors), and `ServiceOrder` for POS rent collection (`/pos?serviceOrderId=...`).
+  * New views: Property Portfolio, Occupancy Kanban & Owner Disbursements Hub (`/real-estate-dashboard`) and Properties, Lease Contracts & Monthly Rent Billing Console (`/real-estate-leases`).

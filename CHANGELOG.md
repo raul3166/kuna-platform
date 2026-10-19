@@ -7,6 +7,96 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.6.0-rc1] - 2026-10-19
+
+### Added
+
+#### Vertical REAL_ESTATE / Inmobiliaria, Administración de Propiedades & Arrendamientos (Fase 8)
+* **Modelos inmobiliarios (`schema.prisma`):** `RealEstateProperty`, `RealEstateLease`, `RealEstateRentCharge` y enums `RealEstatePropertyType` (`APARTMENT`, `HOUSE`, `COMMERCIAL_LOCAL`, `OFFICE`, `WAREHOUSE`, `LAND`), `RealEstatePropertyStatus` (`AVAILABLE`, `RENTED`, `MAINTENANCE`, `RESERVED`, `SOLD`) y `RealEstateLeaseStatus` (`ACTIVE`, `EXPIRED`, `TERMINATED`, `PENDING_SIGNATURE`), todos multi-tenant (`organizationId` y `branchId`).
+* **Reutilización estricta del Core (sin duplicar entidades):**
+  * Propietarios (arrendadores) e Inquilinos (arrendatarios) = `Customer`
+  * Asesores inmobiliarios / captadores = `ServiceWorker`
+  * Recaudo de cánones de arrendamiento, cuotas de administración y comisiones de agencia = `ServiceOrder` (vinculada a `RealEstateRentCharge`) + POS (`Sale`, `CashSession`, `/pos?serviceOrderId=...`)
+* **Módulo Backend `RealEstateModule` (`/real-estate`, `@RequiresVertical('REAL_ESTATE')`):**
+  * `GET /real-estate/dashboard`: KPIs de portafolio (inmuebles captados, porcentaje de ocupación, contratos activos, facturación mensual de cánones, comisión inmobiliaria estimada y cánones pendientes en POS), Kanban de ocupación en 4 estados y tabla de recaudo/dispersión a propietarios.
+  * `GET /real-estate/properties`, `POST /real-estate/properties`, `PATCH /real-estate/properties/:id/status`: Captación de propiedades con características físicas (`areaM2`, `bedrooms`, `bathrooms`), propietario (`ownerCustomerId`), canon mensual sugerido (`monthlyRentPrice`), administración (`adminFeePrice`) y porcentaje de comisión de agencia (`agencyCommissionPct`).
+  * `GET /real-estate/leases`, `POST /real-estate/leases`: Formalización de contratos de arrendamiento (`ARR-XXXXXX`) que cambia automáticamente el estado del inmueble a `RENTED` y emite el primer canon mensual para cobro inmediato en POS.
+  * `POST /real-estate/rent-charges`, `PATCH /real-estate/rent-charges/:id/disburse`: Emisión de cánones mensuales por periodo (`YYYY-MM`) con desglose automático de `agencyCommissionAmount` y `ownerNetAmount` (neto a girar al propietario), creación de `ServiceOrder` (`ORD-ARR-XXXXXX`) y control de giro/dispersión al propietario (`isOwnerDisbursed`).
+  * `GET /real-estate/config`, `PATCH /real-estate/config`: Parámetros operativos inmobiliarios (`defaultAgencyCommissionPct`, `defaultPaymentDay`, `lateFeeInterestPct`, `autoGenerateFirstRentCharge`).
+* **Vistas Frontend Vue 3 (`apps/web`):**
+  * `RealEstateDashboardView.vue` (`/real-estate-dashboard`): Hub de portafolio inmobiliario con Kanban de ocupación, recaudo de cánones en POS y control de giros a propietarios.
+  * `RealEstateLeasesView.vue` (`/real-estate-leases`): Consola de captación de inmuebles, formalización de contratos de arriendo y emisión de cánones mensuales.
+  * Integración en `navigation.ts` y `router/index.ts` protegida con `requiredVertical: 'REAL_ESTATE'`.
+
+---
+## [2.5.0-rc1] - 2026-10-19
+
+### Added
+
+#### Vertical ACADEMY / Academia, Instituto & Centro Educativo (Fase 7)
+* **Modelos académicos (`schema.prisma`):** `AcademyCourse`, `AcademyCohort`, `AcademyEnrollment`, `AcademyAttendance` y enums `AcademyEnrollmentStatus` (`ACTIVE`, `COMPLETED`, `PAUSED`, `DROPPED`) y `AcademyAttendanceStatus` (`PRESENT`, `LATE`, `ABSENT`, `EXCUSED`), todos multi-tenant (`organizationId` y `branchId`).
+* **Reutilización estricta del Core (sin duplicar entidades):**
+  * Estudiantes y acudientes = `Customer`
+  * Cuerpo docente / profesores = `ServiceWorker`
+  * Libros, kits de estudio y uniformes = `Product`, `ServiceOrderMaterial`, `InventoryMovement`
+  * Cobro de matrículas, pensiones y liquidación de comisiones docentes = `ServiceOrder` (vinculada a `AcademyEnrollment`) + POS (`Sale`, `CashSession`, `/pos?serviceOrderId=...`)
+* **Módulo Backend `AcademyModule` (`/academy`, `@RequiresVertical('ACADEMY')`):**
+  * `GET /academy/dashboard`: KPIs de campus (programas activos, grupos abiertos, estudiantes matriculados, porcentaje global de asistencia, matrículas pendientes de cobro POS e ingreso académico pactado), cohortes activas y últimas matrículas.
+  * `GET /academy/courses`, `POST /academy/courses`: Catálogo de cursos y programas por categoría (`IDIOMAS`, `MUSICA_ARTES`, `TECNOLOGIA`, `TUTORIA_ESCOLAR`, `DEPORTES`, `OTRO`), nivel, semanas, horas, valor de inscripción (`tuitionFee`) y pensión/módulo (`monthlyFee`).
+  * `GET /academy/cohorts`, `GET /academy/cohorts/:id`, `POST /academy/cohorts`: Apertura de grupos/cohortes con aula (`classroom`), horario (`scheduleLabel`), docente asignado (`teacherWorkerId`) y control de cupo máximo (`maxCapacity`).
+  * `GET /academy/enrollments`, `POST /academy/enrollments`, `PATCH /academy/enrollments/:id`: Admisión y matrícula de alumnos (`MAT-XXXXXX`) con validación de cupo disponible, cálculo de becas (`scholarshipPct`), inclusión opcional de material educativo (`Product`) y generación atómica de `ServiceOrder` (`ORD-ACA-XXXXXX`) para facturación en POS.
+  * `POST /academy/attendance/batch`: Planilla de asistencia y calificación por sesión que recalcula automáticamente el porcentaje de asistencia acumulado (`attendancePct`) y el promedio académico (`finalGrade`) de cada estudiante.
+  * `GET /academy/config`, `PATCH /academy/config`: Configuración de escala de calificación (`gradingScaleMax`, `minPassingGrade`, `minAttendancePct`).
+* **Vistas Frontend Vue 3 (`apps/web`):**
+  * `AcademyDashboardView.vue` (`/academy-dashboard`): Hub de campus académico, tarjetas de grupos en curso, modal interactivo de planilla de asistencia/evaluación y tabla de cobro de matrículas en POS.
+  * `AcademyProgramsView.vue` (`/academy-programs`): Consola de cursos, grupos y matrículas con creación rápida de estudiantes en el Core y calculadora de becas/kits de estudio.
+  * Integración en `navigation.ts` y `router/index.ts` protegida con `requiredVertical: 'ACADEMY'`.
+
+---
+## [2.4.0-rc1] - 2026-10-19
+
+### Added
+
+#### Vertical BAKERY / Panadería, Pastelería & Repostería (Fase 6)
+* **Modelos operativos de Panadería (`schema.prisma`):** `BakeryRecipe`, `BakeryRecipeIngredient`, `BakeryProductionOrder` y enum `BakeryProductionStatus` (`PLANNED`, `MIXING`, `FERMENTING`, `BAKING`, `COOLING_DECORATING`, `COMPLETED`, `CANCELLED`), todos multi-tenant (`organizationId` y `branchId`).
+* **Reutilización estricta del Core (sin duplicar entidades):**
+  * Panes, pasteles, postres terminados e insumos/materias primas (harina, azúcar, mantequilla, levadura, huevos, chocolate) = `Product`, `BranchProductStock`, `InventoryMovement`
+  * Control de frescura y caducidad en vitrina = `ProductLot` (creación automática de lote FEFO al finalizar cada tanda de horneado)
+  * Maestros panaderos, pasteleros y horneros = `ServiceWorker`
+  * Venta de mostrador y cafetería = POS (`Sale`, `CashSession`, `/pos`)
+* **Módulo Backend `BakeryModule` (`/bakery`, `@RequiresVertical('BAKERY')`):**
+  * `GET /bakery/dashboard`: KPIs de producción diaria (recetas activas, tandas en proceso/horno, unidades horneadas hoy, merma del día, costo de insumos consumidos hoy, lotes frescos próximos a vencer ≤ 3 días) y Tablero Kanban de Hornos en 6 columnas (`PLANNED` → `MIXING` → `FERMENTING` → `BAKING` → `COOLING_DECORATING` → `COMPLETED`).
+  * `GET /bakery/recipes`, `GET /bakery/recipes/:id`, `POST /bakery/recipes`: Fórmulas técnicas con cálculo automático de `estimatedBatchCost` y `estimatedUnitCost` en base al `costPrice` de los ingredientes del Core.
+  * `GET /bakery/production-orders`, `POST /bakery/production-orders`, `PATCH /bakery/production-orders/:id/status`: Programación y ejecución de tandas (`HOR-XXXXXX`). Al pasar a `COMPLETED`, ejecuta una transacción ACID que: (1) descuenta cada ingrediente (`SERVICE_CONSUMPTION`), (2) incrementa el stock del producto terminado (`ADJUSTMENT`) actualizando su costo unitario, y (3) genera automáticamente el lote fresco `ProductLot` con vencimiento a `shelfLifeDays`.
+  * `GET /bakery/config`, `PATCH /bakery/config`: Parámetros operativos (`defaultShelfLifeDays`, `autoCreateProductLotOnBake`, `autoDeductIngredientsOnBake`, `maxWasteAlertPct`).
+* **Vistas Frontend Vue 3 (`apps/web`):**
+  * `BakeryDashboardView.vue` (`/bakery-dashboard`): Monitor Kanban de hornos y producción, modal de salida a vitrina con control de merma, y tabla de lotes frescos FEFO próximos a vencer.
+  * `BakeryRecipesView.vue` (`/bakery-recipes`): Recetario técnico con costeo en vivo de ingredientes, creación rápida de productos/insumos en el Core y lanzador de tandas al horno en 1 clic.
+  * Integración en `navigation.ts` y `router/index.ts` protegida con `requiredVertical: 'BAKERY'`.
+
+---
+## [2.3.0-rc1] - 2026-10-16
+
+### Added
+
+#### Vertical LAUNDRY / Lavandería, Planchado & Tintorería (Fase 5)
+* **Modelos operativos de Lavandería (`schema.prisma`):** `LaundryTicket`, `LaundryTicketItem` y enums `LaundryTicketStatus` (`RECEIVED`, `WASHING`, `DRYING`, `IRONING`, `READY`, `DELIVERED`, `CANCELLED`), `LaundryPricingMode` (`BY_WEIGHT`, `BY_GARMENT`, `MIXED`), todos multi-tenant (`organizationId` y `branchId`).
+* **Reutilización estricta del Core (sin duplicar entidades):**
+  * Clientes = `Customer`
+  * Operarios de lavado, planchado y tintorería = `ServiceWorker`
+  * Tarifas de lavado por kilo, lavado en seco y planchado = `ServiceItem`
+  * Detergentes, suavizantes, bolsas y ganchos = `Product`, `BranchProductStock`, `InventoryMovement`
+  * Ejecución, liquidación de comisiones y cobro = `ServiceOrder` (vinculada a `LaundryTicket`) + POS (`/pos?serviceOrderId=...`)
+* **Módulo Backend `LaundryModule` (`/laundry`, `@RequiresVertical('LAUNDRY')`):**
+  * `GET /laundry/dashboard`: Tablero Kanban de planta en 5 etapas (`RECEIVED` → `WASHING` → `DRYING` → `IRONING` → `READY`) y KPIs en tiempo real (tickets activos, kilos en planta, piezas totales, listos en perchero, tickets Express y facturación estimada).
+  * `GET /laundry/tickets`, `GET /laundry/tickets/:id`, `POST /laundry/tickets`, `PATCH /laundry/tickets/:id/status`: Recepción de lotes por peso y por prenda con registro de manchas/daños previos (`defectsNotes`), recargo automático por servicio Express, asignación de perchero/estante (`rackLocation`) y sincronización automática con `ServiceOrder` (descarga única de insumos al pasar a `READY`).
+  * `GET /laundry/config`, `PATCH /laundry/config`: Configuración de tarifa por kilogramo (`defaultPricePerKg`), porcentaje de recargo Express (`expressSurchargePct`) y horas prometidas de entrega (`defaultPromisedHours`).
+* **Vistas Frontend Vue 3 (`apps/web`):**
+  * `LaundryDashboardView.vue` (`/laundry-dashboard`): Tablero Kanban de planta de lavandería, asignación de perchero al terminar planchado, cobro directo en POS y entrega.
+  * `LaundryIntakeView.vue` (`/laundry-intake`): Consola de recepción y pesaje de prendas con botones rápidos de prendas frecuentes, inspección de manchas/daños y directorio de tickets.
+  * Integración en `navigation.ts` y `router/index.ts` protegida con `requiredVertical: 'LAUNDRY'`.
+
+---
 ## [2.2.0-rc1] - 2026-10-16
 
 ### Added

@@ -337,15 +337,79 @@ Objetivo: Gestión integral de clínicas veterinarias, peluquería canina/felina
 
 ---
 
+# Sprint 26 — Laundry & Dry Cleaning Vertical (Fase 5)
+
+Objetivo: Gestión integral de lavanderías y tintorerías con recepción por peso (kg) y por prenda, control de etapas de lavado/secado/planchado, ubicación en perchero y cobro integrado con `ServiceOrder` y POS.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-133 | Modelos de Tickets y Prendas (`LaundryTicket`, `LaundryTicketItem`, `LaundryPricingMode`) | ✅ | Backend |
+| KNA-134 | Recepción de Prendas, Pesaje en Báscula, Recargo Express e Inspección de Manchas (`LaundryIntakeView.vue`) | ✅ | Backend/Frontend |
+| KNA-135 | Tablero Kanban de Planta en 5 Etapas: Recibido → Lavado → Secado → Planchado → Perchero (`LaundryDashboardView.vue`) | ✅ | Backend/Frontend |
+| KNA-136 | Asignación de Perchero/Estante (`rackLocation`) y Sincronización con `ServiceOrder` y POS | ✅ | Backend/Frontend |
+
+**Sprint 26 (Fase 5) completado al 100%.**
+
+---
+
+# Sprint 27 — Bakery & Pastry Production Vertical (Fase 6)
+
+Objetivo: Gestión integral de panaderías, pastelerías y reposterías con recetario técnico, costeo automático de insumos, tablero Kanban de hornos en 6 etapas, control de mermas y creación automática de lotes frescos (`ProductLot`) para rotación FEFO y venta en POS.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-137 | Modelos de Recetas, Ingredientes y Órdenes de Horneado (`BakeryRecipe`, `BakeryRecipeIngredient`, `BakeryProductionOrder`) | ✅ | Backend |
+| KNA-138 | Recetario Técnico con Costeo en Vivo de Insumos y Lanzador de Tandas (`BakeryRecipesView.vue`) | ✅ | Backend/Frontend |
+| KNA-139 | Tablero Kanban de Hornos (Programada → Amasado → Fermentación → Horno → Decorado → Vitrina) (`BakeryDashboardView.vue`) | ✅ | Backend/Frontend |
+| KNA-140 | Transacción ACID de Salida de Horno: Descarga de Insumos + Entrada de Producto Terminado + Creación de Lote Fresco FEFO (`ProductLot`) | ✅ | Backend/Frontend |
+
+**Sprint 27 (Fase 6) completado al 100%.**
+
+---
+
+# Sprint 28 — Academy & Education Center Vertical (Fase 7)
+
+Objetivo: Gestión integral de academias, institutos de idiomas/música/tecnología y centros educativos con catálogo de programas, apertura de cohortes/horarios con docentes, matrículas con becas y kits de estudio, control de asistencia/calificaciones por sesión y facturación integrada en POS.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-141 | Modelos Académicos (`AcademyCourse`, `AcademyCohort`, `AcademyEnrollment`, `AcademyAttendance`) | ✅ | Backend |
+| KNA-142 | Catálogo de Programas, Apertura de Grupos/Horarios y Asignación de Docentes (`AcademyProgramsView.vue`) | ✅ | Backend/Frontend |
+| KNA-143 | Admisión y Matrícula de Estudiantes con Becas, Kits de Estudio e Integración a `ServiceOrder` y POS | ✅ | Backend/Frontend |
+| KNA-144 | Planilla de Asistencia por Sesión y Cálculo Automático de Porcentaje de Asistencia y Promedio (`AcademyDashboardView.vue`) | ✅ | Backend/Frontend |
+
+**Sprint 28 (Fase 7) completado al 100%.**
+
+---
+
+# Sprint 29 — Real Estate & Property Management Vertical (Fase 8)
+
+Objetivo: Gestión integral de inmobiliarias y administración de propiedades en arriendo, reutilizando `Customer` (propietarios e inquilinos), `ServiceWorker` (asesores inmobiliarios), `ServiceOrder` y el POS para recaudo de cánones, retención de comisión de agencia y control de giros netos a propietarios.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-145 | Modelos Inmobiliarios (`RealEstateProperty`, `RealEstateLease`, `RealEstateRentCharge`) | ✅ | Backend |
+| KNA-146 | Captación de Inmuebles, Estados de Ocupación y Vínculo con Propietarios (`RealEstateLeasesView.vue`) | ✅ | Backend/Frontend |
+| KNA-147 | Formalización de Contratos de Arrendamiento y Emisión Automática de Cánones Mensuales | ✅ | Backend/Frontend |
+| KNA-148 | Recaudo de Cánones en POS, Liquidación de Comisión Inmobiliaria y Control de Giro Neto a Propietarios (`RealEstateDashboardView.vue`) | ✅ | Backend/Frontend |
+
+**Sprint 29 (Fase 8) completado al 100%. ¡Las 14 Verticales del Ecosistema Multi-Vertical de KUNA están 100% operativas!**
+
+---
+
 # Próximos Sprints / Roadmap de Verticales
 
 | Sprint | Vertical | Alcance Previsto | Estado |
 | --- | --- | --- | :---: |
 | **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | ✅ Completado |
 | **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | ✅ Completado |
-| **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | 📋 Planificado |
-| **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | 📋 Planificado |
-| **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | 📋 Planificado |
-| **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones de arrendamiento y propietarios | 📋 Planificado |
+| **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | ✅ Completado |
+| **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | ✅ Completado |
+| **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | ✅ Completado |
+| **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones de arrendamiento y propietarios | ✅ Completado |
+
+
+
+
 
 

@@ -219,6 +219,30 @@ async function main() {
     { module: 'veterinary', code: 'veterinary.read', name: 'Read veterinary data', description: 'Allows viewing pets, clinical records and vaccination reminders' },
     { module: 'veterinary', code: 'veterinary.update', name: 'Update veterinary data', description: 'Allows updating pet profiles and veterinary clinic settings' },
     { module: 'veterinary', code: 'veterinary.delete', name: 'Delete veterinary data', description: 'Allows archiving pet records' },
+
+    // --- MODULE: LAUNDRY ---
+    { module: 'laundry', code: 'laundry.create', name: 'Create laundry tickets', description: 'Allows receiving garments and creating laundry tickets' },
+    { module: 'laundry', code: 'laundry.read', name: 'Read laundry data', description: 'Allows viewing plant Kanban board and laundry tickets' },
+    { module: 'laundry', code: 'laundry.update', name: 'Update laundry data', description: 'Allows advancing washing/drying/ironing/delivery status and rack location' },
+    { module: 'laundry', code: 'laundry.delete', name: 'Delete laundry data', description: 'Allows cancelling laundry tickets' },
+
+    // --- MODULE: BAKERY ---
+    { module: 'bakery', code: 'bakery.create', name: 'Create bakery recipes & batches', description: 'Allows creating bakery recipes and launching production orders' },
+    { module: 'bakery', code: 'bakery.read', name: 'Read bakery data', description: 'Allows viewing bakery oven Kanban, recipes and fresh lots' },
+    { module: 'bakery', code: 'bakery.update', name: 'Update bakery data', description: 'Allows advancing oven stages, registering waste and completing batches' },
+    { module: 'bakery', code: 'bakery.delete', name: 'Delete bakery data', description: 'Allows cancelling bakery production orders' },
+
+    // --- MODULE: ACADEMY ---
+    { module: 'academy', code: 'academy.create', name: 'Create academy courses, cohorts & enrollments', description: 'Allows creating academic courses, cohorts and enrolling students' },
+    { module: 'academy', code: 'academy.read', name: 'Read academy data', description: 'Allows viewing academic cohorts, enrollments and attendance logs' },
+    { module: 'academy', code: 'academy.update', name: 'Update academy data', description: 'Allows recording student attendance, grades and updating enrollment status' },
+    { module: 'academy', code: 'academy.delete', name: 'Delete academy data', description: 'Allows dropping or archiving enrollments' },
+
+    // --- MODULE: REAL-ESTATE ---
+    { module: 'real-estate', code: 'real-estate.create', name: 'Create real estate properties, leases & rent charges', description: 'Allows registering properties, lease contracts and monthly rent charges' },
+    { module: 'real-estate', code: 'real-estate.read', name: 'Read real estate data', description: 'Allows viewing property portfolio, active leases and owner disbursements' },
+    { module: 'real-estate', code: 'real-estate.update', name: 'Update real estate data', description: 'Allows updating property status, lease terms and owner disbursements' },
+    { module: 'real-estate', code: 'real-estate.delete', name: 'Delete real estate data', description: 'Allows terminating leases or archiving properties' },
   ];
 
   await prisma.permission.createMany({
@@ -637,7 +661,7 @@ async function main() {
   // Activar verticales por defecto a todas las organizaciones existentes para retrocompatibilidad
   const allOrganizations = await prisma.organization.findMany();
   const allVerticals = await prisma.vertical.findMany();
-  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE', 'BEAUTY', 'VETERINARY'];
+  const defaultActiveCodes = ['RETAIL', 'SERVICES', 'HOTEL', 'RESTAURANT', 'PHARMACY', 'GYM', 'STUDIO', 'AUTOMOTIVE', 'BEAUTY', 'VETERINARY', 'LAUNDRY', 'BAKERY', 'ACADEMY', 'REAL_ESTATE'];
 
   for (const org of allOrganizations) {
     for (const vert of allVerticals) {

@@ -63,6 +63,10 @@ import { RetailModule } from './modules/retail/retail.module';
 import { AutomotiveModule } from './modules/automotive/automotive.module';
 import { BeautyModule } from './modules/beauty/beauty.module';
 import { VeterinaryModule } from './modules/veterinary/veterinary.module';
+import { LaundryModule } from './modules/laundry/laundry.module';
+import { BakeryModule } from './modules/bakery/bakery.module';
+import { AcademyModule } from './modules/academy/academy.module';
+import { RealEstateModule } from './modules/real-estate/real-estate.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -127,6 +131,10 @@ import { VeterinaryModule } from './modules/veterinary/veterinary.module';
     AutomotiveModule,
     BeautyModule,
     VeterinaryModule,
+    LaundryModule,
+    BakeryModule,
+    AcademyModule,
+    RealEstateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

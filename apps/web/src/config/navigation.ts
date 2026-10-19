@@ -158,6 +158,50 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    key: 'laundry',
+    label: 'Lavandería & Tintorería',
+    requiredVertical: 'LAUNDRY',
+    items: [
+      { label: 'Planta & Percheros (Hub)', icon: '🧺', to: '/laundry-dashboard' },
+      { label: 'Recepción & Tickets', icon: '👕', to: '/laundry-intake' },
+      { label: 'Catálogo de Tarifas', icon: '📋', to: '/service-items' },
+      { label: 'Liquidación de Comisiones', icon: '💰', to: '/service-commissions' },
+    ],
+  },
+  {
+    key: 'bakery',
+    label: 'Panadería & Pastelería',
+    requiredVertical: 'BAKERY',
+    items: [
+      { label: 'Hornos & Vitrina (Hub)', icon: '🥐', to: '/bakery-dashboard' },
+      { label: 'Recetario & Costeo', icon: '🥖', to: '/bakery-recipes' },
+      { label: 'Lotes y Frescura (FEFO)', icon: '🏷️', to: '/expiring-lots' },
+      { label: 'Maestros Panaderos', icon: '👨‍🍳', to: '/service-workers' },
+    ],
+  },
+  {
+    key: 'academy',
+    label: 'Academia & Educación',
+    requiredVertical: 'ACADEMY',
+    items: [
+      { label: 'Campus & Asistencia (Hub)', icon: '🎓', to: '/academy-dashboard' },
+      { label: 'Cursos, Grupos & Matrículas', icon: '📚', to: '/academy-programs' },
+      { label: 'Cuerpo Docente', icon: '👩‍🏫', to: '/service-workers' },
+      { label: 'Liquidación Docentes', icon: '💰', to: '/service-commissions' },
+    ],
+  },
+  {
+    key: 'real-estate',
+    label: 'Inmobiliaria & Propiedades',
+    requiredVertical: 'REAL_ESTATE',
+    items: [
+      { label: 'Portafolio & Giros (Hub)', icon: '🏢', to: '/real-estate-dashboard' },
+      { label: 'Inmuebles, Contratos & Cánones', icon: '🔑', to: '/real-estate-leases' },
+      { label: 'Asesores Inmobiliarios', icon: '👔', to: '/service-workers' },
+      { label: 'Comisiones de Agencia', icon: '💰', to: '/service-commissions' },
+    ],
+  },
+  {
     key: 'hotel',
     label: 'Recepción Hotel',
     requiredVertical: 'HOTEL',
