@@ -347,18 +347,30 @@ async function main() {
         'suppliers.create', 'suppliers.read', 'suppliers.update',
       ],
     },
+    // --- RESTAURANTE ---
     {
-      code: 'RESTAURANT_STAFF',
-      name: 'Personal de Restaurante / Mesero',
-      description: 'Gestión de salas, comandas en mesas y pedidos de restaurante',
+      code: 'RESTAURANT_WAITER',
+      name: 'Mesero / Salonero',
+      description: 'Atención en mesas, toma de comandas y pedidos de salón',
       permissionCodes: [
-        'restaurant.read', 'restaurant.create', 'restaurant.update',
+        'restaurant.read', 'restaurant.update',
         'sales.create', 'sales.read',
         'sale-items.create', 'sale-items.read',
         'products.read', 'product-categories.read',
         'customers.read',
       ],
     },
+    {
+      code: 'RESTAURANT_KITCHEN',
+      name: 'Cocinero / Chef de Línea (KDS)',
+      description: 'Pantalla de cocina, visualización de comandas y avance de preparación/despacho',
+      permissionCodes: [
+        'restaurant.read', 'restaurant.update',
+        'products.read',
+      ],
+    },
+
+    // --- HOTEL ---
     {
       code: 'HOTEL_RECEPTIONIST',
       name: 'Recepcionista de Hotel',
@@ -370,9 +382,19 @@ async function main() {
       ],
     },
     {
+      code: 'HOTEL_HOUSEKEEPING',
+      name: 'Gobernanta / Limpieza de Hotel',
+      description: 'Supervisión de aseo de habitaciones y cambio de estado a limpio/mantenimiento',
+      permissionCodes: [
+        'hotel.read', 'hotel.update',
+      ],
+    },
+
+    // --- VETERINARIA ---
+    {
       code: 'VETERINARIAN',
-      name: 'Médico Veterinario / Staff Clínico',
-      description: 'Gestión de expedientes de mascotas, consultas clínicas y vacunación',
+      name: 'Médico Veterinario',
+      description: 'Consultas médicas, diagnósticos, expedientes clínicos y vacunación',
       permissionCodes: [
         'veterinary.create', 'veterinary.read', 'veterinary.update', 'veterinary.delete',
         'customers.create', 'customers.read', 'customers.update',
@@ -380,71 +402,162 @@ async function main() {
       ],
     },
     {
-      code: 'BEAUTY_SPECIALIST',
-      name: 'Especialista Beauty / Estilista',
-      description: 'Agenda de citas, reservas, catálogo de servicios de belleza y clientes',
+      code: 'VET_GROOMER',
+      name: 'Estilista Canino / Pet Shop',
+      description: 'Baños, peluquería canina, citas de estética y tienda de mascotas',
+      permissionCodes: [
+        'veterinary.read', 'veterinary.update',
+        'customers.create', 'customers.read',
+        'products.read', 'sales.create',
+      ],
+    },
+
+    // --- BELLEZA & SPA ---
+    {
+      code: 'BEAUTY_RECEPTION',
+      name: 'Recepción / Agendamiento Beauty',
+      description: 'Agenda general del salón, asignación de citas, profesionales y caja',
       permissionCodes: [
         'beauty.create', 'beauty.read', 'beauty.update', 'beauty.delete',
         'customers.create', 'customers.read', 'customers.update',
-        'products.read',
+        'sales.create', 'payments.create',
       ],
     },
     {
-      code: 'AUTOMOTIVE_MECHANIC',
-      name: 'Mecánico / Asesor de Taller',
-      description: 'Recepción técnica de vehículos, checklist de taller y órdenes de servicio automotriz',
+      code: 'BEAUTY_STYLIST',
+      name: 'Estilista / Profesional Beauty',
+      description: 'Agenda personal de citas, fórmulas técnicas de clientes y catálogo de servicios',
+      permissionCodes: [
+        'beauty.read', 'beauty.update',
+        'customers.read',
+        'products.read',
+      ],
+    },
+
+    // --- AUTOMOTRIZ ---
+    {
+      code: 'AUTO_SERVICE_ADVISOR',
+      name: 'Asesor de Servicio Automotriz',
+      description: 'Recepción de vehículos, checklist de daños, kilometraje y apertura de orden de servicio',
       permissionCodes: [
         'automotive.create', 'automotive.read', 'automotive.update',
         'service-orders.create', 'service-orders.read', 'service-orders.update',
         'customers.create', 'customers.read',
-        'products.read', 'inventory-movements.read',
-      ],
-    },
-    {
-      code: 'LAUNDRY_OPERATOR',
-      name: 'Operador de Lavandería / Tintorería',
-      description: 'Recepción de prendas, pesaje, tickets de lavado y tablero Kanban de planta',
-      permissionCodes: [
-        'laundry.create', 'laundry.read', 'laundry.update', 'laundry.delete',
-        'customers.create', 'customers.read',
         'products.read',
       ],
     },
     {
-      code: 'BAKERY_CHEF',
+      code: 'AUTO_MECHANIC',
+      name: 'Mecánico / Técnico de Taller',
+      description: 'Diagnóstico técnico, checklist de reparación, reporte de tareas y repuestos',
+      permissionCodes: [
+        'automotive.read', 'automotive.update',
+        'service-orders.read', 'service-orders.update',
+        'products.read', 'inventory-movements.read',
+      ],
+    },
+
+    // --- LAVANDERÍA ---
+    {
+      code: 'LAUNDRY_FRONT_DESK',
+      name: 'Recepción de Lavandería / Mostrador',
+      description: 'Recepción de prendas, pesaje, registro de manchas, entrega de tickets y cobro',
+      permissionCodes: [
+        'laundry.create', 'laundry.read',
+        'customers.create', 'customers.read',
+        'sales.create', 'payments.create',
+      ],
+    },
+    {
+      code: 'LAUNDRY_OPERATOR',
+      name: 'Operario de Planta de Lavandería',
+      description: 'Tablero Kanban de lavado, secado, planchado y ubicación en percheros',
+      permissionCodes: [
+        'laundry.read', 'laundry.update',
+      ],
+    },
+
+    // --- PANADERÍA ---
+    {
+      code: 'BAKERY_BAKER',
       name: 'Maestro Panadero / Pastelero',
-      description: 'Gestión de recetas, órdenes de producción en horno y consumo de insumos',
+      description: 'Fichas de recetas, órdenes de horneado, producción y control de mermas',
       permissionCodes: [
         'bakery.create', 'bakery.read', 'bakery.update', 'bakery.delete',
         'products.read', 'product-categories.read', 'inventory-movements.read',
       ],
     },
     {
-      code: 'ACADEMY_INSTRUCTOR',
-      name: 'Docente / Coordinador Académico',
-      description: 'Gestión de programas académicos, cohortes, matrículas, notas y asistencias',
+      code: 'BAKERY_STORE',
+      name: 'Vendedor de Mostrador / Despacho',
+      description: 'Venta de pan fresco en vitrina, empaque y despacho rápido en POS',
+      permissionCodes: [
+        'bakery.read',
+        'products.read', 'product-categories.read',
+        'sales.create', 'sale-items.create',
+      ],
+    },
+
+    // --- ACADEMIA ---
+    {
+      code: 'ACADEMY_COORDINATOR',
+      name: 'Coordinador Académico / Matrículas',
+      description: 'Programas de estudio, cohortes, cupos, inscripciones y kits de estudio',
       permissionCodes: [
         'academy.create', 'academy.read', 'academy.update', 'academy.delete',
         'customers.create', 'customers.read',
       ],
     },
     {
+      code: 'ACADEMY_TEACHER',
+      name: 'Docente / Instructor Académico',
+      description: 'Registro de asistencia diaria y calificaciones de estudiantes de sus cohortes',
+      permissionCodes: [
+        'academy.read', 'academy.update',
+        'customers.read',
+      ],
+    },
+
+    // --- INMOBILIARIA ---
+    {
       code: 'REAL_ESTATE_AGENT',
-      name: 'Asesor / Agente Inmobiliario',
-      description: 'Catálogo de propiedades, contratos de arrendamiento, cánones y liquidación a propietarios',
+      name: 'Asesor Comercial Inmobiliario',
+      description: 'Captación de propiedades, visitas con prospectos e inventario de inmuebles',
+      permissionCodes: [
+        'real-estate.create', 'real-estate.read',
+        'customers.create', 'customers.read',
+      ],
+    },
+    {
+      code: 'REAL_ESTATE_ADMIN',
+      name: 'Administrador de Arriendos y Contratos',
+      description: 'Contratos de arrendamiento, cánones mensuales y dispersión a propietarios',
       permissionCodes: [
         'real-estate.create', 'real-estate.read', 'real-estate.update', 'real-estate.delete',
         'customers.create', 'customers.read', 'customers.update',
       ],
     },
+
+    // --- GIMNASIO & STUDIO ---
     {
-      code: 'GYM_TRAINER',
-      name: 'Instructor / Staff de Gimnasio & Studio',
-      description: 'Control de accesos y torniquete, membresías, clases grupales y reservas',
+      code: 'GYM_FRONT_DESK',
+      name: 'Recepción de Gimnasio / Accesos',
+      description: 'Control de torniquete/check-in, suscripciones, venta de membresías y tiqueteras',
       permissionCodes: [
         'gym.create', 'gym.read', 'gym.update', 'gym.delete',
         'studio.create', 'studio.read', 'studio.update', 'studio.delete',
         'customers.create', 'customers.read',
+        'sales.create', 'payments.create',
+      ],
+    },
+    {
+      code: 'GYM_TRAINER',
+      name: 'Instructor / Entrenador Fitness & Studio',
+      description: 'Gestión de clases grupales, reservas y control de asistencia a salas',
+      permissionCodes: [
+        'gym.read',
+        'studio.read', 'studio.update',
+        'customers.read',
       ],
     },
   ];
