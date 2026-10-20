@@ -1,4 +1,4 @@
-import { PrismaClient, TaxType } from '@prisma/client';
+import { PrismaClient, TaxType, InventoryMovementType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -538,6 +538,29 @@ async function main() {
     },
   });
 
+  const existingMov1 = await prisma.inventoryMovement.findFirst({
+    where: {
+      productId: product1.id,
+      movementType: InventoryMovementType.INITIAL_STOCK,
+    },
+  });
+  if (!existingMov1) {
+    await prisma.inventoryMovement.create({
+      data: {
+        organizationId: organization.id,
+        productId: product1.id,
+        branchId: branch.id,
+        movementType: InventoryMovementType.INITIAL_STOCK,
+        quantity: 100,
+        unitCost: 3000,
+        totalCost: 300000,
+        reference: 'APERTURA-PROD-001',
+        notes: 'Inventario inicial de apertura de operaciones',
+        createdAt: new Date('2026-10-01T08:00:00.000Z'),
+      },
+    });
+  }
+
   const product2 = await prisma.product.upsert({
     where: {
       organizationId_sku: {
@@ -575,6 +598,29 @@ async function main() {
       averageCost: 1200,
     },
   });
+
+  const existingMov2 = await prisma.inventoryMovement.findFirst({
+    where: {
+      productId: product2.id,
+      movementType: InventoryMovementType.INITIAL_STOCK,
+    },
+  });
+  if (!existingMov2) {
+    await prisma.inventoryMovement.create({
+      data: {
+        organizationId: organization.id,
+        productId: product2.id,
+        branchId: branch.id,
+        movementType: InventoryMovementType.INITIAL_STOCK,
+        quantity: 200,
+        unitCost: 1200,
+        totalCost: 240000,
+        reference: 'APERTURA-PROD-002',
+        notes: 'Inventario inicial de apertura de operaciones',
+        createdAt: new Date('2026-10-01T08:00:00.000Z'),
+      },
+    });
+  }
 
   // 12. Restaurante (Ambiente y Mesas)
   await prisma.room.create({
