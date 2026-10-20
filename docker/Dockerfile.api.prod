@@ -1,0 +1,59 @@
+# ==========================================
+# STAGE 1: Builder
+# ==========================================
+FROM node:20-bookworm-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@11.16.0 --activate
+
+WORKDIR /app
+
+# Copiar manifiestos de dependencias
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+
+# Instalar dependencias
+RUN pnpm install --frozen-lockfile
+
+# Generar cliente Prisma
+COPY apps/api/prisma ./apps/api/prisma
+RUN pnpm --filter api exec prisma generate
+
+# Copiar código fuente y compilar API
+COPY apps/api ./apps/api
+RUN pnpm --filter api build
+
+# Aislar dependencias productivas
+RUN pnpm --filter api --prod deploy /prod/api
+RUN cp -r node_modules/.prisma /prod/api/node_modules/ 2>/dev/null || true
+
+# ==========================================
+# STAGE 2: Runner Productivo
+# ==========================================
+FROM node:20-bookworm-slim AS runner
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY --from=builder /prod/api ./
+COPY apps/api/prisma ./prisma
+
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]
+

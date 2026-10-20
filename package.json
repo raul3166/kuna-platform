@@ -4,6 +4,11 @@
   "private": true,
   "packageManager": "pnpm@11.16.0",
   "scripts": {
+    "build:api": "pnpm --filter api exec prisma generate && pnpm --filter api build",
+    "build:web": "pnpm --filter web build",
+    "start:api": "pnpm --filter api start:prod",
+    "db:push": "pnpm --filter api exec prisma db push",
+    "db:seed": "pnpm --filter api exec ts-node prisma/seed.ts",
     "dev:api": "pnpm --filter api start:dev",
     "dev:web": "pnpm --filter web dev",
     "docker:up": "docker compose up -d",
