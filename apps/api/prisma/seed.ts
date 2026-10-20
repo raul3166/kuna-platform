@@ -347,6 +347,106 @@ async function main() {
         'suppliers.create', 'suppliers.read', 'suppliers.update',
       ],
     },
+    {
+      code: 'RESTAURANT_STAFF',
+      name: 'Personal de Restaurante / Mesero',
+      description: 'Gestión de salas, comandas en mesas y pedidos de restaurante',
+      permissionCodes: [
+        'restaurant.read', 'restaurant.create', 'restaurant.update',
+        'sales.create', 'sales.read',
+        'sale-items.create', 'sale-items.read',
+        'products.read', 'product-categories.read',
+        'customers.read',
+      ],
+    },
+    {
+      code: 'HOTEL_RECEPTIONIST',
+      name: 'Recepcionista de Hotel',
+      description: 'Gestión de habitaciones, disponibilidad, reservaciones y check-in/out',
+      permissionCodes: [
+        'hotel.create', 'hotel.read', 'hotel.update', 'hotel.delete',
+        'customers.create', 'customers.read', 'customers.update',
+        'sales.read', 'payments.create',
+      ],
+    },
+    {
+      code: 'VETERINARIAN',
+      name: 'Médico Veterinario / Staff Clínico',
+      description: 'Gestión de expedientes de mascotas, consultas clínicas y vacunación',
+      permissionCodes: [
+        'veterinary.create', 'veterinary.read', 'veterinary.update', 'veterinary.delete',
+        'customers.create', 'customers.read', 'customers.update',
+        'products.read',
+      ],
+    },
+    {
+      code: 'BEAUTY_SPECIALIST',
+      name: 'Especialista Beauty / Estilista',
+      description: 'Agenda de citas, reservas, catálogo de servicios de belleza y clientes',
+      permissionCodes: [
+        'beauty.create', 'beauty.read', 'beauty.update', 'beauty.delete',
+        'customers.create', 'customers.read', 'customers.update',
+        'products.read',
+      ],
+    },
+    {
+      code: 'AUTOMOTIVE_MECHANIC',
+      name: 'Mecánico / Asesor de Taller',
+      description: 'Recepción técnica de vehículos, checklist de taller y órdenes de servicio automotriz',
+      permissionCodes: [
+        'automotive.create', 'automotive.read', 'automotive.update',
+        'service-orders.create', 'service-orders.read', 'service-orders.update',
+        'customers.create', 'customers.read',
+        'products.read', 'inventory-movements.read',
+      ],
+    },
+    {
+      code: 'LAUNDRY_OPERATOR',
+      name: 'Operador de Lavandería / Tintorería',
+      description: 'Recepción de prendas, pesaje, tickets de lavado y tablero Kanban de planta',
+      permissionCodes: [
+        'laundry.create', 'laundry.read', 'laundry.update', 'laundry.delete',
+        'customers.create', 'customers.read',
+        'products.read',
+      ],
+    },
+    {
+      code: 'BAKERY_CHEF',
+      name: 'Maestro Panadero / Pastelero',
+      description: 'Gestión de recetas, órdenes de producción en horno y consumo de insumos',
+      permissionCodes: [
+        'bakery.create', 'bakery.read', 'bakery.update', 'bakery.delete',
+        'products.read', 'product-categories.read', 'inventory-movements.read',
+      ],
+    },
+    {
+      code: 'ACADEMY_INSTRUCTOR',
+      name: 'Docente / Coordinador Académico',
+      description: 'Gestión de programas académicos, cohortes, matrículas, notas y asistencias',
+      permissionCodes: [
+        'academy.create', 'academy.read', 'academy.update', 'academy.delete',
+        'customers.create', 'customers.read',
+      ],
+    },
+    {
+      code: 'REAL_ESTATE_AGENT',
+      name: 'Asesor / Agente Inmobiliario',
+      description: 'Catálogo de propiedades, contratos de arrendamiento, cánones y liquidación a propietarios',
+      permissionCodes: [
+        'real-estate.create', 'real-estate.read', 'real-estate.update', 'real-estate.delete',
+        'customers.create', 'customers.read', 'customers.update',
+      ],
+    },
+    {
+      code: 'GYM_TRAINER',
+      name: 'Instructor / Staff de Gimnasio & Studio',
+      description: 'Control de accesos y torniquete, membresías, clases grupales y reservas',
+      permissionCodes: [
+        'gym.create', 'gym.read', 'gym.update', 'gym.delete',
+        'studio.create', 'studio.read', 'studio.update', 'studio.delete',
+        'customers.create', 'customers.read',
+      ],
+    },
   ];
 
   const allOrganizationsList = await prisma.organization.findMany();
