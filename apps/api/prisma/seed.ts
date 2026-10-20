@@ -287,60 +287,128 @@ async function main() {
     },
   });
 
-  // 4. Roles
-  const adminRole = await prisma.role.upsert({
+  // 4. Catálogo de Roles Operativos Predefinidos y Matriz de Permisos
+  const rolesDefinitions = [
+    {
+      code: 'ADMIN',
+      name: 'Administrador General',
+      description: 'Acceso total sin restricciones a todas las funciones y verticales',
+      permissionCodes: allPermissions.map((p) => p.code),
+    },
+    {
+      code: 'CASHIER',
+      name: 'Cajero / Terminal POS',
+      description: 'Gestión de caja, arqueos, ventas POS, cobro de servicios y facturación',
+      permissionCodes: [
+        'cash-sessions.create', 'cash-sessions.read', 'cash-sessions.update',
+        'sales.create', 'sales.read', 'sales.update',
+        'sale-items.create', 'sale-items.read', 'sale-items.update',
+        'sale-returns.create', 'sale-returns.read',
+        'sale-return-items.create', 'sale-return-items.read',
+        'payments.create', 'payments.read',
+        'customers.create', 'customers.read', 'customers.update',
+        'products.read', 'product-categories.read',
+        'inventory.read', 'inventory-movements.read',
+        'billing-resolutions.read',
+        'taxes.read',
+        'service-orders.read', 'service-orders.update',
+        'restaurant.read', 'restaurant.update',
+        'automotive.read', 'automotive.update',
+        'beauty.read', 'beauty.update',
+        'veterinary.read', 'veterinary.update',
+        'laundry.read', 'laundry.update',
+        'bakery.read', 'bakery.update',
+        'academy.read', 'academy.update',
+        'real-estate.read', 'real-estate.update',
+      ],
+    },
+    {
+      code: 'SERVICES_TECH',
+      name: 'Técnico de Servicios',
+      description: 'Gestión operativa de órdenes de servicio, tareas técnicas y reportes',
+      permissionCodes: [
+        'service-orders.create', 'service-orders.read', 'service-orders.update',
+        'service-workers.read', 'service-items.read',
+        'customers.create', 'customers.read',
+        'products.read', 'inventory-movements.read',
+      ],
+    },
+    {
+      code: 'INVENTORY_MANAGER',
+      name: 'Encargado de Inventario / Bodega',
+      description: 'Gestión de productos, catálogo, stock, ajustes de kardex y recepción de compras',
+      permissionCodes: [
+        'products.create', 'products.read', 'products.update', 'products.delete',
+        'product-categories.create', 'product-categories.read', 'product-categories.update',
+        'inventory.create', 'inventory.read',
+        'inventory-movements.create', 'inventory-movements.read', 'inventory-movements.adjustment',
+        'goods-receipts.create', 'goods-receipts.read', 'goods-receipts.update', 'goods-receipts.process',
+        'goods-receipt-items.create', 'goods-receipt-items.read', 'goods-receipt-items.update',
+        'suppliers.create', 'suppliers.read', 'suppliers.update',
+      ],
+    },
+  ];
+
+  const allOrganizationsList = await prisma.organization.findMany();
+  for (const org of allOrganizationsList) {
+    for (const rDef of rolesDefinitions) {
+      const createdRole = await prisma.role.upsert({
+        where: {
+          organizationId_code: {
+            organizationId: org.id,
+            code: rDef.code,
+          },
+        },
+        update: {
+          name: rDef.name,
+          description: rDef.description,
+        },
+        create: {
+          organizationId: org.id,
+          name: rDef.name,
+          code: rDef.code,
+          description: rDef.description,
+        },
+      });
+
+      // Asociar permisos autorizados para el rol
+      const targetPermissions = allPermissions.filter((p) => rDef.permissionCodes.includes(p.code));
+      for (const perm of targetPermissions) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: {
+              roleId: createdRole.id,
+              permissionId: perm.id,
+            },
+          },
+          update: {},
+          create: {
+            roleId: createdRole.id,
+            permissionId: perm.id,
+          },
+        });
+      }
+    }
+  }
+
+  // Referencias para los usuarios iniciales de la demo
+  const adminRole = await prisma.role.findUniqueOrThrow({
     where: {
       organizationId_code: {
         organizationId: organization.id,
         code: 'ADMIN',
       },
     },
-    update: {},
-    create: {
-      organizationId: organization.id,
-      name: 'Administrador',
-      code: 'ADMIN',
-      description: 'Acceso total a todas las funciones',
-    },
   });
 
-  const cashierRole = await prisma.role.upsert({
+  const cashierRole = await prisma.role.findUniqueOrThrow({
     where: {
       organizationId_code: {
         organizationId: organization.id,
         code: 'CASHIER',
       },
     },
-    update: {},
-    create: {
-      organizationId: organization.id,
-      name: 'Cajero / Vendedor',
-      code: 'CASHIER',
-      description: 'Acceso a ventas, caja y clientes',
-    },
   });
-
-  // Asignar todos los permisos a todos los roles de Administrador de todas las organizaciones
-  const allAdminRoles = await prisma.role.findMany({
-    where: { code: 'ADMIN' },
-  });
-  for (const r of allAdminRoles) {
-    for (const perm of allPermissions) {
-      await prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: r.id,
-            permissionId: perm.id,
-          },
-        },
-        update: {},
-        create: {
-          roleId: r.id,
-          permissionId: perm.id,
-        },
-      });
-    }
-  }
 
   // 5. Hash de Contraseña común ("MiPassword123")
   const passwordRaw = 'MiPassword123';
