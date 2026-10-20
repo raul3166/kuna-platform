@@ -24,6 +24,7 @@ export class BillingResolutionsService {
         toNumber: dto.toNumber,
         currentNumber: dto.currentNumber,
         expiryDate: new Date(dto.expiryDate),
+        isActive: dto.isActive ?? true,
       },
     });
   }

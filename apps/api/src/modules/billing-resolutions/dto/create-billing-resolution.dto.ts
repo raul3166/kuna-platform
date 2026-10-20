@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsNumber, IsString, IsPositive } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsString, IsPositive, IsOptional, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -37,10 +37,16 @@ export class CreateBillingResolutionDto {
 
   @Type(() => Number)
   @IsNumber()
+  @IsPositive()
   @ApiProperty({ example: 1 })
   currentNumber: number;
 
   @IsDateString()
   @ApiProperty({ example: '2027-12-31T00:00:00.000Z' })
   expiryDate: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ example: true, required: false })
+  isActive?: boolean;
 }
