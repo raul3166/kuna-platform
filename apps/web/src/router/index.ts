@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useVerticalsStore } from '../stores/verticals'
+import { navigationSections } from '../config/navigation'
 import NotFoundView from '../views/NotFoundView.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -454,6 +455,32 @@ router.beforeEach(async (to, _from, next) => {
         `[KUNA Multi-Tenant] Acceso denegado: El vertical '${requiredVertical}' no está activado para la organización ${authStore.currentOrganization.name}.`
       )
       return next('/dashboard')
+    }
+  }
+
+  // Validación de Permisos RBAC por ruta
+  if (to.meta.requiresAuth && to.path !== '/dashboard') {
+    if (!authStore.accessLoaded) {
+      await authStore.refreshUserAccess()
+    }
+
+    const matchingPairs = navigationSections.flatMap((section) =>
+      section.items
+        .filter((item) => item.to === to.path)
+        .map((item) => ({ section, item }))
+    )
+
+    if (matchingPairs.length > 0) {
+      const hasAccess = matchingPairs.some(
+        ({ section, item }) =>
+          authStore.hasPermission(section.requiredPermission) &&
+          authStore.hasPermission(item.requiredPermission)
+      )
+
+      if (!hasAccess) {
+        console.warn(`[KUNA RBAC] Acceso denegado a la ruta '${to.path}' para el usuario actual.`)
+        return next('/dashboard')
+      }
     }
   }
 

@@ -298,7 +298,7 @@ async function main() {
     {
       code: 'CASHIER',
       name: 'Cajero / Terminal POS',
-      description: 'Gestión de caja, arqueos, ventas POS, cobro de servicios y facturación',
+      description: 'Gestión de caja, arqueos, ventas POS, devoluciones y facturación en punto de venta',
       permissionCodes: [
         'cash-sessions.create', 'cash-sessions.read', 'cash-sessions.update',
         'sales.create', 'sales.read', 'sales.update',
@@ -311,15 +311,6 @@ async function main() {
         'inventory.read', 'inventory-movements.read',
         'billing-resolutions.read',
         'taxes.read',
-        'service-orders.read', 'service-orders.update',
-        'restaurant.read', 'restaurant.update',
-        'automotive.read', 'automotive.update',
-        'beauty.read', 'beauty.update',
-        'veterinary.read', 'veterinary.update',
-        'laundry.read', 'laundry.update',
-        'bakery.read', 'bakery.update',
-        'academy.read', 'academy.update',
-        'real-estate.read', 'real-estate.update',
       ],
     },
     {

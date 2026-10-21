@@ -71,6 +71,9 @@ async function handleLogin() {
       }
     )
 
+    // Sincronizamos los roles y permisos RBAC del usuario
+    await authStore.resolveUserAccessFromProfile(dbUserData)
+
     // 5. Redirección al área de trabajo
     router.push('/dashboard')
   } catch (error: any) {

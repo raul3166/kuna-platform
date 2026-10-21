@@ -63,7 +63,15 @@ export class UserRolesService {
     include: {
       userRoles: {
         include: {
-          role: true,
+          role: {
+            include: {
+              rolePermissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -84,7 +92,15 @@ async getUserRoles(userId: string) {
 
         userRoles: {
           include: {
-            role: true,
+            role: {
+              include: {
+                rolePermissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -153,7 +169,15 @@ async removeRole(
 
       userRoles: {
         include: {
-          role: true,
+          role: {
+            include: {
+              rolePermissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
         },
       },
     },

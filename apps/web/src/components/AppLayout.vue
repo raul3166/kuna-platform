@@ -16,13 +16,30 @@ function handleLogout() {
   router.push('/login')
 }
 
-// Filtra las secciones visibles según los verticales activos de la organización
+// Filtra las secciones e ítems visibles según los verticales activos de la organización y los permisos RBAC del usuario
 const visibleNavigation = computed(() => {
-  return navigationSections.filter((section) => {
-    if (section.isCore) return true
-    if (!section.requiredVertical) return true
-    return verticalsStore.hasVertical(section.requiredVertical)
-  })
+  return navigationSections
+    .map((section) => {
+      const isVerticalAllowed =
+        section.isCore ||
+        !section.requiredVertical ||
+        verticalsStore.hasVertical(section.requiredVertical)
+
+      if (!isVerticalAllowed) return null
+      if (!authStore.hasPermission(section.requiredPermission)) return null
+
+      const allowedItems = section.items.filter((item) =>
+        authStore.hasPermission(item.requiredPermission)
+      )
+
+      if (allowedItems.length === 0) return null
+
+      return {
+        ...section,
+        items: allowedItems,
+      }
+    })
+    .filter((section): section is NonNullable<typeof section> => section !== null)
 })
 
 const activeSection = ref<string | null>(null)
@@ -58,10 +75,11 @@ watch(
   }
 )
 
-onMounted(() => {
+onMounted(async () => {
   if (authStore.currentOrganization?.id) {
     verticalsStore.loadOrganizationVerticals(authStore.currentOrganization.id)
   }
+  await authStore.refreshUserAccess()
   autoExpandSection(route.path)
 })
 </script>
