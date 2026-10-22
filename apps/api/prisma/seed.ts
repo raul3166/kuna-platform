@@ -529,24 +529,43 @@ async function main() {
       ],
     },
 
-    // --- GIMNASIO & STUDIO ---
+    // --- GIMNASIO ---
     {
       code: 'GYM_FRONT_DESK',
       name: 'Recepción de Gimnasio / Accesos',
-      description: 'Control de torniquete/check-in, suscripciones, venta de membresías y tiqueteras',
+      description: 'Control de torniquete/check-in, suscripciones y venta de planes de membresía de gimnasio',
       permissionCodes: [
         'gym.create', 'gym.read', 'gym.update', 'gym.delete',
-        'studio.create', 'studio.read', 'studio.update', 'studio.delete',
         'customers.create', 'customers.read',
         'sales.create', 'payments.create',
       ],
     },
     {
       code: 'GYM_TRAINER',
-      name: 'Instructor / Entrenador Fitness & Studio',
-      description: 'Gestión de clases grupales, reservas y control de asistencia a salas',
+      name: 'Entrenador Fitness de Gimnasio',
+      description: 'Control de acceso a gimnasio y consulta de entrenadores/asistencia',
       permissionCodes: [
-        'gym.read',
+        'gym.read', 'gym.update',
+        'customers.read',
+      ],
+    },
+
+    // --- ESTUDIO (YOGA / PILATES / BARRE) ---
+    {
+      code: 'STUDIO_RECEPTION',
+      name: 'Coordinación / Recepción Studio (Yoga & Pilates)',
+      description: 'Gestión de planes, tiqueteras, calendario de clases, reservas, asistencia y liquidación de instructores',
+      permissionCodes: [
+        'studio.create', 'studio.read', 'studio.update', 'studio.delete',
+        'customers.create', 'customers.read',
+        'sales.create', 'payments.create',
+      ],
+    },
+    {
+      code: 'STUDIO_INSTRUCTOR',
+      name: 'Instructor de Studio (Yoga / Pilates)',
+      description: 'Consulta de calendario de clases, reservas de cupos y toma de asistencia en sala',
+      permissionCodes: [
         'studio.read', 'studio.update',
         'customers.read',
       ],
