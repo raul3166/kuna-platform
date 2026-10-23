@@ -43,6 +43,11 @@ const visibleNavigation = computed(() => {
 })
 
 const activeSection = ref<string | null>(null)
+const isMobileMenuOpen = ref(false)
+
+function closeMobileMenu() {
+  isMobileMenuOpen.value = false
+}
 
 // Encuentra dinámicamente qué sección contiene la ruta actual
 function autoExpandSection(currentPath: string) {
@@ -62,6 +67,7 @@ watch(
   () => route.path,
   (newPath) => {
     autoExpandSection(newPath)
+    isMobileMenuOpen.value = false
   },
   { immediate: true }
 )
@@ -86,12 +92,35 @@ onMounted(async () => {
 
 <template>
   <div class="flex h-screen bg-slate-50 font-sans overflow-hidden">
-    <!-- SIDEBAR LATERAL -->
-    <aside class="hidden w-64 bg-slate-900 text-slate-300 md:flex md:flex-col border-r border-slate-800">
+    <!-- OVERLAY MÓVIL -->
+    <div
+      v-if="isMobileMenuOpen"
+      @click="closeMobileMenu"
+      class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs transition-opacity md:hidden"
+      aria-hidden="true"
+    />
+
+    <!-- SIDEBAR LATERAL (Drawer en móvil, fijo en escritorio) -->
+    <aside
+      class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-900 text-slate-300 border-r border-slate-800 transform transition-transform duration-300 ease-in-out md:static md:w-64 md:translate-x-0"
+      :class="isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'"
+    >
       <!-- Logo KUNA -->
-      <div class="flex h-16 items-center px-6 bg-slate-950 border-b border-slate-800">
-        <span class="text-xl font-black tracking-wider text-white">KUNA</span>
-        <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
+      <div class="flex h-16 items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
+        <div class="flex items-center">
+          <span class="text-xl font-black tracking-wider text-white">KUNA</span>
+          <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
+        </div>
+
+        <!-- Botón cerrar menú en móvil -->
+        <button
+          @click="closeMobileMenu"
+          type="button"
+          class="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white md:hidden"
+          aria-label="Cerrar menú"
+        >
+          ✕
+        </button>
       </div>
 
       <!-- Menú Renderizado Dinámicamente -->
@@ -112,6 +141,7 @@ onMounted(async () => {
               v-for="item in section.items"
               :key="item.to"
               :to="item.to"
+              @click="closeMobileMenu"
               class="flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-slate-800 hover:text-white"
               active-class="bg-blue-600 text-white hover:bg-blue-600"
             >
@@ -123,7 +153,13 @@ onMounted(async () => {
       </nav>
 
       <!-- Footer del Sidebar -->
-      <div class="p-4 bg-slate-950 border-t border-slate-800">
+      <div class="p-4 bg-slate-950 border-t border-slate-800 space-y-2">
+        <div class="sm:hidden border-b border-slate-800 pb-2 mb-2">
+          <p class="text-xs font-semibold text-slate-200 truncate">
+            {{ authStore.user?.firstName }} {{ authStore.user?.lastName }}
+          </p>
+          <p class="text-[11px] text-slate-400 truncate">{{ authStore.user?.email }}</p>
+        </div>
         <p class="text-xs text-slate-500 text-center">Latam Edition v0.7.0</p>
       </div>
     </aside>
@@ -131,17 +167,29 @@ onMounted(async () => {
     <!-- ÁREA DE CONTENIDO PRINCIPAL -->
     <div class="flex flex-1 flex-col overflow-hidden">
       <!-- TOPBAR SUPERIOR -->
-      <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm z-10">
-        <div class="flex items-center space-x-2">
-          <span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 border border-slate-200">
+      <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 shadow-sm z-10">
+        <div class="flex items-center space-x-2 min-w-0">
+          <!-- Botón Hamburguesa (visible solo en móvil/tablet vertical) -->
+          <button
+            @click="isMobileMenuOpen = true"
+            type="button"
+            class="mr-1 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden shadow-xs"
+            aria-label="Abrir menú de navegación"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <span class="inline-flex shrink-0 items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 border border-slate-200">
             📍 {{ authStore.currentBranch?.name || 'Sucursal Activa' }}
           </span>
 
           <span class="text-sm font-medium text-slate-400">/</span>
-          <span class="text-sm font-semibold text-slate-600">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
+          <span class="text-sm font-semibold text-slate-600 truncate">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
         </div>
 
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3 sm:space-x-4 shrink-0">
           <div class="text-right hidden sm:block">
             <p class="text-sm font-semibold text-slate-700">
               {{ authStore.user?.firstName }} {{ authStore.user?.lastName }}
@@ -156,7 +204,7 @@ onMounted(async () => {
       </header>
 
       <!-- VISTA ENRUTADA -->
-      <main class="flex-1 overflow-y-auto p-6 lg:p-8">
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <slot />
       </main>
     </div>
