@@ -26,6 +26,7 @@ export const navigationSections: NavigationSection[] = [
     isCore: true,
     items: [
       { label: 'Bienvenida', icon: '👋', to: '/dashboard' },
+      { label: 'Clientes / Alumnos (CRM)', icon: '👥', to: '/customers', requiredPermission: 'customers.create' },
       { label: 'Organizaciones', icon: '🏢', to: '/organizations', requiredPermission: 'organizations.read' },
     ],
   },
