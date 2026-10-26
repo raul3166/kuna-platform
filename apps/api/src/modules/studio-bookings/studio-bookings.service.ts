@@ -182,4 +182,203 @@ export class StudioBookingsService {
       available: Math.max(0, schedule.capacity - reservedCount),
     };
   }
+
+  private async resolveOrganizationBySlugOrId(slugOrId: string) {
+    const org = await this.prisma.organization.findFirst({
+      where: {
+        isActive: true,
+        OR: [{ slug: slugOrId }, { id: slugOrId }],
+      },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Estudio u organización no encontrada');
+    }
+
+    return org;
+  }
+
+  async getPublicCatalog(slugOrId: string, dateStr?: string) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+    const targetDateStr = dateStr || new Date().toISOString().split('T')[0];
+    const targetDate = this.parseLocalDate(targetDateStr);
+
+    const [branches, plans, schedules, bookingsForDate] = await Promise.all([
+      this.prisma.branch.findMany({
+        where: { organizationId: org.id, isActive: true },
+        select: { id: true, name: true, address: true, city: true, phoneNumber: true },
+      }),
+      this.prisma.studioPlan.findMany({
+        where: { organizationId: org.id, isActive: true },
+        include: { product: { select: { id: true, name: true, salePrice: true } } },
+        orderBy: { price: 'asc' },
+      }),
+      this.prisma.studioSchedule.findMany({
+        where: { organizationId: org.id },
+        include: {
+          instructor: { select: { id: true, firstName: true, lastName: true, specialty: true } },
+          branch: { select: { id: true, name: true } },
+        },
+        orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+      }),
+      this.prisma.studioBooking.findMany({
+        where: {
+          organizationId: org.id,
+          bookingDate: targetDate,
+          status: BookingStatus.CONFIRMED,
+        },
+        select: { studioScheduleId: true },
+      }),
+    ]);
+
+    const reservedBySchedule: Record<string, number> = {};
+    for (const b of bookingsForDate) {
+      reservedBySchedule[b.studioScheduleId] = (reservedBySchedule[b.studioScheduleId] || 0) + 1;
+    }
+
+    const enrichedSchedules = schedules.map((s) => {
+      const reserved = reservedBySchedule[s.id] || 0;
+      return {
+        ...s,
+        reservedCount: reserved,
+        availableSpots: Math.max(0, s.capacity - reserved),
+      };
+    });
+
+    return {
+      organization: {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        country: org.country,
+        timezone: org.timezone,
+      },
+      branches,
+      plans,
+      schedules: enrichedSchedules,
+      selectedDate: targetDateStr,
+    };
+  }
+
+  async getPublicStudentStatus(slugOrId: string, identifier: string) {
+    const cleanId = (identifier || '').trim();
+    if (!cleanId) {
+      throw new BadRequestException('Ingresa tu número de documento o correo electrónico');
+    }
+
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        organizationId: org.id,
+        isActive: true,
+        OR: [
+          { identificationNumber: { equals: cleanId, mode: 'insensitive' } },
+          { email: { equals: cleanId, mode: 'insensitive' } },
+          { phoneNumber: { equals: cleanId } },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        companyName: true,
+        identificationNumber: true,
+        email: true,
+        phoneNumber: true,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(
+        'No encontramos un alumno registrado con ese documento o correo en este estudio.',
+      );
+    }
+
+    const [subscriptions, bookings] = await Promise.all([
+      this.prisma.studioSubscription.findMany({
+        where: {
+          organizationId: org.id,
+          customerId: customer.id,
+        },
+        include: {
+          plan: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.studioBooking.findMany({
+        where: {
+          organizationId: org.id,
+          customerId: customer.id,
+        },
+        include: {
+          schedule: {
+            include: {
+              instructor: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
+        orderBy: { bookingDate: 'desc' },
+      }),
+    ]);
+
+    return {
+      customer,
+      subscriptions,
+      bookings,
+    };
+  }
+
+  async createPublicBooking(
+    slugOrId: string,
+    payload: { customerId: string; studioScheduleId: string; bookingDate: string },
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const schedule = await this.prisma.studioSchedule.findFirst({
+      where: { id: payload.studioScheduleId, organizationId: org.id },
+    });
+
+    if (!schedule) {
+      throw new NotFoundException('El horario seleccionado no pertenece a este estudio');
+    }
+
+    let branchId = schedule.branchId;
+    if (!branchId) {
+      const defaultBranch = await this.prisma.branch.findFirst({
+        where: { organizationId: org.id, isActive: true },
+      });
+      branchId = defaultBranch?.id || '';
+    }
+
+    return this.create({
+      organizationId: org.id,
+      branchId,
+      customerId: payload.customerId,
+      studioScheduleId: payload.studioScheduleId,
+      bookingDate: payload.bookingDate,
+      status: BookingStatus.CONFIRMED,
+    });
+  }
+
+  async cancelPublicBooking(slugOrId: string, bookingId: string, customerId: string) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const booking = await this.prisma.studioBooking.findFirst({
+      where: {
+        id: bookingId,
+        organizationId: org.id,
+        customerId,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('No se encontró la reserva para este alumno');
+    }
+
+    return this.prisma.studioBooking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.CANCELLED },
+    });
+  }
 }

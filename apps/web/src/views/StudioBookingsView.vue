@@ -285,6 +285,25 @@ watch(() => form.value.studioScheduleId, () => {
   }
 });
 
+const portalCopied = ref(false);
+
+const getPortalUrl = () => {
+  const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId || 'empresa-demo';
+  return `${window.location.origin}/portal/${orgId}`;
+};
+
+const copyStudentPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(getPortalUrl());
+    portalCopied.value = true;
+    setTimeout(() => {
+      portalCopied.value = false;
+    }, 2500);
+  } catch {
+    prompt('Copia el link del Portal de Alumnos:', getPortalUrl());
+  }
+};
+
 onMounted(() => {
   fetchSchedules();
   fetchBookings();
@@ -298,14 +317,31 @@ onMounted(() => {
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
         <div>
           <h1 class="text-2xl font-black text-slate-900 tracking-tight">Gestión de Reservas</h1>
-          <p class="text-sm text-slate-500 mt-1">Administra y agende cupos para las clases del estudio.</p>
+          <p class="text-sm text-slate-500 mt-1">Administra cupos para las clases del estudio o comparte el portal de autogestión con tus alumnos.</p>
         </div>
-        <button
-          @click="openCreateModal"
-          class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm gap-2"
-        >
-          <span>📌</span> Nueva Reserva
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            :href="getPortalUrl()"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors gap-1.5"
+          >
+            <span>🌐</span> Ver Portal de Alumnos
+          </a>
+          <button
+            type="button"
+            @click="copyStudentPortalLink"
+            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors gap-1.5"
+          >
+            <span>{{ portalCopied ? '✅ Link Copiado' : '🔗 Copiar Link para Alumnos' }}</span>
+          </button>
+          <button
+            @click="openCreateModal"
+            class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm gap-2"
+          >
+            <span>📌</span> Nueva Reserva
+          </button>
+        </div>
       </div>
 
       <!-- Barra de Filtros -->

@@ -55,6 +55,43 @@ export class StudioBookingsController {
     return this.studioBookingsService.getAvailability(organizationId, studioScheduleId, bookingDate);
   }
 
+  @ApiOperation({ summary: 'Public student portal: get studio plans, schedules and availability' })
+  @Get('public/catalog/:slug')
+  getPublicCatalog(
+    @Param('slug') slug: string,
+    @Query('date') date?: string,
+  ) {
+    return this.studioBookingsService.getPublicCatalog(slug, date);
+  }
+
+  @ApiOperation({ summary: 'Public student portal: lookup student active tiquetera and bookings' })
+  @Get('public/student/:slug')
+  getPublicStudentStatus(
+    @Param('slug') slug: string,
+    @Query('identifier') identifier: string,
+  ) {
+    return this.studioBookingsService.getPublicStudentStatus(slug, identifier);
+  }
+
+  @ApiOperation({ summary: 'Public student portal: book a class spot using active tiquetera' })
+  @Post('public/book/:slug')
+  createPublicBooking(
+    @Param('slug') slug: string,
+    @Body() body: { customerId: string; studioScheduleId: string; bookingDate: string },
+  ) {
+    return this.studioBookingsService.createPublicBooking(slug, body);
+  }
+
+  @ApiOperation({ summary: 'Public student portal: cancel student own booking' })
+  @Patch('public/cancel/:slug/:bookingId')
+  cancelPublicBooking(
+    @Param('slug') slug: string,
+    @Param('bookingId') bookingId: string,
+    @Body('customerId') customerId: string,
+  ) {
+    return this.studioBookingsService.cancelPublicBooking(slug, bookingId, customerId);
+  }
+
   @ApiOperation({ summary: 'Get booking detail by ID' })
   @Permissions('studio.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

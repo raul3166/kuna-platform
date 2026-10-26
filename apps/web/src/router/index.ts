@@ -21,6 +21,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/portal/:slug',
+    name: 'studio-public-portal',
+    component: () => import('../views/StudioPublicPortalView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     // 1. Tu panel de bienvenida original
     path: '/dashboard',
     name: 'dashboard',
