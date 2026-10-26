@@ -25,6 +25,10 @@ async function handleLogin() {
   errorMessage.value = ''
 
   try {
+    // Limpiamos cualquier contexto previo de organización/sucursal antes de autenticar
+    localStorage.removeItem('kuna_org')
+    localStorage.removeItem('kuna_branch')
+
     // 1. Autenticar y obtener el accessToken puro de tu AuthService
     const loginResponse = await api.post('/auth/login', {
       email: email.value,

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './core/prisma/prisma.module';
+import { TenantInterceptor } from './core/tenant/tenant.interceptor';
 import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
@@ -137,6 +139,12 @@ import { RealEstateModule } from './modules/real-estate/real-estate.module';
     RealEstateModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantInterceptor,
+    },
+  ],
 })
 export class AppModule {}
