@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { useVerticalsStore } from '../stores/verticals'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const verticalsStore = useVerticalsStore()
 
@@ -66,8 +68,10 @@ const errorMessage = ref('')
 const selectedOrgForVerticals = ref<string>('')
 const togglingCode = ref<string | null>(null)
 
-// Modal y Formulario
+// Modal y Formulario de Resolución
 const isModalOpen = ref(false)
+const isOrgModalOpen = ref(false)
+const isBranchModalOpen = ref(false)
 const isSaving = ref(false)
 const formError = ref('')
 const form = ref({
@@ -80,14 +84,41 @@ const form = ref({
   expiryDate: ''
 })
 
+const orgForm = ref({
+  name: '',
+  slug: '',
+  country: 'Colombia',
+  timezone: 'America/Bogota'
+})
+
+const branchForm = ref({
+  organizationId: '',
+  name: '',
+  code: '',
+  address: '',
+  city: '',
+  country: 'Colombia',
+  phoneNumber: '',
+  timezone: 'America/Bogota'
+})
+
+function updateOrgSlugFromName() {
+  orgForm.value.slug = orgForm.value.name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 async function loadData() {
   isLoading.value = true
   errorMessage.value = ''
   try {
     const [orgResponse, branchResponse, resResponse] = await Promise.all([
       api.get<Organization[]>('/organizations'),
-      api.get<Branch[]>('/branches'),
-      api.get<BillingResolution[]>('/billing-resolutions')
+      api.get<Branch[]>('/branches', { headers: { 'x-tenant-scope': 'global' } }),
+      api.get<BillingResolution[]>('/billing-resolutions', { headers: { 'x-tenant-scope': 'global' } })
     ])
 
     organizations.value = orgResponse.data
@@ -104,6 +135,83 @@ async function loadData() {
   } finally {
     isLoading.value = false
   }
+}
+
+function openOrgModal() {
+  formError.value = ''
+  orgForm.value = {
+    name: '',
+    slug: '',
+    country: 'Colombia',
+    timezone: 'America/Bogota'
+  }
+  isOrgModalOpen.value = true
+}
+
+async function handleSaveOrganization() {
+  formError.value = ''
+  try {
+    isSaving.value = true
+    const { data: createdOrg } = await api.post<Organization>('/organizations', orgForm.value)
+    isOrgModalOpen.value = false
+    await loadData()
+    selectedOrgForVerticals.value = createdOrg.id
+    await switchToOrganization(createdOrg)
+  } catch (error: any) {
+    formError.value = error.response?.data?.message || 'Error al crear la organización.'
+  } finally {
+    isSaving.value = false
+  }
+}
+
+function openBranchModal() {
+  formError.value = ''
+  branchForm.value = {
+    organizationId: authStore.currentOrganization?.id || organizations.value[0]?.id || '',
+    name: '',
+    code: '',
+    address: '',
+    city: '',
+    country: 'Colombia',
+    phoneNumber: '',
+    timezone: 'America/Bogota'
+  }
+  isBranchModalOpen.value = true
+}
+
+async function handleSaveBranch() {
+  formError.value = ''
+  try {
+    isSaving.value = true
+    await api.post('/branches', branchForm.value)
+    isBranchModalOpen.value = false
+    await loadData()
+  } catch (error: any) {
+    formError.value = error.response?.data?.message || 'Error al crear la sucursal.'
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function switchToOrganization(org: Organization) {
+  const orgBranches = branches.value.filter(b => b.organizationId === org.id)
+  const defaultBranch = orgBranches[0] || { id: '', name: 'Sede Principal' }
+  authStore.switchOrganizationContext(
+    { id: org.id, name: org.name },
+    { id: defaultBranch.id, name: defaultBranch.name }
+  )
+  selectedOrgForVerticals.value = org.id
+  await verticalsStore.loadOrganizationVerticals(org.id)
+}
+
+async function goToOrgVerticals(org: Organization) {
+  await switchToOrganization(org)
+  activeTab.value = 'verticals'
+}
+
+async function goToOrgUsers(org: Organization) {
+  await switchToOrganization(org)
+  router.push('/users')
 }
 
 watch(selectedOrgForVerticals, (newOrgId) => {
@@ -194,13 +302,31 @@ onMounted(() => {
         </p>
       </div>
 
-      <button
-        v-if="activeTab === 'resolutions'"
-        @click="openModal"
-        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
-      >
-        <span>+ Nueva Resolución</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="activeTab === 'organizations'"
+          @click="openOrgModal"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+        >
+          <span>+ Nueva Organización</span>
+        </button>
+
+        <button
+          v-if="activeTab === 'branches'"
+          @click="openBranchModal"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+        >
+          <span>+ Nueva Sucursal</span>
+        </button>
+
+        <button
+          v-if="activeTab === 'resolutions'"
+          @click="openModal"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+        >
+          <span>+ Nueva Resolución</span>
+        </button>
+      </div>
     </header>
 
     <!-- Pestañas -->
@@ -268,7 +394,7 @@ onMounted(() => {
     <!-- Contenido -->
     <div v-else class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <!-- ORGANIZACIONES -->
-      <div v-if="activeTab === 'organizations'">
+      <div v-if="activeTab === 'organizations'" class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -277,15 +403,48 @@ onMounted(() => {
               <th class="px-6 py-3">País</th>
               <th class="px-6 py-3">Fecha de Creación</th>
               <th class="px-6 py-3">Estado</th>
+              <th class="px-6 py-3 text-right">Gestión Multi-Empresa</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-for="org in organizations" :key="org.id" class="hover:bg-slate-50/50 transition-colors">
-              <td class="px-6 py-4 font-semibold text-slate-900">{{ org.name }}</td>
+              <td class="px-6 py-4 font-semibold text-slate-900">
+                {{ org.name }}
+                <span
+                  v-if="authStore.currentOrganization?.id === org.id"
+                  class="ml-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200"
+                >
+                  ● Contexto Activo
+                </span>
+              </td>
               <td class="px-6 py-4 font-mono text-xs text-slate-600">{{ org.slug }}</td>
               <td class="px-6 py-4"><span class="rounded bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 border border-blue-200">🌎 {{ org.country }}</span></td>
               <td class="px-6 py-4 text-slate-500 text-xs">{{ formatDate(org.createdAt) }}</td>
               <td class="px-6 py-4"><span class="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Activa</span></td>
+              <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                <button
+                  v-if="authStore.currentOrganization?.id !== org.id"
+                  type="button"
+                  @click="switchToOrganization(org)"
+                  class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  🔄 Operar aquí
+                </button>
+                <button
+                  type="button"
+                  @click="goToOrgVerticals(org)"
+                  class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  🧩 Verticales
+                </button>
+                <button
+                  type="button"
+                  @click="goToOrgUsers(org)"
+                  class="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  👥 Usuarios y Roles
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -531,6 +690,136 @@ onMounted(() => {
             </button>
             <button type="submit" :disabled="isSaving" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">
               {{ isSaving ? 'Guardando...' : 'Guardar Resolución' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL CREACIÓN ORGANIZACIÓN -->
+    <div v-if="isOrgModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Crear Nueva Organización (Empresa)</h2>
+        <p class="text-xs text-slate-500 mb-4">
+          Se aprovisionará automáticamente su Sede Principal y el catálogo completo de roles por vertical.
+        </p>
+
+        <div v-if="formError" class="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-600 border border-red-200">
+          {{ formError }}
+        </div>
+
+        <form @submit.prevent="handleSaveOrganization" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Razón Social / Nombre de la Empresa</label>
+            <input
+              v-model="orgForm.name"
+              @input="updateOrgSlugFromName"
+              type="text"
+              placeholder="Ej: Studio Pilates Zen S.A.S."
+              class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Identificador / Slug Único</label>
+            <input
+              v-model="orgForm.slug"
+              type="text"
+              placeholder="studio-pilates-zen"
+              class="w-full rounded-lg border border-slate-300 p-2.5 font-mono text-slate-700 focus:border-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">País</label>
+              <input
+                v-model="orgForm.country"
+                type="text"
+                placeholder="Colombia"
+                class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Zona Horaria</label>
+              <input
+                v-model="orgForm.timezone"
+                type="text"
+                placeholder="America/Bogota"
+                class="w-full rounded-lg border border-slate-300 p-2.5 font-mono text-slate-700 focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <button type="button" @click="isOrgModalOpen = false" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">
+              Cancelar
+            </button>
+            <button type="submit" :disabled="isSaving" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">
+              {{ isSaving ? 'Aprovisionando...' : 'Crear Organización' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL CREACIÓN SUCURSAL -->
+    <div v-if="isBranchModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Registrar Nueva Sucursal</h2>
+        <p class="text-xs text-slate-500 mb-4">Agrega una nueva sede física vinculada a una organización.</p>
+
+        <div v-if="formError" class="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-600 border border-red-200">
+          {{ formError }}
+        </div>
+
+        <form @submit.prevent="handleSaveBranch" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Organización</label>
+            <select v-model="branchForm.organizationId" class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none" required>
+              <option v-for="org in organizations" :key="org.id" :value="org.id">
+                {{ org.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre de Sucursal</label>
+              <input v-model="branchForm.name" type="text" placeholder="Sede Norte" class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none" required />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Código Interno</label>
+              <input v-model="branchForm.code" type="text" placeholder="NOR01" class="w-full rounded-lg border border-slate-300 p-2.5 uppercase font-mono focus:border-blue-500 focus:outline-none" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Ciudad</label>
+              <input v-model="branchForm.city" type="text" placeholder="Medellín" class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none" required />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">País</label>
+              <input v-model="branchForm.country" type="text" placeholder="Colombia" class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none" required />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Dirección Física</label>
+            <input v-model="branchForm.address" type="text" placeholder="Calle 10 # 40-20" class="w-full rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:border-blue-500 focus:outline-none" required />
+          </div>
+
+          <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <button type="button" @click="isBranchModalOpen = false" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">
+              Cancelar
+            </button>
+            <button type="submit" :disabled="isSaving" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">
+              {{ isSaving ? 'Guardando...' : 'Guardar Sucursal' }}
             </button>
           </div>
         </form>

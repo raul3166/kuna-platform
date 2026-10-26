@@ -56,6 +56,10 @@ async function loadStaffModuleData() {
     users.value = usersRes.data
     branches.value = branchesRes.data
     allRoles.value = rolesRes.data
+
+    if (branches.value.length > 0 && !branches.value.some(b => b.id === formUser.value.branchId)) {
+      formUser.value.branchId = branches.value[0].id
+    }
   } catch (error: any) {
     console.error(error)
     errorMessage.value = 'No fue posible sincronizar el directorio de personal operativo.'
@@ -128,7 +132,7 @@ async function handleCreateUser() {
 
   try {
     const payload = {
-      organizationId: authStore.user?.organizationId || '',
+      organizationId: authStore.currentOrganization?.id || authStore.user?.organizationId || '',
       branchId: formUser.value.branchId,
       firstName: formUser.value.firstName,
       lastName: formUser.value.lastName,
@@ -142,7 +146,7 @@ async function handleCreateUser() {
 
     formUser.value = {
       firstName: '', lastName: '', email: '', password: '', phoneNumber: '',
-      branchId: authStore.user?.branchId || ''
+      branchId: branches.value[0]?.id || authStore.currentBranch?.id || ''
     }
 
     activeTab.value = 'list'

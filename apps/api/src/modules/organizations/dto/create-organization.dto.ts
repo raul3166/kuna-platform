@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateOrganizationDto {
   @ApiProperty({
@@ -21,10 +21,19 @@ export class CreateOrganizationDto {
   slug!: string;
 
   @ApiProperty({
-    example: 'CO',
-    description: 'Código del país',
+    example: 'Colombia',
+    description: 'País o código del país',
   })
   @IsString()
-  @Length(2, 2)
+  @Length(2, 60)
   country!: string;
+
+  @ApiProperty({
+    example: 'America/Bogota',
+    description: 'Zona horaria de la organización',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }

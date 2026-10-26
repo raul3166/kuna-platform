@@ -145,6 +145,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function switchOrganizationContext(org: Organization, branch: Branch) {
+    currentOrganization.value = org
+    currentBranch.value = branch
+    if (user.value) {
+      user.value = {
+        ...user.value,
+        organizationId: org.id,
+        branchId: branch.id,
+      }
+      localStorage.setItem('kuna_user', JSON.stringify(user.value))
+    }
+    localStorage.setItem('kuna_org', JSON.stringify(org))
+    localStorage.setItem('kuna_branch', JSON.stringify(branch))
+  }
+
   function logout() {
     token.value = null
     user.value = null
@@ -177,6 +192,7 @@ export const useAuthStore = defineStore('auth', () => {
     resolveUserAccessFromProfile,
     refreshUserAccess,
     setSession,
+    switchOrganizationContext,
     logout
   }
 })

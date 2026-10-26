@@ -18,7 +18,8 @@ export class TenantInterceptor implements NestInterceptor {
       url.startsWith('/auth/') ||
       url.startsWith('/user-roles/') ||
       url.startsWith('/organizations') ||
-      url.startsWith('/verticals');
+      url.startsWith('/verticals') ||
+      req?.headers?.['x-tenant-scope'] === 'global';
 
     const queryOrgId =
       typeof req?.query?.organizationId === 'string' &&
