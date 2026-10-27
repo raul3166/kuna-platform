@@ -194,13 +194,29 @@ onMounted(() => {
                   </div>
                 </td>
                 <td class="px-6 py-4 font-medium text-slate-800">
-                  {{ sub.studioPlan?.name || 'Plan Eliminado' }}
+                  {{ (sub.plan || sub.studioPlan)?.name || 'Plan Eliminado' }}
                 </td>
-                <td class="px-6 py-4 text-slate-600">{{ formatDate(sub.startDate) }}</td>
-                <td class="px-6 py-4 text-slate-600 font-medium">{{ formatDate(sub.endDate) }}</td>
+                <td class="px-6 py-4 text-slate-600">
+                  <span
+                    v-if="sub.hasStartedFirstClass === false && sub.status === 'ACTIVE'"
+                    class="inline-flex items-center gap-1 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-bold text-amber-800"
+                  >
+                    ⏳ En su 1ª clase
+                  </span>
+                  <span v-else>{{ formatDate(sub.startDate) }}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-600 font-medium">
+                  <span
+                    v-if="sub.hasStartedFirstClass === false && sub.status === 'ACTIVE'"
+                    class="text-xs text-slate-500 italic"
+                  >
+                    {{ (sub.plan || sub.studioPlan)?.durationDays || 30 }} días desde la 1ª clase
+                  </span>
+                  <span v-else>{{ formatDate(sub.endDate) }}</span>
+                </td>
                 <td class="px-6 py-4">
-                  <span v-if="sub.studioPlan?.type === 'CLASS_PACK'" class="font-bold" :class="sub.remainingClasses > 0 ? 'text-purple-700' : 'text-rose-600'">
-                    🎟️ {{ sub.remainingClasses }} / {{ sub.initialClasses }}
+                  <span v-if="(sub.plan || sub.studioPlan)?.type === 'CLASS_PACK'" class="font-bold" :class="sub.remainingClasses > 0 ? 'text-purple-700' : 'text-rose-600'">
+                    🎟️ {{ sub.remainingClasses }} / {{ sub.totalClasses ?? sub.initialClasses }}
                   </span>
                   <span v-else class="text-blue-600 font-semibold text-xs bg-blue-50 px-2 py-1 rounded">
                     ♾️ Ilimitado
@@ -271,8 +287,12 @@ onMounted(() => {
               </select>
             </div>
 
+            <div class="rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-xs text-blue-900">
+              <strong>💡 Vigencia desde la 1ª clase:</strong> El paquete queda activo de inmediato para agendar, y el conteo del mes (o vigencia del plan) se ajustará automáticamente a partir del día en que el alumno asista a su <strong>primera clase</strong>.
+            </div>
+
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Inicio</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha de Asignación / Compra</label>
               <input v-model="form.startDate" type="date" required class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
             </div>
 

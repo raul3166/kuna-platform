@@ -94,7 +94,7 @@ export class StudioSubscriptionsService {
   }
 
   async findAll(organizationId: string, branchId?: string, customerId?: string) {
-    return this.prisma.studioSubscription.findMany({
+    const subs = await this.prisma.studioSubscription.findMany({
       where: {
         organizationId,
         ...(branchId ? { branchId } : {}),
@@ -105,9 +105,22 @@ export class StudioSubscriptionsService {
           include: { product: true },
         },
         customer: true,
+        _count: {
+          select: {
+            attendanceLogs: {
+              where: { status: 'ALLOWED' },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return subs.map((s) => ({
+      ...s,
+      attendedClassesCount: s._count?.attendanceLogs ?? 0,
+      hasStartedFirstClass: (s._count?.attendanceLogs ?? 0) > 0,
+    }));
   }
 
   async findOne(id: string) {

@@ -84,16 +84,35 @@ export class StudioAttendancesService {
       }
     }
 
-    // 2. Buscar suscripción activa y vigente para la fecha elegida
+    // 2. Buscar suscripción activa (vigente en fechas O pendiente de asistir a su 1ª clase)
     const activeSubscription = await this.prisma.studioSubscription.findFirst({
       where: {
         customerId: customer.id,
         organizationId: dto.organizationId,
         status: 'ACTIVE',
-        startDate: { lte: dayEnd },
-        endDate: { gte: dayStart },
+        OR: [
+          {
+            startDate: { lte: dayEnd },
+            endDate: { gte: dayStart },
+          },
+          {
+            attendanceLogs: {
+              none: { status: 'ALLOWED' },
+            },
+          },
+        ],
       },
-      include: { plan: true },
+      include: {
+        plan: true,
+        _count: {
+          select: {
+            attendanceLogs: {
+              where: { status: 'ALLOWED' },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
     let status = 'ALLOWED';
@@ -130,22 +149,35 @@ export class StudioAttendancesService {
       }
     }
 
-    // 3. Transacción para registrar el log y actualizar saldos
+    // 3. Transacción para registrar el log, activar vigencia desde la 1ª clase y actualizar saldos
     return this.prisma.$transaction(async (tx) => {
       let updatedRemaining = activeSubscription?.remainingClasses ?? null;
 
       if (status === 'ALLOWED' && activeSubscription) {
         const isPack = activeSubscription.plan.type === 'CLASS_PACK';
+        const isFirstClassAttended = (activeSubscription._count?.attendanceLogs ?? 0) === 0;
+
+        const updateData: Record<string, any> = {};
+
+        // Si es la primera clase a la que asiste con este paquete, la vigencia empieza a correr hoy
+        if (isFirstClassAttended) {
+          const firstClassStart = new Date(dayStart);
+          const calculatedEnd = new Date(dayStart);
+          calculatedEnd.setDate(calculatedEnd.getDate() + (activeSubscription.plan.durationDays || 30));
+          updateData.startDate = firstClassStart;
+          updateData.endDate = calculatedEnd;
+        }
 
         if (isPack && activeSubscription.remainingClasses !== null) {
           updatedRemaining = activeSubscription.remainingClasses - 1;
+          updateData.remainingClasses = updatedRemaining;
+          updateData.status = updatedRemaining === 0 ? 'EXHAUSTED' : 'ACTIVE';
+        }
 
+        if (Object.keys(updateData).length > 0) {
           await tx.studioSubscription.update({
             where: { id: activeSubscription.id },
-            data: {
-              remainingClasses: updatedRemaining,
-              status: updatedRemaining === 0 ? 'EXHAUSTED' : 'ACTIVE',
-            },
+            data: updateData,
           });
         }
       }
