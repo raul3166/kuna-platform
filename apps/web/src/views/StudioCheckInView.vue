@@ -27,7 +27,7 @@ const searchingWalkIn = ref(false);
 // Cargar los horarios creados para la sede
 const fetchSchedules = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
     if (!orgId) return;
 
@@ -66,7 +66,7 @@ const autoSelectScheduleForDate = () => {
 };
 
 const loadClassRoster = async () => {
-  const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+  const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
   const branchId = authStore.currentBranch?.id;
   if (!orgId || !selectedScheduleId.value || !selectedDate.value) {
     classBookings.value = [];
@@ -143,7 +143,7 @@ const markStudentAttendance = async (customer: { id: string; identificationNumbe
   checkingInCustomerId.value = customer.id;
   checkInResult.value = null;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const { data } = await api.post('/studio-attendances/check-in', {
@@ -173,7 +173,7 @@ const runBulkAttendance = async () => {
   runningBulk.value = true;
   checkInResult.value = null;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
     let allowedCount = 0;
     let deniedReasons: string[] = [];
@@ -226,7 +226,7 @@ const searchWalkInCustomers = async () => {
   }
   searchingWalkIn.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const { data } = await api.get('/customers', {
       params: { organizationId: orgId, search: walkInSearch.value.trim() },
     });
@@ -252,7 +252,7 @@ const processCheckIn = async () => {
   checkInResult.value = null;
 
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const { data } = await api.post('/studio-attendances/check-in', {
@@ -287,7 +287,7 @@ const processCheckIn = async () => {
 
 const fetchRecentLogs = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
 
     const { data } = await api.get('/studio-attendances', {

@@ -53,7 +53,7 @@ const selectedSchedule = computed(() =>
 const fetchBookings = async () => {
   loading.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
 
     const branchId = authStore.currentBranch?.id;
@@ -102,7 +102,7 @@ const isBookingAttended = (booking: any) => {
 const markBookingAttendance = async (booking: any) => {
   markingBookingId.value = booking.id;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
     const bDate = String(booking.bookingDate || filterDate.value || '').slice(0, 10);
 
@@ -129,7 +129,7 @@ const markBookingAttendance = async (booking: any) => {
 // Cargar la parrilla de horarios para los dropdowns
 const fetchSchedules = async (date?: string) => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
     if (!orgId) return;
 
@@ -151,7 +151,7 @@ const checkAvailability = async () => {
 
   checkingSpots.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const [bookingsRes, attendancesRes] = await Promise.all([
@@ -209,7 +209,7 @@ const searchCustomers = async () => {
   if (!customerSearch.value || customerSearch.value.length < 2) return;
   loadingCustomers.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const { data } = await api.get('/customers', {
       params: { organizationId: orgId, search: customerSearch.value },
     });
@@ -230,7 +230,7 @@ const saveBooking = async () => {
 
   loadingSubmit.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const payload = {
@@ -255,7 +255,7 @@ const saveBooking = async () => {
 const cancelBooking = async (id: string) => {
   if (!confirm('¿Deseas cancelar esta reserva?')) return;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     await api.patch(`/studio-bookings/${id}/cancel`, null, {
       params: { organizationId: orgId },
     });

@@ -26,7 +26,7 @@ const form = ref({
 const fetchData = async () => {
   loading.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
 
     const [subsRes, custRes, plansRes] = await Promise.all([
@@ -51,7 +51,7 @@ const openCreateModal = () => {
     studioPlanId: '',
     startDate: new Date().toISOString().split('T')[0],
     autoRenew: false,
-    organizationId: authStore.user?.organizationId || authStore.currentOrganization?.id || '',
+    organizationId: authStore.currentOrganization?.id || authStore.user?.organizationId || '',
     branchId: authStore.currentBranch?.id || ''
   };
   showModal.value = true;
@@ -77,7 +77,7 @@ const goToPos = (sub: any) => {
 
 const saveSubscription = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id || '';
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId || '';
     const branchId = authStore.currentBranch?.id || '';
 
     const payload = {

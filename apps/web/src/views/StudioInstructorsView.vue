@@ -47,7 +47,7 @@ const openEditModal = (inst: any) => {
 };
 const assignment = ref({ studioScheduleId:'', instructorId:'', classDate:'', notes:'' });
 const filters = ref({ instructorId:'', startDate: today.slice(0, 8) + '01', endDate: today });
-const orgId = computed(() => auth.user?.organizationId || auth.currentOrganization?.id);
+const orgId = computed(() => auth.currentOrganization?.id || auth.user?.organizationId);
 const branchId = computed(() => auth.currentBranch?.id);
 const money = (value: number) => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(value || 0);
 const name = (item: any) => [item.firstName, item.lastName].filter(Boolean).join(' ');

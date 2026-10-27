@@ -34,8 +34,23 @@ export class TenantInterceptor implements NestInterceptor {
         ? req.headers['x-organization-id'].trim()
         : undefined;
 
-    const organizationId =
-      queryOrgId || (!isAuthOrGlobalRoute ? headerOrgId : undefined);
+    const organizationId = !isAuthOrGlobalRoute
+      ? headerOrgId || queryOrgId
+      : queryOrgId;
+
+    if (organizationId && !isAuthOrGlobalRoute) {
+      if (req?.query && typeof req.query === 'object') {
+        req.query.organizationId = organizationId;
+      }
+      if (
+        req?.body &&
+        typeof req.body === 'object' &&
+        !Array.isArray(req.body) &&
+        req.body.organizationId
+      ) {
+        req.body.organizationId = organizationId;
+      }
+    }
 
     return new Observable((subscriber) => {
       tenantContext.run({ organizationId }, () => {

@@ -25,7 +25,7 @@ const form = ref({
 
 const fetchPlans = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
     const { data } = await api.get('/studio-plans', {
       params: { organizationId: orgId }
@@ -47,7 +47,7 @@ const openCreateModal = () => {
     type: 'UNLIMITED',
     totalClasses: null,
     isNewStudentOnly: false,
-    organizationId: authStore.user?.organizationId || authStore.currentOrganization?.id || '',
+    organizationId: authStore.currentOrganization?.id || authStore.user?.organizationId || '',
     branchId: authStore.currentBranch?.id || ''
   };
   showModal.value = true;
@@ -76,7 +76,7 @@ const closeModal = () => {
 
 const savePlan = async () => {
   try {
-    form.value.organizationId = authStore.user?.organizationId || authStore.currentOrganization?.id || '';
+    form.value.organizationId = authStore.currentOrganization?.id || authStore.user?.organizationId || '';
     form.value.branchId = authStore.currentBranch?.id || '';
 
     // Si es ilimitado, limpiamos el total de clases

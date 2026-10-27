@@ -49,7 +49,7 @@ const getInstructorFullName = (inst: any) => {
 
 const fetchInstructors = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
 
     const branchId = authStore.currentBranch?.id;
@@ -69,7 +69,7 @@ const fetchInstructors = async () => {
 const fetchSchedules = async () => {
   loading.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     if (!orgId) return;
 
     const branchId = authStore.currentBranch?.id;
@@ -119,7 +119,7 @@ const openModal = (scheduleToEdit: any = null) => {
 
 const saveSchedule = async () => {
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const selectedInst = instructors.value.find((i) => i.id === form.value.instructorId);
@@ -178,7 +178,7 @@ const loadAttendees = async () => {
   if (!selectedSchedule.value) return;
   loadingAttendees.value = true;
   try {
-    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
     const branchId = authStore.currentBranch?.id;
 
     const { data } = await api.get('/studio-attendances', {
