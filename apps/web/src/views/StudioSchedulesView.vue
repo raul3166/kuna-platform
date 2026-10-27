@@ -6,6 +6,7 @@ import AppLayout from '../components/AppLayout.vue';
 
 const authStore = useAuthStore();
 const schedules = ref<any[]>([]);
+const instructors = ref<any[]>([]);
 const loading = ref(false);
 const showModal = ref(false);
 const editingId = ref<string | null>(null);
@@ -20,6 +21,7 @@ const selectedDate = ref(new Date().toISOString().split('T')[0]);
 
 const initialForm = {
   className: '',
+  instructorId: '',
   instructorName: '',
   dayOfWeek: 1, // 1: Lunes, ..., 0: Domingo
   startTime: '09:00',
@@ -39,6 +41,30 @@ const daysOfWeek = [
   { id: 6, name: 'Sábado' },
   { id: 0, name: 'Domingo' }
 ];
+
+const getInstructorFullName = (inst: any) => {
+  if (!inst) return '';
+  return [inst.firstName, inst.lastName].filter(Boolean).join(' ').trim();
+};
+
+const fetchInstructors = async () => {
+  try {
+    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    if (!orgId) return;
+
+    const branchId = authStore.currentBranch?.id;
+    const { data } = await api.get('/instructors', {
+      params: {
+        organizationId: orgId,
+        businessType: 'STUDIO',
+        ...(branchId ? { branchId } : {}),
+      },
+    });
+    instructors.value = Array.isArray(data) ? data : (data.items || data.data || []);
+  } catch (error) {
+    console.error('Error al cargar la lista de instructores:', error);
+  }
+};
 
 const fetchSchedules = async () => {
   loading.value = true;
@@ -66,8 +92,17 @@ const fetchSchedules = async () => {
 const openModal = (scheduleToEdit: any = null) => {
   if (scheduleToEdit) {
     editingId.value = scheduleToEdit.id;
+    let matchedInstructorId = scheduleToEdit.instructorId || scheduleToEdit.instructor?.id || '';
+    if (!matchedInstructorId && scheduleToEdit.instructorName) {
+      const found = instructors.value.find(
+        (inst) => getInstructorFullName(inst).toLowerCase() === String(scheduleToEdit.instructorName).trim().toLowerCase()
+      );
+      if (found) matchedInstructorId = found.id;
+    }
+
     form.value = {
       className: scheduleToEdit.className,
+      instructorId: matchedInstructorId,
       instructorName: scheduleToEdit.instructorName || '',
       dayOfWeek: scheduleToEdit.dayOfWeek,
       startTime: scheduleToEdit.startTime,
@@ -87,8 +122,20 @@ const saveSchedule = async () => {
     const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
     const branchId = authStore.currentBranch?.id;
 
+    const selectedInst = instructors.value.find((i) => i.id === form.value.instructorId);
+    const resolvedInstructorName = selectedInst
+      ? getInstructorFullName(selectedInst)
+      : '';
+
     const payload: Record<string, any> = {
-      ...form.value,
+      className: form.value.className,
+      dayOfWeek: form.value.dayOfWeek,
+      startTime: form.value.startTime,
+      endTime: form.value.endTime,
+      capacity: form.value.capacity,
+      notes: form.value.notes,
+      instructorId: form.value.instructorId || undefined,
+      instructorName: resolvedInstructorName || undefined,
       organizationId: orgId,
     };
 
@@ -161,16 +208,21 @@ const getDayName = (dayNumber: number) => {
 };
 
 const getInstructorName = (schedule: any) => {
-  if (schedule.instructor) {
-    return [schedule.instructor.firstName, schedule.instructor.lastName]
+  const inst = schedule.effectiveInstructor || schedule.instructor;
+  if (inst) {
+    return [inst.firstName, inst.lastName]
       .filter(Boolean)
       .join(' ');
+  }
+  if (schedule.instructorName) {
+    return schedule.instructorName;
   }
   return 'Por asignar';
 };
 
 onMounted(() => {
   fetchSchedules();
+  fetchInstructors();
 });
 </script>
 
@@ -304,7 +356,19 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Instructor</label>
-                <input v-model="form.instructorName" placeholder="Nombre" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+                <select
+                  v-model="form.instructorId"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">-- Sin asignar / Por definir --</option>
+                  <option
+                    v-for="inst in instructors.filter((i) => i.isActive !== false)"
+                    :key="inst.id"
+                    :value="inst.id"
+                  >
+                    {{ getInstructorFullName(inst) }}{{ inst.specialty ? ` (${inst.specialty})` : '' }}
+                  </option>
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Cupo Máximo</label>
