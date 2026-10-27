@@ -232,16 +232,24 @@ onMounted(async () => {
     <!-- HEADER DEL PORTAL DE ALUMNOS -->
     <header class="bg-slate-900 text-white shadow-lg border-b border-slate-800">
       <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <span class="inline-flex items-center rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-300 border border-indigo-400/30">
-            🧘‍♀️ Portal de Alumnos & Reservas Online
-          </span>
-          <h1 class="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-white">
-            {{ organization?.name || 'Cargando Estudio...' }}
-          </h1>
-          <p v-if="branches.length > 0" class="mt-1 text-xs sm:text-sm text-slate-400">
-            📍 {{ branches[0].name }} — {{ branches[0].address }}, {{ branches[0].city }}
-          </p>
+        <div class="flex items-center gap-4">
+          <img
+            v-if="(organization?.name || slug || '').toLowerCase().includes('uma')"
+            src="/uma-logo.png"
+            alt="UMA Movimiento Consciente"
+            class="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border-2 border-teal-400/40 shadow-md shrink-0 bg-[#edf3e2]"
+          />
+          <div>
+            <span class="inline-flex items-center rounded-full bg-indigo-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-300 border border-indigo-400/30">
+              🧘‍♀️ Portal de Alumnos & Reservas Online
+            </span>
+            <h1 class="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-white">
+              {{ organization?.name || 'Cargando Estudio...' }}
+            </h1>
+            <p v-if="branches.length > 0" class="mt-1 text-xs sm:text-sm text-slate-400">
+              📍 {{ branches[0].name }} — {{ branches[0].address }}, {{ branches[0].city }}
+            </p>
+          </div>
         </div>
 
         <!-- Estado rápido del alumno si ya se identificó -->

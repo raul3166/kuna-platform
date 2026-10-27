@@ -44,6 +44,41 @@ const visibleNavigation = computed(() => {
 
 const activeSection = ref<string | null>(null)
 const isMobileMenuOpen = ref(false)
+const customLogoTrigger = ref(0)
+const logoInputRef = ref<HTMLInputElement | null>(null)
+
+const currentOrgLogo = computed(() => {
+  void customLogoTrigger.value
+  const org = authStore.currentOrganization
+  if (!org) return null
+  const saved = localStorage.getItem(`kuna_org_logo_${org.id}`)
+  if (saved) return saved
+  const nameOrSlug = `${org.name || ''} ${org.slug || ''}`.toLowerCase()
+  if (nameOrSlug.includes('uma')) {
+    return '/uma-logo.png'
+  }
+  return null
+})
+
+function triggerLogoUpload() {
+  logoInputRef.value?.click()
+}
+
+function handleLogoChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  const orgId = authStore.currentOrganization?.id
+  if (!file || !orgId) return
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    if (typeof reader.result === 'string') {
+      localStorage.setItem(`kuna_org_logo_${orgId}`, reader.result)
+      customLogoTrigger.value++
+    }
+  }
+  reader.readAsDataURL(file)
+}
 
 function closeMobileMenu() {
   isMobileMenuOpen.value = false
@@ -105,11 +140,34 @@ onMounted(async () => {
       class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-900 text-slate-300 border-r border-slate-800 transform transition-transform duration-300 ease-in-out md:static md:w-64 md:translate-x-0"
       :class="isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'"
     >
-      <!-- Logo KUNA -->
-      <div class="flex h-16 items-center justify-between px-6 bg-slate-950 border-b border-slate-800">
-        <div class="flex items-center">
-          <span class="text-xl font-black tracking-wider text-white">KUNA</span>
-          <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
+      <!-- Logo KUNA + Imagen de Empresa -->
+      <div class="flex h-16 items-center justify-between px-5 bg-slate-950 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <button
+            type="button"
+            @click="triggerLogoUpload"
+            title="Clic para cambiar imagen/logo de la empresa"
+            class="relative group shrink-0 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 h-9 w-9 flex items-center justify-center hover:border-blue-400 transition-colors"
+          >
+            <img
+              v-if="currentOrgLogo"
+              :src="currentOrgLogo"
+              alt="Logo empresa"
+              class="h-full w-full object-cover"
+            />
+            <span v-else class="text-sm">🏢</span>
+          </button>
+          <input
+            ref="logoInputRef"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="handleLogoChange"
+          />
+          <div class="flex items-center">
+            <span class="text-xl font-black tracking-wider text-white">KUNA</span>
+            <span class="ml-1.5 text-xs font-semibold uppercase tracking-widest text-blue-500 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900">SaaS</span>
+          </div>
         </div>
 
         <!-- Botón cerrar menú en móvil -->
@@ -186,7 +244,17 @@ onMounted(async () => {
           </span>
 
           <span class="text-sm font-medium text-slate-400">/</span>
-          <span class="text-sm font-semibold text-slate-600 truncate">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
+          <div class="flex items-center gap-2 min-w-0">
+            <img
+              v-if="currentOrgLogo"
+              :src="currentOrgLogo"
+              alt="Logo"
+              @click="triggerLogoUpload"
+              title="Clic para cambiar logo"
+              class="h-7 w-7 rounded-lg object-cover border border-slate-200 shadow-2xs cursor-pointer shrink-0"
+            />
+            <span class="text-sm font-semibold text-slate-600 truncate">{{ authStore.currentOrganization?.name || 'Organización' }}</span>
+          </div>
         </div>
 
         <div class="flex items-center space-x-3 sm:space-x-4 shrink-0">
