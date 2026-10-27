@@ -11,6 +11,7 @@ export class InstructorsController {
   constructor(private readonly service: InstructorsService) {}
   @Get() @PermissionsAny('studio.read', 'gym.read') findAll(@Query('organizationId') organizationId: string, @Query('branchId') branchId?: string, @Query('businessType') businessType?: string) { return this.service.findAll(organizationId, branchId, businessType); }
   @Post() @PermissionsAny('studio.create', 'gym.create') create(@Body() dto: CreateInstructorDto) { return this.service.create(dto); }
+  @Post(':id/enable-access') @PermissionsAny('studio.create', 'studio.update', 'gym.create', 'gym.update') enableAccess(@Param('id') id: string, @Query('organizationId') organizationId: string, @Body() body: { email?: string; password?: string }) { return this.service.enableAccess(id, organizationId, body); }
   @Patch(':id') @PermissionsAny('studio.update', 'gym.update') update(@Param('id') id: string, @Query('organizationId') organizationId: string, @Body() dto: UpdateInstructorDto) { return this.service.update(id, organizationId, dto); }
   @Delete(':id') @PermissionsAny('studio.delete', 'gym.delete') remove(@Param('id') id: string, @Query('organizationId') organizationId: string) { return this.service.remove(id, organizationId); }
   @Post('overrides') @PermissionsAny('studio.update', 'gym.update') override(@Body() dto: CreateInstructorOverrideDto) { return this.service.setOverride(dto); }

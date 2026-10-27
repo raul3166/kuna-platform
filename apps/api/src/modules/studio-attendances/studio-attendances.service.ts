@@ -7,16 +7,42 @@ export class StudioAttendancesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async checkIn(dto: CreateStudioAttendanceDto) {
-    // 1. Buscar cliente por número de documento
-    const customer = await this.prisma.customer.findFirst({
-      where: {
-        organizationId: dto.organizationId,
-        identificationNumber: dto.documentNumber,
-      },
-    });
+    // 1. Buscar cliente por ID directo o por número de documento
+    const customer = dto.customerId
+      ? await this.prisma.customer.findFirst({
+          where: {
+            id: dto.customerId,
+            organizationId: dto.organizationId,
+          },
+        })
+      : await this.prisma.customer.findFirst({
+          where: {
+            organizationId: dto.organizationId,
+            identificationNumber: dto.documentNumber,
+          },
+        });
 
     if (!customer) {
-      throw new NotFoundException('Cliente no encontrado con ese número de documento');
+      throw new NotFoundException('Cliente no encontrado con ese número de documento o registro');
+    }
+
+    let resolvedBranchId = dto.branchId;
+    if (!resolvedBranchId) {
+      if (dto.studioScheduleId) {
+        const sched = await this.prisma.studioSchedule.findUnique({
+          where: { id: dto.studioScheduleId },
+          select: { branchId: true },
+        });
+        if (sched?.branchId) resolvedBranchId = sched.branchId;
+      }
+      if (!resolvedBranchId) {
+        const firstBranch = await this.prisma.branch.findFirst({
+          where: { organizationId: dto.organizationId, isActive: true },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
+        resolvedBranchId = firstBranch?.id || '';
+      }
     }
 
     // Determinar la fecha objetivo (si viene dto.date 'YYYY-MM-DD', o usa la hora actual)
@@ -31,6 +57,32 @@ export class StudioAttendancesService {
 
     const dayEnd = new Date(baseDate);
     dayEnd.setHours(23, 59, 59, 999);
+
+    // Verificar si ya se le tomó asistencia en esta misma clase y fecha
+    if (dto.studioScheduleId) {
+      const alreadyCheckedInSameClass = await this.prisma.studioAttendanceLog.findFirst({
+        where: {
+          organizationId: dto.organizationId,
+          customerId: customer.id,
+          studioScheduleId: dto.studioScheduleId,
+          status: 'ALLOWED',
+          checkInAt: { gte: dayStart, lte: dayEnd },
+        },
+        include: {
+          customer: true,
+          schedule: true,
+          subscription: { include: { plan: true } },
+        },
+      });
+      if (alreadyCheckedInSameClass) {
+        return {
+          ...alreadyCheckedInSameClass,
+          plan: alreadyCheckedInSameClass.subscription?.plan || null,
+          remainingClasses: alreadyCheckedInSameClass.subscription?.remainingClasses ?? null,
+          alreadyRegistered: true,
+        };
+      }
+    }
 
     // 2. Buscar suscripción activa y vigente para la fecha elegida
     const activeSubscription = await this.prisma.studioSubscription.findFirst({
@@ -104,7 +156,7 @@ export class StudioAttendancesService {
       const log = await tx.studioAttendanceLog.create({
         data: {
           organizationId: dto.organizationId,
-          branchId: dto.branchId,
+          branchId: resolvedBranchId,
           customerId: customer.id,
           studioSubscriptionId: activeSubscription?.id ?? null,
           studioScheduleId: dto.studioScheduleId ?? null,

@@ -4,7 +4,7 @@ import { StudioAttendancesService } from './studio-attendances.service';
 import { CreateStudioAttendanceDto } from './dto/create-studio-attendance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permissions, PermissionsAny } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('Studio Attendances')
 @ApiBearerAuth('JWT-auth')
@@ -13,7 +13,7 @@ export class StudioAttendancesController {
   constructor(private readonly attendancesService: StudioAttendancesService) {}
 
   @ApiOperation({ summary: 'Register a studio member check-in (validation & class decrement)' })
-  @Permissions('studio.create')
+  @PermissionsAny('studio.create', 'studio.update')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Post('check-in')
   checkIn(@Body() dto: CreateStudioAttendanceDto) {

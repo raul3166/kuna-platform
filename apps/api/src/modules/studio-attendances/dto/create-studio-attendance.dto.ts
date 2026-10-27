@@ -5,16 +5,22 @@ export class CreateStudioAttendanceDto {
   organizationId: string;
 
   @IsString()
-  branchId: string;
+  @IsOptional()
+  branchId?: string;
 
   @IsString()
-  documentNumber: string;
+  @IsOptional()
+  documentNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  customerId?: string;
 
   @IsString()
   @IsOptional()
   studioScheduleId?: string;
 
   @IsDateString()
-  @IsOptional() // Déjalo opcional si deseas usar la fecha actual del servidor por defecto cuando no se envíe
+  @IsOptional()
   date?: string;
 }

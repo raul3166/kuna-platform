@@ -16,6 +16,8 @@ export class CreateInstructorDto {
   @IsNumber() @Min(0) fixedClassRate: number;
   @IsNumber() @Min(0) perStudentRate: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() createUserAccount?: boolean;
+  @IsOptional() @IsString() password?: string;
 }
 export class UpdateInstructorDto extends PartialType(CreateInstructorDto) {}
 export class CreateInstructorOverrideDto {

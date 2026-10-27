@@ -8,10 +8,12 @@ const authStore = useAuthStore();
 
 // Estados principales
 const bookings = ref<any[]>([]);
+const attendances = ref<any[]>([]);
 const schedules = ref<any[]>([]);
 const customers = ref<any[]>([]);
 const loading = ref(false);
 const loadingSubmit = ref(false);
+const markingBookingId = ref<string | null>(null);
 
 // Modales
 const showCreateModal = ref(false);
@@ -64,12 +66,63 @@ const fetchBookings = async () => {
       ...(filterScheduleId.value !== 'ALL' ? { studioScheduleId: filterScheduleId.value } : {}),
     };
 
-    const { data } = await api.get('/studio-bookings', { params });
-    bookings.value = Array.isArray(data) ? data : (data.items || data.data || []);
+    const [bookingsRes, attendancesRes] = await Promise.all([
+      api.get('/studio-bookings', { params }),
+      api.get('/studio-attendances', {
+        params: {
+          organizationId: orgId,
+          ...(branchId ? { branchId } : {}),
+          ...(filterDate.value ? { date: filterDate.value } : {}),
+          ...(filterScheduleId.value !== 'ALL' ? { studioScheduleId: filterScheduleId.value } : {}),
+        },
+      }).catch(() => ({ data: [] })),
+    ]);
+    bookings.value = Array.isArray(bookingsRes.data) ? bookingsRes.data : (bookingsRes.data.items || bookingsRes.data.data || []);
+    attendances.value = Array.isArray(attendancesRes.data) ? attendancesRes.data : (attendancesRes.data.items || attendancesRes.data.data || []);
   } catch (error) {
     console.error('Error al obtener reservas:', error);
   } finally {
     loading.value = false;
+  }
+};
+
+const isBookingAttended = (booking: any) => {
+  const bDate = String(booking.bookingDate || '').slice(0, 10);
+  return attendances.value.some((a) => {
+    const aDate = String(a.checkInAt || '').slice(0, 10);
+    return (
+      a.customerId === booking.customerId &&
+      a.studioScheduleId === booking.studioScheduleId &&
+      a.status === 'ALLOWED' &&
+      (!bDate || !aDate || aDate === bDate)
+    );
+  });
+};
+
+const markBookingAttendance = async (booking: any) => {
+  markingBookingId.value = booking.id;
+  try {
+    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    const branchId = authStore.currentBranch?.id;
+    const bDate = String(booking.bookingDate || filterDate.value || '').slice(0, 10);
+
+    const { data } = await api.post('/studio-attendances/check-in', {
+      customerId: booking.customerId,
+      documentNumber: booking.customer?.identificationNumber || undefined,
+      organizationId: orgId,
+      branchId: branchId || undefined,
+      studioScheduleId: booking.studioScheduleId,
+      date: bDate || undefined,
+    });
+
+    if (data?.status === 'DENIED') {
+      alert(data.reason || 'No se pudo autorizar el ingreso del alumno');
+    }
+    await fetchBookings();
+  } catch (error: any) {
+    alert(error?.response?.data?.message || 'Error al registrar la asistencia');
+  } finally {
+    markingBookingId.value = null;
   }
 };
 
@@ -422,13 +475,29 @@ onMounted(() => {
                   </span>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <button
-                    v-if="b.status === 'CONFIRMED'"
-                    @click="cancelBooking(b.id)"
-                    class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors"
-                  >
-                    Cancelar
-                  </button>
+                  <div v-if="b.status === 'CONFIRMED'" class="inline-flex items-center justify-end gap-2">
+                    <span
+                      v-if="isBookingAttended(b)"
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"
+                    >
+                      ✅ Presente
+                    </span>
+                    <button
+                      v-else
+                      :disabled="markingBookingId === b.id"
+                      @click="markBookingAttendance(b)"
+                      class="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                    >
+                      {{ markingBookingId === b.id ? 'Marcando...' : '✅ Asistió' }}
+                    </button>
+                    <button
+                      v-if="!isBookingAttended(b)"
+                      @click="cancelBooking(b.id)"
+                      class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                   <span v-else class="text-xs text-slate-300 italic">Sin acciones</span>
                 </td>
               </tr>

@@ -117,7 +117,7 @@ export const navigationSections: NavigationSection[] = [
       { label: 'Control de Asistencia', icon: '🚪', to: '/studio-checkin', requiredPermission: 'studio.read' },
       { label: 'Calendario Clases', icon: '🚪', to: '/studio-schedules', requiredPermission: 'studio.read' },
       { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings', requiredPermission: 'studio.read' },
-      { label: 'Instructores y Liquidación', icon: '👩‍🏫', to: '/studio-instructors', requiredPermission: 'studio.read' },
+      { label: 'Instructores y Liquidación', icon: '👩‍🏫', to: '/studio-instructors', requiredPermission: 'studio.create' },
       { label: 'Reportes y Retención', icon: '📊', to: '/studio-reports', requiredPermission: 'studio.create' },
     ],
   },

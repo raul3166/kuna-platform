@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InstructorPaymentModel } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateInstructorDto, UpdateInstructorDto, CreateInstructorOverrideDto } from './dto/instructor.dto';
 
@@ -10,8 +11,8 @@ const localDate = (value: string) => new Date(`${value}T00:00:00`);
 export class InstructorsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(organizationId: string, branchId?: string, businessType?: string) {
-    return this.prisma.instructor.findMany({
+  async findAll(organizationId: string, branchId?: string, businessType?: string) {
+    const instructors = await this.prisma.instructor.findMany({
       where: {
         organizationId,
         ...(branchId ? { branchId } : {}),
@@ -23,6 +24,36 @@ export class InstructorsService {
       },
       orderBy: [{ isActive: 'desc' }, { firstName: 'asc' }],
     });
+
+    const emails = instructors
+      .map((i) => i.email?.trim().toLowerCase())
+      .filter((e): e is string => Boolean(e));
+
+    const existingUsers = emails.length
+      ? await this.prisma.user.findMany({
+          where: {
+            organizationId,
+            email: { in: emails, mode: 'insensitive' },
+            isActive: true,
+          },
+          select: { id: true, email: true },
+        })
+      : [];
+
+    const userByEmail = new Map(
+      existingUsers.map((u) => [u.email.trim().toLowerCase(), u]),
+    );
+
+    return instructors.map((inst) => {
+      const matchedUser = inst.email
+        ? userByEmail.get(inst.email.trim().toLowerCase())
+        : undefined;
+      return {
+        ...inst,
+        hasSystemAccess: Boolean(matchedUser),
+        systemUserId: matchedUser?.id || null,
+      };
+    });
   }
 
   async findOne(id: string, organizationId: string) {
@@ -31,13 +62,152 @@ export class InstructorsService {
     return instructor;
   }
 
-  create(dto: CreateInstructorDto) {
-    return this.prisma.instructor.create({ data: dto });
+  private async ensureInstructorUserAccount(
+    instructor: {
+      id: string;
+      organizationId: string;
+      branchId: string | null;
+      firstName: string;
+      lastName: string | null;
+      identification: string;
+      phoneNumber: string | null;
+      email: string | null;
+      businessType?: string | null;
+    },
+    passwordOverride?: string,
+  ) {
+    const cleanEmail = instructor.email?.trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new BadRequestException('El instructor debe tener un correo electrónico para habilitar su usuario');
+    }
+
+    let targetBranchId = instructor.branchId;
+    if (!targetBranchId) {
+      const firstBranch = await this.prisma.branch.findFirst({
+        where: { organizationId: instructor.organizationId, isActive: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (!firstBranch) {
+        throw new BadRequestException('La organización no tiene una sede activa para asociar el usuario del instructor');
+      }
+      targetBranchId = firstBranch.id;
+    }
+
+    const rawPassword = (passwordOverride || instructor.identification || '123456').trim();
+    const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+    let user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: 'insensitive' },
+      },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          organizationId: instructor.organizationId,
+          branchId: targetBranchId,
+          firstName: instructor.firstName,
+          lastName: instructor.lastName || '',
+          email: cleanEmail,
+          passwordHash,
+          phoneNumber: instructor.phoneNumber || null,
+          isActive: true,
+        },
+      });
+    } else if (user.organizationId === instructor.organizationId) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isActive: true,
+          passwordHash,
+        },
+      });
+    }
+
+    const bType = instructor.businessType || 'STUDIO';
+    const roleCodes: string[] = [];
+    if (bType === 'STUDIO' || bType === 'ALL') roleCodes.push('STUDIO_INSTRUCTOR');
+    if (bType === 'GYM' || bType === 'ALL') roleCodes.push('GYM_TRAINER');
+
+    const roles = await this.prisma.role.findMany({
+      where: { code: { in: roleCodes }, isActive: true },
+    });
+
+    for (const role of roles) {
+      await this.prisma.userRole.upsert({
+        where: {
+          userId_roleId: {
+            userId: user.id,
+            roleId: role.id,
+          },
+        },
+        update: {},
+        create: {
+          userId: user.id,
+          roleId: role.id,
+        },
+      });
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      initialPassword: rawPassword,
+      assignedRoles: roles.map((r) => r.code),
+    };
+  }
+
+  async create(dto: CreateInstructorDto) {
+    const { createUserAccount, password, ...instructorData } = dto;
+    if (instructorData.email) {
+      instructorData.email = instructorData.email.trim().toLowerCase();
+    }
+
+    const instructor = await this.prisma.instructor.create({
+      data: instructorData,
+    });
+
+    let accessInfo: any = null;
+    if (createUserAccount !== false && instructor.email) {
+      accessInfo = await this.ensureInstructorUserAccount(instructor, password);
+    }
+
+    return {
+      ...instructor,
+      hasSystemAccess: Boolean(accessInfo),
+      accessInfo,
+    };
+  }
+
+  async enableAccess(
+    id: string,
+    organizationId: string,
+    body?: { email?: string; password?: string },
+  ) {
+    let instructor = await this.findOne(id, organizationId);
+    if (body?.email && body.email.trim().toLowerCase() !== instructor.email) {
+      instructor = await this.prisma.instructor.update({
+        where: { id },
+        data: { email: body.email.trim().toLowerCase() },
+      });
+    }
+    const accessInfo = await this.ensureInstructorUserAccount(instructor, body?.password);
+    return {
+      ...instructor,
+      hasSystemAccess: true,
+      accessInfo,
+    };
   }
 
   async update(id: string, organizationId: string, dto: UpdateInstructorDto) {
     await this.findOne(id, organizationId);
-    return this.prisma.instructor.update({ where: { id }, data: dto });
+    const { createUserAccount, password, ...instructorData } = dto;
+    const updated = await this.prisma.instructor.update({ where: { id }, data: instructorData });
+    if (createUserAccount && updated.email) {
+      await this.ensureInstructorUserAccount(updated, password);
+    }
+    return updated;
   }
 
   async remove(id: string, organizationId: string) {
