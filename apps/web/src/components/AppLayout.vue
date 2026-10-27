@@ -53,7 +53,7 @@ const currentOrgLogo = computed(() => {
   if (!org) return null
   const saved = localStorage.getItem(`kuna_org_logo_${org.id}`)
   if (saved) return saved
-  const nameOrSlug = `${org.name || ''} ${org.slug || ''}`.toLowerCase()
+  const nameOrSlug = `${org.name || ''} ${(org as any).slug || ''}`.toLowerCase()
   if (nameOrSlug.includes('uma')) {
     return '/uma-logo.png'
   }
