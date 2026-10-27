@@ -12,6 +12,69 @@ export class InstructorsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, branchId?: string, businessType?: string) {
+    // Auto-sincronizar usuarios que ya tengan rol STUDIO_INSTRUCTOR o GYM_TRAINER pero aún no estén en la tabla Instructor
+    const roleCodesToSync =
+      businessType === 'GYM'
+        ? ['GYM_TRAINER']
+        : businessType === 'STUDIO'
+          ? ['STUDIO_INSTRUCTOR']
+          : ['STUDIO_INSTRUCTOR', 'GYM_TRAINER'];
+
+    const roleUsers = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        isActive: true,
+        userRoles: {
+          some: {
+            role: {
+              code: { in: roleCodesToSync },
+            },
+          },
+        },
+      },
+      include: {
+        userRoles: { include: { role: true } },
+      },
+    });
+
+    if (roleUsers.length > 0) {
+      const existingAll = await this.prisma.instructor.findMany({
+        where: { organizationId },
+        select: { id: true, email: true },
+      });
+      const existingEmailSet = new Set(
+        existingAll
+          .map((i) => i.email?.trim().toLowerCase())
+          .filter((e): e is string => Boolean(e)),
+      );
+
+      for (const u of roleUsers) {
+        const cleanEmail = u.email.trim().toLowerCase();
+        if (!existingEmailSet.has(cleanEmail)) {
+          const isGymOnly =
+            u.userRoles.some((ur) => ur.role.code === 'GYM_TRAINER') &&
+            !u.userRoles.some((ur) => ur.role.code === 'STUDIO_INSTRUCTOR');
+          await this.prisma.instructor.create({
+            data: {
+              organizationId,
+              branchId: u.branchId || branchId || null,
+              firstName: u.firstName,
+              lastName: u.lastName || '',
+              identification: u.phoneNumber || cleanEmail.split('@')[0],
+              phoneNumber: u.phoneNumber || null,
+              email: cleanEmail,
+              businessType: isGymOnly ? 'GYM' : 'STUDIO',
+              paymentModel: InstructorPaymentModel.FIXED_PER_CLASS,
+              fixedClassRate: 0,
+              perStudentRate: 0,
+              isActive: true,
+            },
+          });
+          existingEmailSet.add(cleanEmail);
+        }
+      }
+    }
+
     const instructors = await this.prisma.instructor.findMany({
       where: {
         organizationId,
