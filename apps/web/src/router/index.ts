@@ -263,6 +263,12 @@ const routes: Array<RouteRecordRaw> = [
   meta: { requiresAuth: true, requiredVertical: 'STUDIO' }
 },
 {
+  path: '/studio-reports',
+  name: 'studio-reports',
+  component: () => import('../views/StudioReportsView.vue'),
+  meta: { requiresAuth: true, requiredVertical: 'STUDIO' }
+},
+{
     path: '/service-orders',
     name: 'service-orders',
     component: () => import('../views/ServiceOrdersView.vue'),

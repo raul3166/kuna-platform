@@ -118,6 +118,7 @@ export const navigationSections: NavigationSection[] = [
       { label: 'Calendario Clases', icon: '🚪', to: '/studio-schedules', requiredPermission: 'studio.read' },
       { label: 'Reservas de Cupos', icon: '📌', to: '/studio-bookings', requiredPermission: 'studio.read' },
       { label: 'Instructores y Liquidación', icon: '👩‍🏫', to: '/studio-instructors', requiredPermission: 'studio.read' },
+      { label: 'Reportes y Retención', icon: '📊', to: '/studio-reports', requiredPermission: 'studio.create' },
     ],
   },
   {
