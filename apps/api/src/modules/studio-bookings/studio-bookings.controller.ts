@@ -92,6 +92,31 @@ export class StudioBookingsController {
     return this.studioBookingsService.cancelPublicBooking(slug, bookingId, customerId);
   }
 
+  @ApiOperation({ summary: 'Public student portal: submit class rating and feedback comment' })
+  @Post('public/feedback/:slug')
+  submitPublicFeedback(
+    @Param('slug') slug: string,
+    @Body()
+    body: {
+      customerId: string;
+      studioScheduleId: string;
+      classDate?: string;
+      rating: number;
+      comment?: string;
+      isAnonymous?: boolean;
+    },
+  ) {
+    return this.studioBookingsService.submitPublicFeedback(slug, body);
+  }
+
+  @ApiOperation({ summary: 'Admin: get studio class feedbacks and ratings summary' })
+  @Permissions('studio.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Get('feedback/list')
+  getOrganizationFeedback(@Query('organizationId') organizationId: string) {
+    return this.studioBookingsService.getOrganizationFeedback(organizationId);
+  }
+
   @ApiOperation({ summary: 'Get booking detail by ID' })
   @Permissions('studio.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

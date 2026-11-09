@@ -295,7 +295,7 @@ export class StudioBookingsService {
       );
     }
 
-    const [subscriptions, bookings] = await Promise.all([
+    const [subscriptions, bookings, feedbacks] = await Promise.all([
       this.prisma.studioSubscription.findMany({
         where: {
           organizationId: org.id,
@@ -320,12 +320,222 @@ export class StudioBookingsService {
         },
         orderBy: { bookingDate: 'desc' },
       }),
+      this.getStudentFeedbacks(org.id, customer.id),
     ]);
 
     return {
       customer,
       subscriptions,
       bookings,
+      feedbacks,
+    };
+  }
+
+  private feedbackTableReady = false;
+
+  private async ensureFeedbackTable() {
+    if (this.feedbackTableReady) return;
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "StudioClassFeedback" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "organizationId" TEXT NOT NULL,
+          "customerId" TEXT NOT NULL,
+          "customerName" TEXT NOT NULL,
+          "studioScheduleId" TEXT NOT NULL,
+          "className" TEXT NOT NULL,
+          "instructorName" TEXT,
+          "classDate" TEXT,
+          "rating" INTEGER NOT NULL DEFAULT 5,
+          "comment" TEXT,
+          "isAnonymous" BOOLEAN NOT NULL DEFAULT false,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      this.feedbackTableReady = true;
+    } catch {
+      // Ignorar si ya existe
+    }
+  }
+
+  private async getStudentFeedbacks(organizationId: string, customerId: string) {
+    await this.ensureFeedbackTable();
+    try {
+      const rows = await this.prisma.$queryRaw<any[]>`
+        SELECT
+          "id",
+          "studioScheduleId",
+          "className",
+          "instructorName",
+          "classDate",
+          "rating",
+          "comment",
+          "isAnonymous",
+          "createdAt"
+        FROM "StudioClassFeedback"
+        WHERE "organizationId" = ${organizationId}
+          AND "customerId" = ${customerId}
+        ORDER BY "createdAt" DESC
+        LIMIT 25
+      `;
+      return rows;
+    } catch {
+      return [];
+    }
+  }
+
+  async submitPublicFeedback(
+    slugOrId: string,
+    payload: {
+      customerId: string;
+      studioScheduleId: string;
+      classDate?: string;
+      rating: number;
+      comment?: string;
+      isAnonymous?: boolean;
+    },
+  ) {
+    await this.ensureFeedbackTable();
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const rating = Math.min(5, Math.max(1, Math.round(Number(payload.rating || 5))));
+
+    const [customer, schedule] = await Promise.all([
+      this.prisma.customer.findFirst({
+        where: { id: payload.customerId, organizationId: org.id },
+      }),
+      this.prisma.studioSchedule.findFirst({
+        where: { id: payload.studioScheduleId, organizationId: org.id },
+        include: { instructor: true },
+      }),
+    ]);
+
+    if (!customer) {
+      throw new NotFoundException('Alumno no encontrado en este estudio');
+    }
+    if (!schedule) {
+      throw new NotFoundException('La clase seleccionada no pertenece a este estudio');
+    }
+
+    const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim();
+    const instructorName = schedule.instructor
+      ? [schedule.instructor.firstName, schedule.instructor.lastName].filter(Boolean).join(' ').trim()
+      : schedule.instructorName || 'Sin asignar';
+
+    const id = `fb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const cleanComment = (payload.comment || '').trim() || null;
+    const classDate = (payload.classDate || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const isAnonymous = Boolean(payload.isAnonymous);
+
+    await this.prisma.$executeRaw`
+      INSERT INTO "StudioClassFeedback" (
+        "id",
+        "organizationId",
+        "customerId",
+        "customerName",
+        "studioScheduleId",
+        "className",
+        "instructorName",
+        "classDate",
+        "rating",
+        "comment",
+        "isAnonymous",
+        "createdAt"
+      ) VALUES (
+        ${id},
+        ${org.id},
+        ${customer.id},
+        ${customerName},
+        ${schedule.id},
+        ${schedule.className},
+        ${instructorName},
+        ${classDate},
+        ${rating},
+        ${cleanComment},
+        ${isAnonymous},
+        NOW()
+      )
+    `;
+
+    return {
+      id,
+      className: schedule.className,
+      instructorName,
+      classDate,
+      rating,
+      comment: cleanComment,
+      isAnonymous,
+    };
+  }
+
+  async getOrganizationFeedback(organizationId: string) {
+    await this.ensureFeedbackTable();
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        "id",
+        "customerId",
+        "customerName",
+        "studioScheduleId",
+        "className",
+        "instructorName",
+        "classDate",
+        "rating",
+        "comment",
+        "isAnonymous",
+        "createdAt"
+      FROM "StudioClassFeedback"
+      WHERE "organizationId" = ${organizationId}
+      ORDER BY "createdAt" DESC
+      LIMIT 200
+    `;
+
+    const totalFeedbacks = rows.length;
+    const sumRating = rows.reduce((acc, r) => acc + Number(r.rating || 0), 0);
+    const averageRating = totalFeedbacks > 0 ? Number((sumRating / totalFeedbacks).toFixed(1)) : 0;
+
+    const classMap = new Map<string, { className: string; instructorName: string; count: number; sum: number }>();
+    for (const r of rows) {
+      const key = `${r.className}__${r.instructorName || 'Sin asignar'}`;
+      const cur = classMap.get(key) || {
+        className: r.className,
+        instructorName: r.instructorName || 'Sin asignar',
+        count: 0,
+        sum: 0,
+      };
+      cur.count += 1;
+      cur.sum += Number(r.rating || 0);
+      classMap.set(key, cur);
+    }
+
+    const byClass = Array.from(classMap.values())
+      .map((c) => ({
+        className: c.className,
+        instructorName: c.instructorName,
+        count: c.count,
+        avgRating: Number((c.sum / c.count).toFixed(1)),
+      }))
+      .sort((a, b) => b.avgRating - a.avgRating || b.count - a.count);
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      customerName: r.isAnonymous ? 'Alumno Anónimo' : r.customerName,
+      studioScheduleId: r.studioScheduleId,
+      className: r.className,
+      instructorName: r.instructorName || 'Sin asignar',
+      classDate: r.classDate,
+      rating: Number(r.rating || 5),
+      comment: r.comment,
+      isAnonymous: Boolean(r.isAnonymous),
+      createdAt: r.createdAt,
+    }));
+
+    return {
+      summary: {
+        totalFeedbacks,
+        averageRating,
+        byClass,
+      },
+      items,
     };
   }
 

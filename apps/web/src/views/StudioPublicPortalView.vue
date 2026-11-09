@@ -15,7 +15,15 @@ const schedules = ref<any[]>([])
 
 const selectedDate = ref<string>(new Date().toISOString().split('T')[0] || '')
 const showAllWeek = ref(false)
-const activeTab = ref<'classes' | 'plans' | 'my-bookings'>('classes')
+const activeTab = ref<'classes' | 'plans' | 'my-bookings' | 'feedback'>('classes')
+
+// Estado del formulario de Feedback de Clases
+const feedbackScheduleId = ref('')
+const feedbackDate = ref<string>(new Date().toISOString().split('T')[0] || '')
+const feedbackRating = ref<number>(5)
+const feedbackComment = ref('')
+const feedbackAnonymous = ref(false)
+const submittingFeedback = ref(false)
 
 // Estado del Alumno identificado
 const studentIdentifier = ref(localStorage.getItem('kuna_portal_student_id') || '')
@@ -212,6 +220,60 @@ async function handleCancelBooking(booking: any) {
       type: 'error',
       text: err.response?.data?.message || 'No se pudo cancelar la reserva.',
     }
+  }
+}
+
+function openFeedbackForSchedule(scheduleId: string, dateStr?: string) {
+  feedbackScheduleId.value = scheduleId
+  if (dateStr) {
+    feedbackDate.value = String(dateStr).slice(0, 10)
+  }
+  activeTab.value = 'feedback'
+}
+
+async function handleSubmitFeedback() {
+  actionMessage.value = null
+  if (!studentData.value?.customer?.id) {
+    actionMessage.value = {
+      type: 'error',
+      text: 'Primero ingresa tu cédula, teléfono o correo arriba en "Consulta tu Tiquetera" para enviar tu calificación.',
+    }
+    return
+  }
+  if (!feedbackScheduleId.value) {
+    actionMessage.value = {
+      type: 'error',
+      text: 'Selecciona la clase que deseas calificar.',
+    }
+    return
+  }
+
+  submittingFeedback.value = true
+  try {
+    await api.post(`/studio-bookings/public/feedback/${slug.value}`, {
+      customerId: studentData.value.customer.id,
+      studioScheduleId: feedbackScheduleId.value,
+      classDate: feedbackDate.value,
+      rating: feedbackRating.value,
+      comment: feedbackComment.value,
+      isAnonymous: feedbackAnonymous.value,
+    })
+
+    actionMessage.value = {
+      type: 'success',
+      text: '¡Gracias por tu feedback! Los administradores del estudio ya pueden leer tus comentarios.',
+    }
+    feedbackComment.value = ''
+    feedbackRating.value = 5
+    feedbackAnonymous.value = false
+    await lookupStudent(true)
+  } catch (err: any) {
+    actionMessage.value = {
+      type: 'error',
+      text: err?.response?.data?.message || 'No se pudo enviar tu calificación.',
+    }
+  } finally {
+    submittingFeedback.value = false
   }
 }
 
@@ -426,6 +488,19 @@ onMounted(async () => {
           >
             📌 Mis Reservas Activas ({{ confirmedBookings.length }})
           </button>
+
+          <button
+            type="button"
+            @click="activeTab = 'feedback'"
+            :class="[
+              activeTab === 'feedback'
+                ? 'border-indigo-600 text-indigo-600 font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-700',
+              'whitespace-nowrap border-b-2 pb-3 text-sm transition-colors',
+            ]"
+          >
+            ⭐ Calificar Clases / Feedback
+          </button>
         </nav>
       </div>
 
@@ -623,13 +698,171 @@ onMounted(async () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              @click="handleCancelBooking(booking)"
-              class="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+              <button
+                type="button"
+                @click="openFeedbackForSchedule(booking.studioScheduleId, booking.bookingDate)"
+                class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                ⭐ Calificar
+              </button>
+              <button
+                type="button"
+                @click="handleCancelBooking(booking)"
+                class="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
+              >
+                Cancelar Reserva
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: CALIFICAR CLASES Y ENVIAR FEEDBACK AL ESTUDIO -->
+      <section v-if="activeTab === 'feedback'" class="space-y-6">
+        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 space-y-5">
+          <div>
+            <h2 class="text-lg font-black text-slate-900">
+              ⭐ Califica tu Experiencia en Clase
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Tu opinión nos ayuda a mejorar cada día. Selecciona la clase, califícala de 1 a 5 estrellas y déjanos tus comentarios o sugerencias para el equipo del estudio.
+            </p>
+          </div>
+
+          <div
+            v-if="!studentData?.customer"
+            class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-900"
+          >
+            ⚠️ Primero ingresa tu <strong>cédula, teléfono o correo</strong> en el recuadro superior <strong>"Consulta tu Tiquetera"</strong> para poder enviar tu calificación.
+          </div>
+
+          <form v-else @submit.prevent="handleSubmitFeedback" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">
+                  Clase que deseas calificar
+                </label>
+                <select
+                  v-model="feedbackScheduleId"
+                  required
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white text-slate-900 focus:border-indigo-600 focus:outline-none"
+                >
+                  <option value="" disabled>-- Selecciona una clase --</option>
+                  <option v-for="sch in schedules" :key="sch.id" :value="sch.id">
+                    {{ daysOfWeekNames[sch.dayOfWeek] }} · {{ sch.className }} ({{ sch.startTime }}) — {{ getInstructorName(sch) }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">
+                  Fecha aproximada de la clase
+                </label>
+                <input
+                  v-model="feedbackDate"
+                  type="date"
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white text-slate-900 focus:border-indigo-600 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-2">
+                Calificación de la Clase (1 a 5 Estrellas)
+              </label>
+              <div class="flex items-center gap-2">
+                <button
+                  v-for="star in [1, 2, 3, 4, 5]"
+                  :key="star"
+                  type="button"
+                  @click="feedbackRating = star"
+                  class="px-3.5 py-2 rounded-xl border text-base font-black transition-all flex items-center gap-1"
+                  :class="
+                    star <= feedbackRating
+                      ? 'bg-amber-50 border-amber-300 text-amber-500 shadow-2xs scale-105'
+                      : 'bg-slate-50 border-slate-200 text-slate-300 hover:text-amber-300'
+                  "
+                >
+                  <span>★</span>
+                  <span class="text-xs font-bold text-slate-700">{{ star }}</span>
+                </button>
+                <span class="ml-2 text-xs font-bold text-slate-600">
+                  {{
+                    feedbackRating === 5
+                      ? '¡Excelente! (5/5)'
+                      : feedbackRating === 4
+                        ? 'Muy buena (4/5)'
+                        : feedbackRating === 3
+                          ? 'Buena (3/5)'
+                          : feedbackRating === 2
+                            ? 'Regular (2/5)'
+                            : 'Por mejorar (1/5)'
+                  }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">
+                Comentarios o Sugerencias
+              </label>
+              <textarea
+                v-model="feedbackComment"
+                rows="3"
+                placeholder="¿Qué fue lo que más te gustó de la clase o de la profesora? ¿Tienes alguna sugerencia para el estudio?"
+                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none"
+              ></textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                <input
+                  v-model="feedbackAnonymous"
+                  type="checkbox"
+                  class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>🕵️ Enviar mi comentario de forma anónima</span>
+              </label>
+
+              <button
+                type="submit"
+                :disabled="submittingFeedback"
+                class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                {{ submittingFeedback ? 'Enviando...' : '💬 Enviar Feedback al Estudio' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Historial de calificaciones enviadas por este alumno -->
+        <div
+          v-if="studentData?.feedbacks?.length"
+          class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200 space-y-4"
+        >
+          <h3 class="text-sm font-black uppercase tracking-wider text-slate-700">
+            Mis Calificaciones Enviadas ({{ studentData.feedbacks.length }})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div
+              v-for="fb in studentData.feedbacks"
+              :key="fb.id"
+              class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1.5"
             >
-              Cancelar Reserva
-            </button>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-900">
+                  {{ fb.className }} · <span class="text-slate-500">{{ fb.instructorName }}</span>
+                </span>
+                <span class="text-amber-500 font-black text-sm">
+                  {{ '★'.repeat(Number(fb.rating || 5)) }}{{ '☆'.repeat(5 - Number(fb.rating || 5)) }}
+                </span>
+              </div>
+              <p v-if="fb.comment" class="text-xs text-slate-700 italic">"{{ fb.comment }}"</p>
+              <p class="text-[11px] text-slate-400">
+                Fecha clase: {{ fb.classDate }} {{ fb.isAnonymous ? '· Enviado como anónimo' : '' }}
+              </p>
+            </div>
           </div>
         </div>
       </section>

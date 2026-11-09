@@ -9,8 +9,16 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
-const activeTab = ref<'retention' | 'occupancy' | 'financial' | 'constancy'>('retention')
+const activeTab = ref<'retention' | 'occupancy' | 'financial' | 'constancy' | 'feedback'>('retention')
 const retentionFilter = ref<'ALL' | 'LOW_CLASSES' | 'EXPIRING_SOON' | 'EXPIRED'>('ALL')
+const feedbackStarFilter = ref<'ALL' | '5' | '4' | 'LOW'>('ALL')
+const feedbackData = ref<{
+  summary: { totalFeedbacks: number; averageRating: number; byClass: any[] }
+  items: any[]
+}>({
+  summary: { totalFeedbacks: 0, averageRating: 0, byClass: [] },
+  items: [],
+})
 
 const todayStr = new Date().toISOString().slice(0, 10)
 const firstDayOfMonthStr = `${todayStr.slice(0, 8)}01`
@@ -77,7 +85,7 @@ async function loadAllStudioAnalytics() {
       ...(branchId.value ? { branchId: branchId.value } : {}),
     }
 
-    const [subsRes, schedRes, bookRes, attRes, plansRes, settleRes] = await Promise.all([
+    const [subsRes, schedRes, bookRes, attRes, plansRes, settleRes, fbRes] = await Promise.all([
       api.get('/studio-subscriptions', { params: baseParams }).catch(() => ({ data: [] })),
       api.get('/studio-schedules', { params: baseParams }).catch(() => ({ data: [] })),
       api.get('/studio-bookings', { params: baseParams }).catch(() => ({ data: [] })),
@@ -92,7 +100,16 @@ async function loadAllStudioAnalytics() {
           },
         })
         .catch(() => ({ data: null })),
+      api
+        .get('/studio-bookings/feedback/list', {
+          params: { organizationId: orgId.value },
+        })
+        .catch(() => ({ data: { summary: { totalFeedbacks: 0, averageRating: 0, byClass: [] }, items: [] } })),
     ])
+
+    if (fbRes?.data) {
+      feedbackData.value = fbRes.data
+    }
 
     subscriptions.value = Array.isArray(subsRes.data)
       ? subsRes.data
@@ -432,6 +449,14 @@ const studentConstancyList = computed(() => {
   )
 })
 
+const filteredFeedbackItems = computed(() => {
+  const list = feedbackData.value?.items || []
+  if (feedbackStarFilter.value === 'ALL') return list
+  if (feedbackStarFilter.value === '5') return list.filter((i) => Number(i.rating) === 5)
+  if (feedbackStarFilter.value === '4') return list.filter((i) => Number(i.rating) === 4)
+  return list.filter((i) => Number(i.rating) <= 3)
+})
+
 onMounted(() => {
   loadAllStudioAnalytics()
 })
@@ -588,6 +613,19 @@ onMounted(() => {
             ]"
           >
             🏆 Constancia de Alumnas ({{ studentConstancyList.length }})
+          </button>
+
+          <button
+            type="button"
+            @click="activeTab = 'feedback'"
+            :class="[
+              activeTab === 'feedback'
+                ? 'border-indigo-600 text-indigo-600 font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-700',
+              'whitespace-nowrap border-b-2 pb-3 text-sm transition-colors',
+            ]"
+          >
+            ⭐ Feedback de Alumnos ({{ feedbackData.summary?.totalFeedbacks || 0 }})
           </button>
         </nav>
       </div>
@@ -912,6 +950,142 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- TAB 5: FEEDBACK Y CALIFICACIONES DE CLASES -->
+      <section v-if="activeTab === 'feedback'" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-2xl bg-white p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Calificación Promedio del Estudio
+            </p>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-3xl font-black text-amber-500">
+                ★ {{ feedbackData.summary?.averageRating || '0.0' }}
+              </span>
+              <span class="text-xs font-semibold text-slate-400">/ 5.0</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">
+              Basado en {{ feedbackData.summary?.totalFeedbacks || 0 }} opinión(es) de alumnos
+            </p>
+          </div>
+
+          <div class="md:col-span-2 rounded-2xl bg-white p-5 border border-slate-100 shadow-sm">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Calificación Promedio por Clase e Instructora
+            </p>
+            <div
+              v-if="!feedbackData.summary?.byClass?.length"
+              class="text-xs text-slate-400 italic py-2"
+            >
+              Aún no se han recibido calificaciones desde el Portal de Alumnos.
+            </div>
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div
+                v-for="item in feedbackData.summary.byClass"
+                :key="`${item.className}-${item.instructorName}`"
+                class="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3.5 py-2.5 text-xs"
+              >
+                <div>
+                  <p class="font-bold text-slate-900">{{ item.className }}</p>
+                  <p class="text-[11px] text-slate-500">👩‍🏫 {{ item.instructorName }} · {{ item.count }} opinión(es)</p>
+                </div>
+                <span class="rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 font-black text-amber-700">
+                  ★ {{ item.avgRating }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div>
+            <h3 class="text-sm font-black text-slate-900">Buzón de Comentarios y Evaluaciones</h3>
+            <p class="text-xs text-slate-500">Opiniones enviadas por los alumnos desde el Portal de Autogestión.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              @click="feedbackStarFilter = 'ALL'"
+              :class="feedbackStarFilter === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
+              class="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              Todas ({{ feedbackData.items?.length || 0 }})
+            </button>
+            <button
+              type="button"
+              @click="feedbackStarFilter = '5'"
+              :class="feedbackStarFilter === '5' ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-800'"
+              class="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              ★★★★★ Excelentes
+            </button>
+            <button
+              type="button"
+              @click="feedbackStarFilter = '4'"
+              :class="feedbackStarFilter === '4' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700'"
+              class="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              ★★★★☆ Muy buenas
+            </button>
+            <button
+              type="button"
+              @click="feedbackStarFilter = 'LOW'"
+              :class="feedbackStarFilter === 'LOW' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700'"
+              class="rounded-xl px-3 py-1.5 text-xs font-bold"
+            >
+              ★ a ★★★ Por mejorar
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="filteredFeedbackItems.length === 0"
+          class="rounded-2xl bg-white p-10 text-center text-sm text-slate-400 border border-slate-100"
+        >
+          No hay comentarios para el filtro seleccionado.
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <article
+            v-for="fb in filteredFeedbackItems"
+            :key="fb.id"
+            class="rounded-2xl bg-white p-5 border border-slate-100 shadow-sm flex flex-col justify-between gap-3"
+          >
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="inline-block rounded-lg bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-700">
+                    🧘 {{ fb.className }}
+                  </span>
+                  <p class="text-xs text-slate-500 mt-1">
+                    Instructora: <strong>{{ fb.instructorName }}</strong> · Fecha clase: {{ formatDate(fb.classDate) }}
+                  </p>
+                </div>
+                <span class="text-amber-500 font-black text-base tracking-tight">
+                  {{ '★'.repeat(Number(fb.rating || 5)) }}{{ '☆'.repeat(5 - Number(fb.rating || 5)) }}
+                </span>
+              </div>
+
+              <p
+                v-if="fb.comment"
+                class="rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm text-slate-800 italic"
+              >
+                "{{ fb.comment }}"
+              </p>
+              <p v-else class="text-xs text-slate-400 italic">
+                (Calificación sin comentario adicional)
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+              <span class="font-bold text-slate-700">
+                {{ fb.isAnonymous ? '🕵️ Alumno Anónimo' : `👤 ${fb.customerName}` }}
+              </span>
+              <span>{{ formatDate(fb.createdAt) }}</span>
+            </div>
+          </article>
         </div>
       </section>
     </div>
