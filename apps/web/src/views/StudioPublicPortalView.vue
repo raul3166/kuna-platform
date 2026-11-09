@@ -102,6 +102,13 @@ function formatDate(dateStr: string) {
   })
 }
 
+function getInstructorName(sch: any): string {
+  if (sch?.instructor) {
+    return [sch.instructor.firstName, sch.instructor.lastName].filter(Boolean).join(' ')
+  }
+  return sch?.instructorName || 'Instructora del estudio'
+}
+
 async function loadCatalog() {
   loadingCatalog.value = true
   catalogError.value = ''
