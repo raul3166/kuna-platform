@@ -186,7 +186,8 @@ model Organization {
   studioPlans          StudioPlan[]
   studioSubscriptions  StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
-  studioSchedules      StudioSchedule[] // <-- AGREGAR ESTA LÍNEA
+  studioSchedules      StudioSchedule[]
+  studioClassFeedbacks StudioClassFeedback[]
   instructors          Instructor[]
   serviceWorkers       ServiceWorker[]
   serviceItems         ServiceItem[]
@@ -253,7 +254,7 @@ model Branch {
   studioPlans          StudioPlan[]
   studioSubscriptions  StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
-  studioSchedules      StudioSchedule[] // <-- AGREGAR ESTA LÍNEA
+  studioSchedules      StudioSchedule[]
   instructors          Instructor[]
   serviceWorkers       ServiceWorker[]
   serviceOrders        ServiceOrder[]
@@ -1293,6 +1294,7 @@ model Customer {
   studioSubscriptions  StudioSubscription[]
   studioAttendanceLogs StudioAttendanceLog[]
   bookings             StudioBooking[]
+  studioClassFeedbacks StudioClassFeedback[]
   serviceOrders        ServiceOrder[]
   hotelReservations     HotelReservation[]
   vehicles             Vehicle[]
@@ -1580,6 +1582,7 @@ model StudioSchedule {
   attendanceLogs   StudioAttendanceLog[]
   bookings         StudioBooking[]
   classInstructors StudioClassInstructor[]
+  classFeedbacks   StudioClassFeedback[]
 
   @@index([organizationId])
   @@index([branchId])
@@ -1625,6 +1628,29 @@ model StudioBooking {
   schedule StudioSchedule @relation(fields: [studioScheduleId], references: [id])
 
   @@unique([studioScheduleId, customerId, bookingDate])
+}
+
+model StudioClassFeedback {
+  id               String   @id @default(cuid())
+  organizationId   String
+  customerId       String
+  customerName     String
+  studioScheduleId String
+  className        String
+  instructorName   String?
+  classDate        String?
+  rating           Int      @default(5)
+  comment          String?
+  isAnonymous      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  schedule     StudioSchedule @relation(fields: [studioScheduleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([studioScheduleId])
+  @@index([customerId])
 }
 
 // --- ENUMS ---
