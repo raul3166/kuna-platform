@@ -1,10 +1,10 @@
 # KUNA Core Domain
 
-**Versión:** 1.0
+**Versión:** 2.7.0
 
-**Estado:** Draft
+**Estado:** Production
 
-**Última actualización:** 24/07/2026
+**Última actualización:** 10/11/2026
 
 ---
 
@@ -238,7 +238,7 @@ KUNA estructura su dominio separando conceptualmente el **Core Empresarial Comú
 ```
 Organization
     │
-    ├── 1:N ── OrganizationVertical ── N:1 ── Vertical
+    ├── 1:N ── OrganizationVertical ── N:1 ── Vertical (14 Verticales Operativas)
     │                                             │
     │                                             ├── RETAIL
     │                                             ├── AUTOMOTIVE
@@ -246,9 +246,13 @@ Organization
     │                                             ├── SERVICES
     │                                             ├── HOTEL
     │                                             ├── GYM
-    │                                             ├── STUDIO
+    │                                             ├── STUDIO (Planes, horarios, portal público, retención y StudioClassFeedback)
     │                                             ├── PHARMACY
-    │                                             └── Otras industrias...
+    │                                             ├── BEAUTY
+    │                                             ├── VETERINARY
+    │                                             ├── LAUNDRY
+    │                                             ├── BAKERY
+    │                                             └── REAL_ESTATE
     │
     ├── 1:N ── Branch (Multi-sucursal)
     │             │

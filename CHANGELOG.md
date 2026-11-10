@@ -7,6 +7,40 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.7.0] - 2026-11-10
+
+### Added
+
+#### Suite Integral para Boutique Studios (`STUDIO` — Caso de Éxito: UMA Movimiento Consciente)
+* **Portal Público de Autogestión de Alumnos (`/portal/:slug`, `StudioPublicPortalView.vue`):**
+  * Consulta e identificación de alumnos sin contraseña mediante número de documento, celular o correo electrónico (`GET /studio-bookings/public/student/:slug`).
+  * Catálogo público de clases del día con aforo en tiempo real y planes/paquetes con enlace directo a WhatsApp (`GET /studio-bookings/public/catalog/:slug`).
+  * Reserva y cancelación de cupos por parte del alumno (`POST /studio-bookings/public/book/:slug`, `PATCH /studio-bookings/public/cancel/:slug/:bookingId`) con regla automática de bloqueo de cancelación dentro de las 2 horas previas al inicio de la clase.
+* **Motor de Calificación y Feedback de Clases (`StudioClassFeedback`):**
+  * Nuevo modelo relacional `StudioClassFeedback` en `schema.prisma` y PostgreSQL con índices por organización, horario y alumno.
+  * Pestaña **`⭐ Calificar Clases / Feedback`** en el Portal Público de Alumnos con selector de 1 a 5 estrellas, comentarios/sugerencias, casilla opcional de envío anónimo (`isAnonymous`) e historial de reseñas enviadas (`POST /studio-bookings/public/feedback/:slug`).
+  * Pestaña **`⭐ Feedback de Alumnos`** en el panel administrativo (`StudioReportsView.vue`, `GET /studio-bookings/feedback/list`) con promedio general del estudio, ranking promedio por clase e instructora, y filtros rápidos por cantidad de estrellas.
+* **Activación Inteligente de Vigencia por Primera Clase Asistida:**
+  * Los paquetes por tiempo o tiquetera (`durationDays`, ej. 30 días / 1 mes) inician su conteo de vigencia automáticamente el día en que el alumno asiste a su **primera clase** (`checkIn` / reserva marcada como `ATTENDED`), recalculando `startDate` y `endDate` desde la primera asistencia real.
+* **Llamado a Lista y Check-In Interactivo (`StudioCheckInView.vue` y `StudioBookingsView.vue`):**
+  * Selector de fecha y clase del día con lista en vivo de alumnos inscritos (`CONFIRMED` / `ATTENDED`).
+  * Botón **`✅ Marcar Asistió (Descontar Clase)`** a 1 clic que registra la asistencia, descuenta el crédito de la suscripción activa y actualiza el estado de la reserva a `ATTENDED`.
+* **Creación Unificada de Instructores + Usuario de Sistema (`StudioInstructorsView.vue` y `InstructorsService`):**
+  * Al crear o editar un instructor con correo electrónico, el backend aprovisiona automáticamente su cuenta `User` con rol `STUDIO_INSTRUCTOR` (contraseña inicial igual al documento de identidad) y permisos operativos (`studio.schedules.read`, `studio.bookings.read`, `studio.attendance.write`, `studio.instructors.read`).
+  * Sincronización bidireccional automática entre usuarios con rol `STUDIO_INSTRUCTOR` y la tabla `Instructor`.
+* **Analítica, Liquidación de Nómina, Retención y Co-Branding (`StudioReportsView.vue`, `AppLayout.vue`):**
+  * Liquidación automática de pago a instructores bajo modelos `FIXED_PER_CLASS`, `PER_STUDENT` e `HYBRID`.
+  * Reporte de retención con detección de paquetes por vencer (≤ 7 días), pocos créditos (≤ 2 clases) y alumnos inactivos (> 14 días sin asistir) con botón directo a WhatsApp.
+  * Identidad visual compartida (`KUNA + UMA Movimiento Consciente`) en el Sidebar administrativo y en el Portal Público de Alumnos.
+
+### Security
+* **Blindaje Row Level Security (RLS) en Supabase PostgreSQL:** Activación de `ENABLE ROW LEVEL SECURITY` en las 67 tablas del esquema `public` (incluyendo `StudioClassFeedback`), cerrando el acceso directo anónimo al Data API público de Supabase y manteniendo el acceso exclusivo a través del backend autenticado de NestJS.
+
+### Changed & Fixed
+* **Prioridad de Contexto Multi-Tenant (`TenantInterceptor` y Vistas de Estudio):** Priorización de `authStore.currentOrganization.id` y cabeceras `x-organization-id` / `x-branch-id` sobre el tenant base del token JWT para permitir el cambio transparente de organización a usuarios SuperAdmin.
+* **Selector Relacional de Instructores en Horarios (`StudioSchedulesView.vue`):** Reemplazo del campo de texto libre por un selector `<select>` conectado al directorio de instructores activos.
+
+---
 ## [2.6.0-rc1] - 2026-10-19
 
 ### Added

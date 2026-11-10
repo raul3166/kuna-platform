@@ -1,6 +1,6 @@
 # KUNA Product Backlog
 
-> Última actualización: 2026-10-15
+> Última actualización: 2026-11-10 (Versión actual: `v2.7.0`)
 
 ---
 
@@ -15,10 +15,16 @@
 | EPIC-05 | Inventory Core, Kardex, Transfers & Consumptions | 🟢 Completado |
 | EPIC-06 | Commercial, Sales, POS & Cash Sessions | 🟢 Completado |
 | EPIC-07 | Analytics, BI & Executive Reports | 🟢 Completado |
-| EPIC-08 | Multi-Vertical SaaS Architecture & Vertical Catalog | 🟢 Completado |
-| EPIC-09 | Retail Industry Vertical | 🟢 Completado |
-| EPIC-10 | Automotive & Motorcycle Workshop Vertical | 🟢 Completado |
-| EPIC-11 | Beauty, Wellness & Salon Vertical | 🟢 Completado |
+| EPIC-08 | Multi-Vertical SaaS Architecture & Vertical Catalog (14 Verticales) | 🟢 Completado |
+| EPIC-09 | Retail Industry Vertical (`RETAIL`) | 🟢 Completado |
+| EPIC-10 | Automotive & Motorcycle Workshop Vertical (`AUTOMOTIVE`) | 🟢 Completado |
+| EPIC-11 | Beauty, Wellness & Salon Vertical (`BEAUTY`) | 🟢 Completado |
+| EPIC-12 | Veterinary Clinic, Grooming & Pet Shop Vertical (`VETERINARY`) | 🟢 Completado |
+| EPIC-13 | Laundry & Dry Cleaning Vertical (`LAUNDRY`) | 🟢 Completado |
+| EPIC-14 | Bakery, Pastry & Oven Production Vertical (`BAKERY`) | 🟢 Completado |
+| EPIC-15 | Academy & Education Center Vertical (`ACADEMY`) | 🟢 Completado |
+| EPIC-16 | Real Estate & Property Management Vertical (`REAL_ESTATE`) | 🟢 Completado |
+| EPIC-17 | Cloud Production Infrastructure, RLS Security & Studio Enterprise Suite (`v2.7.0`) | 🟢 Completado |
 
 ---
 
@@ -509,6 +515,21 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-146 | Captación de Inmuebles, Estados de Ocupación y Vínculo con Propietarios (`RealEstateLeasesView.vue`) | ✅ | Backend/Frontend |
 | KNA-147 | Formalización de Contratos de Arrendamiento y Emisión Automática de Cánones Mensuales | ✅ | Backend/Frontend |
 | KNA-148 | Recaudo de Cánones en POS, Liquidación de Comisión Inmobiliaria y Control de Giro Neto a Propietarios (`RealEstateDashboardView.vue`) | ✅ | Backend/Frontend |
+
+---
+
+# Sprint 30 — Cloud Production Deployment, RLS Security & Studio Enterprise Suite (Completado — `v2.7.0`)
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-149 | Despliegue Cloud en Producción (Cloudflare Pages + Render + Supabase) y Blindaje RLS en las 67 tablas PostgreSQL | ✅ | Infra/DB |
+| KNA-150 | Portal Público de Autogestión de Alumnos (`/portal/:slug`, `StudioPublicPortalView.vue`) con Reservas, Aforo y Regla de Cancelación (2h) | ✅ | Backend/Frontend |
+| KNA-151 | Activación Inteligente de Vigencia de Paquetes (`durationDays`) a partir de la Primera Clase Asistida | ✅ | Backend |
+| KNA-152 | Creación Unificada de Instructores + Usuario `STUDIO_INSTRUCTOR` con Sincronización Automática (`StudioInstructorsView.vue`) | ✅ | Backend/Frontend |
+| KNA-153 | Llamado a Lista Interactivo por Clase y Check-In a 1 Clic con Descuento de Créditos (`StudioCheckInView.vue` y `StudioBookingsView.vue`) | ✅ | Backend/Frontend |
+| KNA-154 | Tablero de Reportes, Liquidación de Nómina de Instructores y Alertas de Retención con WhatsApp (`StudioReportsView.vue`) | ✅ | Backend/Frontend |
+| KNA-155 | Motor de Calificación (1-5 ★) y Feedback de Clases con Opción Anónima (`StudioClassFeedback`) en Portal de Alumnos y Panel Admin | ✅ | Backend/Frontend |
+
 
 
 
