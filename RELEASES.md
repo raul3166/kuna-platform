@@ -226,3 +226,28 @@
   * Relational models `RealEstateProperty`, `RealEstateLease`, and `RealEstateRentCharge` supporting property intake, lease contracts, monthly rent + HOA/admin fee billing, automatic agency commission calculation (`agencyCommissionAmount`), and owner net disbursement tracking (`ownerNetAmount`, `isOwnerDisbursed`).
   * Strict Core reuse: `Customer` (property owners & tenants), `ServiceWorker` (real estate agents/advisors), and `ServiceOrder` for POS rent collection (`/pos?serviceOrderId=...`).
   * New views: Property Portfolio, Occupancy Kanban & Owner Disbursements Hub (`/real-estate-dashboard`) and Properties, Lease Contracts & Monthly Rent Billing Console (`/real-estate-leases`).
+
+---
+
+## v2.7.0 (Production Release — Studio Enterprise Suite & Cloud Deployment)
+
+* **Cloud Production Infrastructure & Database Security:**
+  * Production deployment on **Cloudflare Pages** (Frontend SPA), **Render** (NestJS Backend API), and **Supabase PostgreSQL** (Database Pooler).
+  * Enabled PostgreSQL **Row Level Security (RLS)** across all 67 tables in the `public` schema, eliminating public PostgREST exposure.
+  * Multi-tenant context resolution priority (`x-organization-id`, `x-branch-id`) in `TenantInterceptor` and frontend views for seamless SuperAdmin organization switching.
+* **Boutique Studio Enterprise Suite (`STUDIO` — UMA Movimiento Consciente):**
+  * **Public Student Self-Service Portal (`/portal/:slug`, `StudioPublicPortalView.vue`):**
+    * Passwordless student lookup by ID document, phone number, or email.
+    * Real-time class schedule booking and cancellation with capacity indicators and automatic 2-hour cancellation lock window.
+    * Package catalog display with 1-click WhatsApp purchase integration.
+  * **Student Class Rating & Feedback Engine (`StudioClassFeedback`):**
+    * 1-to-5 star class ratings, written comments/suggestions, optional anonymous submission toggle, and student feedback history in the Public Portal.
+    * Admin Feedback Analytics tab (`⭐ Feedback de Alumnos`) in `StudioReportsView.vue` with studio-wide rating average, breakdown by class and instructor, and star-level filters.
+  * **First-Attendance Package Validity Activation:**
+    * Package duration (`durationDays`) starts counting automatically on the date the student attends their **first class**, updating `startDate` and `endDate` dynamically upon first check-in.
+  * **Interactive Class Roster Roll-Call (`StudioCheckInView.vue` & `StudioBookingsView.vue`):**
+    * Live roster of enrolled students per class schedule and date with 1-click attendance confirmation (`CONFIRMED` → `ATTENDED`) and automatic class credit deduction.
+  * **Unified Instructor + System User Provisioning (`StudioInstructorsView.vue` & `InstructorsService`):**
+    * Creating an instructor with an email automatically provisions a system `User` with role `STUDIO_INSTRUCTOR` (initial password = ID document) and granular permissions (`studio.schedules.read`, `studio.bookings.read`, `studio.attendance.write`, `studio.instructors.read`), plus automatic bidirectional synchronization.
+  * **Retention, Payroll & Co-Branding (`StudioReportsView.vue`, `AppLayout.vue`):**
+    * Automated instructor payroll calculation (`FIXED_PER_CLASS`, `PER_STUDENT`, `HYBRID`), student retention alerts (expiring packages, low credits, inactive > 14 days with direct WhatsApp outreach), and institutional co-branding (`KUNA + UMA`).

@@ -424,16 +424,21 @@ KUNA PLATFORM
 │   ├── Goods Receipts (Ingresos físicos)
 │   └── Purchase Invoices & Returns
 │
-└── 🧩 VERTICALES ACTIVABLES (Por Organización)
+└── 🧩 VERTICALES ACTIVABLES (14 Verticales Operativas por Organización)
     ├── RETAIL (Comercio minorista y tiendas)
     ├── AUTOMOTIVE (Talleres mecánicos y motos)
     ├── RESTAURANT (Gastronomía, salones y KDS)
     ├── SERVICES (Mantenimiento y servicios técnicos)
     ├── HOTEL (Habitaciones y reservaciones)
     ├── GYM (Membresías y control de acceso)
-    ├── STUDIO (Clases, aforos y reservas)
+    ├── STUDIO (Yoga, Pilates, Barre: planes, horarios, portal público, retención y feedback)
     ├── PHARMACY (Lotes, recetas y vencimientos)
-    └── Futuras: BEAUTY, VETERINARY, LAUNDRY, BAKERY, ACADEMY, REAL ESTATE
+    ├── BEAUTY (Salones de belleza, barberías y spa)
+    ├── VETERINARY (Clínica veterinaria, mascotas y vacunación)
+    ├── LAUNDRY (Lavandería y tintorería por peso/prenda)
+    ├── BAKERY (Panadería, recetario técnico y hornos)
+    ├── ACADEMY (Centros educativos, cohortes y matrículas)
+    └── REAL_ESTATE (Inmobiliaria, arriendos y dispersión a propietarios)
 ```
 
 ### Regla Fundamental de Arquitectura
@@ -498,3 +503,20 @@ La Fase 7 (ACADEMY / Academia, Instituto & Centro Educativo) fue implementada en
 ## Sprint 29 (Fase 8) — Estado: Completado (14/14 Verticales Operativas)
 
 La Fase 8 (REAL_ESTATE / Inmobiliaria & Administración de Propiedades) fue implementada en la versión **v2.6.0-rc1**, incorporando captación de inmuebles (`RealEstateProperty`), contratos de arrendamiento (`RealEstateLease`), facturación de cánones mensuales con cálculo automático de comisión de agencia y neto a dispersar al propietario (`RealEstateRentCharge`), e integración directa con `ServiceOrder` y el POS. Con este hito quedan completadas las **14 verticales de negocio** sobre el Core Empresarial Común de KUNA.
+
+---
+
+## Sprint 30 (Producción Cloud & Studio Enterprise Suite) — Estado: Completado (`v2.7.0`)
+
+En la versión **v2.7.0** se completó el despliegue en producción Cloud (**Cloudflare Pages** + **Render** + **Supabase PostgreSQL** con **Row Level Security — RLS** activo en las 67 tablas) y la suite integral para estudios de bienestar (`STUDIO` — **UMA Movimiento Consciente**):
+
+* **Portal Público de Autogestión de Alumnos (`/portal/:slug`):** Consulta sin contraseña por cédula/teléfono/correo, estado de paquetes y créditos, reserva/cancelación de clases en tiempo real con bloqueo automático de 2 horas antes de la sesión, y catálogo de planes conectado a WhatsApp.
+* **Calificación y Feedback de Clases (`StudioClassFeedback`):** Evaluación de 1 a 5 estrellas por clase e instructora, comentarios de los alumnos, opción de envío anónimo y tablero gerencial de reseñas (`⭐ Feedback de Alumnos`) dentro de **Reportes y Retención**.
+* **Vigencia Inteligente desde la Primera Clase:** La duración del paquete (`durationDays`) inicia automáticamente el día en que el alumno asiste a su primera clase.
+* **Llamado a Lista y Check-In a 1 Clic:** Control de asistencia en vivo por horario (`StudioCheckInView.vue` y `StudioBookingsView.vue`) con descuento automático de créditos.
+* **Provisión Unificada de Instructores (`STUDIO_INSTRUCTOR`):** Creación automática de credenciales de acceso para instructores desde el directorio de instructores y sincronización bidireccional.
+* **Analítica, Liquidación de Nómina y Retención:** Cálculo automático de pago a instructores (`FIXED_PER_CLASS`, `PER_STUDENT`, `HYBRID`) y alertas de retención con contacto directo por WhatsApp.
+
+## 📦 Versión actual consolidada
+
+**v2.7.0 (Production)**

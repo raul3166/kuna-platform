@@ -397,16 +397,39 @@ Objetivo: Gestión integral de inmobiliarias y administración de propiedades en
 
 ---
 
-# Próximos Sprints / Roadmap de Verticales
+# Sprint 30 — Cloud Production Deployment, RLS Security & Studio Wellness Suite (v2.7.0)
 
-| Sprint | Vertical | Alcance Previsto | Estado |
+Objetivo: Desplegar la plataforma KUNA en infraestructura Cloud de producción (Cloudflare Pages + Render + Supabase PostgreSQL con RLS) y consolidar la suite integral de operación, autogestión de alumnos, retención y calificación de clases para estudios de Yoga, Pilates y Barre (`STUDIO` — **UMA Movimiento Consciente**).
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-149 | Despliegue Cloud en Producción (Cloudflare Pages + Render + Supabase) y Blindaje RLS en las 67 tablas PostgreSQL | ✅ | Infra/DB |
+| KNA-150 | Portal Público de Autogestión de Alumnos (`/portal/:slug`, `StudioPublicPortalView.vue`) con Reservas, Aforo y Regla de Cancelación (2h) | ✅ | Backend/Frontend |
+| KNA-151 | Activación Inteligente de Vigencia de Paquetes (`durationDays`) a partir de la Primera Clase Asistida | ✅ | Backend |
+| KNA-152 | Creación Unificada de Instructores + Usuario `STUDIO_INSTRUCTOR` con Sincronización Automática (`StudioInstructorsView.vue`) | ✅ | Backend/Frontend |
+| KNA-153 | Llamado a Lista Interactivo por Clase y Check-In a 1 Clic con Descuento de Créditos (`StudioCheckInView.vue` y `StudioBookingsView.vue`) | ✅ | Backend/Frontend |
+| KNA-154 | Tablero de Reportes, Liquidación de Nómina de Instructores y Alertas de Retención con WhatsApp (`StudioReportsView.vue`) | ✅ | Backend/Frontend |
+| KNA-155 | Motor de Calificación (1-5 ★) y Feedback de Clases con Opción Anónima (`StudioClassFeedback`) en Portal de Alumnos y Panel Admin | ✅ | Backend/Frontend |
+
+**Sprint 30 completado al 100%. Plataforma en producción (`v2.7.0`).**
+
+---
+
+# Resumen General del Roadmap de Verticales y Producción
+
+| Sprint | Vertical / Fase | Alcance Principal | Estado |
 | --- | --- | --- | :---: |
-| **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, liquidación de comisiones y catálogo de servicios de belleza | ✅ Completado |
-| **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, recordatorios de vacunación y control de insumos médicos | ✅ Completado |
+| **Sprint 21 (Fase 0)** | **Arquitectura Multi-Vertical** | Catálogo de 14 verticales, `OrganizationVertical`, `VerticalGuard` y navegación dinámica | ✅ Completado |
+| **Sprint 22 (Fase 1)** | **RETAIL / Tiendas** | Rotación de inventario, alertas de stock mínimo y márgenes | ✅ Completado |
+| **Sprint 23 (Fase 2)** | **AUTOMOTIVE / Talleres** | Vehículos, recepción técnica, Kanban de bahías y motor anti-doble descuento | ✅ Completado |
+| **Sprint 24 (Fase 3)** | **BEAUTY / Salón / Barbería / Spa** | Agenda de citas (`Appointment`), horarios de estilistas, comisiones y fórmulas | ✅ Completado |
+| **Sprint 25 (Fase 4)** | **VETERINARY / Veterinaria & Pet Shop** | Expediente clínico de mascotas, carnet de vacunación y control de insumos médicos | ✅ Completado |
 | **Sprint 26 (Fase 5)** | **LAUNDRY / Lavandería** | Ticket de prendas, peso/kilos, fases de lavado, secado, planchado y entrega | ✅ Completado |
 | **Sprint 27 (Fase 6)** | **BAKERY / Panadería & Pastelería** | Recetas de producción, ingredientes, mermas de horneado y lotes de producto fresco | ✅ Completado |
 | **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | ✅ Completado |
-| **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones de arrendamiento y propietarios | ✅ Completado |
+| **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones mensuales y giros a propietarios | ✅ Completado |
+| **Sprint 30 (Prod)** | **STUDIO Enterprise Suite & Cloud** | Portal público de alumnos, vigencia por 1ra asistencia, check-in por lista, nómina, retención y feedback (`StudioClassFeedback`) | ✅ Completado (`v2.7.0`) |
+
 
 
 
