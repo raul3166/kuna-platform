@@ -33,6 +33,21 @@ const studentData = ref<any>(null)
 const actionMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 const bookingInProgressId = ref<string | null>(null)
 
+// Estado para Solicitud de Renovación / Compra de Paquete desde el Portal
+const selectedPlanForRequest = ref<any>(null)
+const packageRequestForm = ref({
+  paymentMethod: 'TRANSFERENCIA_BANCOLOMBIA',
+  amountPaid: 0,
+  reference: '',
+  notes: '',
+})
+const submittingPackageRequest = ref(false)
+
+// Estado para Alerta Médica / Lesión del Alumno
+const editingMedicalAlert = ref(false)
+const medicalAlertInput = ref('')
+const savingMedicalAlert = ref(false)
+
 const daysOfWeekNames: Record<number, string> = {
   0: 'Domingo',
   1: 'Lunes',
@@ -56,18 +71,24 @@ const filteredSchedules = computed(() => {
 
 const activeSubscriptions = computed(() => {
   if (!studentData.value?.subscriptions) return []
-  return studentData.value.subscriptions.filter((sub: any) => sub.status === 'ACTIVE')
+  return studentData.value.subscriptions.filter(
+    (sub: any) => sub.status === 'ACTIVE' || sub.status === 'PAUSED'
+  )
 })
 
 const hasValidTiquetera = computed(() => {
   return activeSubscriptions.value.some(
-    (sub: any) => sub.remainingClasses === null || Number(sub.remainingClasses) > 0
+    (sub: any) =>
+      sub.status === 'ACTIVE' &&
+      (sub.remainingClasses === null || Number(sub.remainingClasses) > 0)
   )
 })
 
 const confirmedBookings = computed(() => {
   if (!studentData.value?.bookings) return []
-  return studentData.value.bookings.filter((b: any) => b.status === 'CONFIRMED')
+  return studentData.value.bookings.filter(
+    (b: any) => b.status === 'CONFIRMED' || b.status === 'WAITLISTED'
+  )
 })
 
 function isAlreadyBooked(scheduleId: string): boolean {
@@ -78,6 +99,18 @@ function isAlreadyBooked(scheduleId: string): boolean {
       b.studioScheduleId === scheduleId &&
       bDate === selectedDate.value &&
       b.status === 'CONFIRMED'
+    )
+  })
+}
+
+function isAlreadyWaitlisted(scheduleId: string): boolean {
+  if (!studentData.value?.bookings) return false
+  return studentData.value.bookings.some((b: any) => {
+    const bDate = String(b.bookingDate || '').slice(0, 10)
+    return (
+      b.studioScheduleId === scheduleId &&
+      bDate === selectedDate.value &&
+      b.status === 'WAITLISTED'
     )
   })
 }
@@ -185,15 +218,19 @@ async function handleBookClass(schedule: any) {
 
   bookingInProgressId.value = schedule.id
   try {
-    await api.post(`/studio-bookings/public/book/${slug.value}`, {
+    const { data: created } = await api.post(`/studio-bookings/public/book/${slug.value}`, {
       customerId: studentData.value.customer.id,
       studioScheduleId: schedule.id,
       bookingDate: selectedDate.value,
+      allowWaitlist: true,
     })
 
     actionMessage.value = {
       type: 'success',
-      text: `¡Tu cupo para ${schedule.className} (${schedule.startTime}) el ${formatDate(selectedDate.value)} quedó reservado con éxito!`,
+      text:
+        created?.status === 'WAITLISTED'
+          ? `⏳ La clase estaba llena y quedaste anotada(o) en la Lista de Espera para ${schedule.className} (${schedule.startTime}). Si se libera un cupo, pasarás a Confirmada automáticamente.`
+          : `¡Tu cupo para ${schedule.className} (${schedule.startTime}) el ${formatDate(selectedDate.value)} quedó reservado con éxito!`,
     }
 
     await Promise.all([loadCatalog(), lookupStudent(true)])
@@ -236,6 +273,81 @@ function openFeedbackForSchedule(scheduleId: string, dateStr?: string) {
     feedbackDate.value = String(dateStr).slice(0, 10)
   }
   activeTab.value = 'feedback'
+}
+
+function openPackageRenewalModal(plan: any) {
+  if (!studentData.value?.customer?.id) {
+    actionMessage.value = {
+      type: 'error',
+      text: 'Primero ingresa tu cédula, teléfono o correo arriba en "Consulta tu Tiquetera" para solicitar o renovar tu paquete.',
+    }
+    return
+  }
+  selectedPlanForRequest.value = plan
+  packageRequestForm.value = {
+    paymentMethod: 'TRANSFERENCIA_BANCOLOMBIA',
+    amountPaid: Number(plan.price || 0),
+    reference: '',
+    notes: '',
+  }
+}
+
+async function submitPackageRenewalRequest() {
+  if (!studentData.value?.customer?.id || !selectedPlanForRequest.value) return
+  submittingPackageRequest.value = true
+  actionMessage.value = null
+  try {
+    await api.post(`/studio-bookings/public/package-request/${slug.value}`, {
+      customerId: studentData.value.customer.id,
+      studioPlanId: selectedPlanForRequest.value.id,
+      paymentMethod: packageRequestForm.value.paymentMethod,
+      amountPaid: Number(packageRequestForm.value.amountPaid || 0),
+      reference: packageRequestForm.value.reference,
+      notes: packageRequestForm.value.notes,
+    })
+    actionMessage.value = {
+      type: 'success',
+      text: `✅ ¡Solicitud de "${selectedPlanForRequest.value.name}" enviada! El estudio verificará tu pago y activará tu paquete.`,
+    }
+    selectedPlanForRequest.value = null
+    await lookupStudent(true)
+  } catch (err: any) {
+    actionMessage.value = {
+      type: 'error',
+      text: err?.response?.data?.message || 'No fue posible enviar la solicitud del paquete.',
+    }
+  } finally {
+    submittingPackageRequest.value = false
+  }
+}
+
+function startEditingMedicalAlert() {
+  medicalAlertInput.value = studentData.value?.customer?.medicalAlerts || ''
+  editingMedicalAlert.value = true
+}
+
+async function saveStudentMedicalAlert() {
+  if (!studentData.value?.customer?.id) return
+  savingMedicalAlert.value = true
+  try {
+    await api.patch(`/studio-bookings/public/medical-alerts/${slug.value}`, {
+      customerId: studentData.value.customer.id,
+      medicalAlerts: medicalAlertInput.value,
+    })
+    editingMedicalAlert.value = false
+    await lookupStudent(true)
+    actionMessage.value = {
+      type: 'success',
+      text: '🩺 Tu condición física / alerta de salud quedó actualizada para tus instructoras.',
+    }
+  } catch (err: any) {
+    actionMessage.value = {
+      type: 'error',
+      text: err?.response?.data?.message || 'No se pudo actualizar la nota de salud.',
+    }
+  } finally {
+    savingMedicalAlert.value = false
+  }
 }
 
 async function handleSubmitFeedback() {
@@ -409,12 +521,27 @@ onMounted(async () => {
             <div
               v-for="sub in activeSubscriptions"
               :key="sub.id"
-              class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 flex items-center justify-between"
+              :class="sub.status === 'PAUSED' ? 'border-sky-200 bg-sky-50/60' : 'border-indigo-100 bg-indigo-50/50'"
+              class="rounded-xl border p-4 flex items-center justify-between"
             >
               <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
-                  {{ sub.plan?.type === 'UNLIMITED' ? 'Plan Ilimitado' : 'Paquete / Tiquetera' }}
-                </span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+                    {{ sub.plan?.type === 'UNLIMITED' ? 'Plan Ilimitado' : 'Paquete / Tiquetera' }}
+                  </span>
+                  <span
+                    v-if="sub.status === 'PAUSED'"
+                    class="rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-[10px] font-bold"
+                  >
+                    ❄️ Congelado
+                  </span>
+                  <span
+                    v-if="Number(sub.balanceAmount || 0) > 0"
+                    class="rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-bold"
+                  >
+                    💰 Saldo pendiente: {{ formatPrice(sub.balanceAmount) }}
+                  </span>
+                </div>
                 <h3 class="text-sm font-black text-slate-900 mt-0.5">
                   {{ sub.plan?.name || 'Suscripción Activa' }}
                 </h3>
@@ -434,8 +561,58 @@ onMounted(async () => {
             </div>
           </div>
           <div v-else class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
-            No tienes una tiquetera activa en este momento. Puedes revisar los <strong>Planes y Paquetes</strong> abajo y solicitar tu activación en la recepción del estudio.
+            No tienes una tiquetera activa en este momento. Puedes revisar los <strong>Planes y Paquetes</strong> abajo y solicitar tu activación o reportar tu pago aquí mismo.
           </div>
+
+          <!-- Bloque de Alerta Médica / Lesiones para la Instructora -->
+          <div class="rounded-xl border border-rose-100 bg-rose-50/50 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="text-xs">
+              <span class="font-bold text-rose-800">🩺 Condición física o lesión para tener en cuenta en clase:</span>
+              <span v-if="studentData.customer.medicalAlerts" class="ml-1.5 font-semibold text-slate-800">
+                {{ studentData.customer.medicalAlerts }}
+              </span>
+              <span v-else class="ml-1.5 text-slate-500 italic">
+                Sin observaciones registradas (ej. lesión de rodilla, espalda, embarazo...)
+              </span>
+            </div>
+            <button
+              v-if="!editingMedicalAlert"
+              type="button"
+              @click="startEditingMedicalAlert"
+              class="self-start sm:self-auto rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors shrink-0"
+            >
+              {{ studentData.customer.medicalAlerts ? '✏️ Actualizar nota' : '➕ Informar condición / lesión' }}
+            </button>
+          </div>
+
+          <form
+            v-if="editingMedicalAlert"
+            @submit.prevent="saveStudentMedicalAlert"
+            class="rounded-xl border border-rose-200 bg-white p-3.5 flex flex-col sm:flex-row gap-2"
+          >
+            <input
+              v-model="medicalAlertInput"
+              type="text"
+              placeholder="Ej: Molestia en rodilla derecha, embarazo 14 semanas..."
+              class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-900"
+            />
+            <div class="flex gap-2">
+              <button
+                type="button"
+                @click="editingMedicalAlert = false"
+                class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                :disabled="savingMedicalAlert"
+                class="rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold"
+              >
+                {{ savingMedicalAlert ? 'Guardando...' : 'Guardar para mi Instructora' }}
+              </button>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -611,6 +788,9 @@ onMounted(async () => {
             <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
               <span class="text-xs text-slate-400">
                 Fecha reserva: <strong>{{ formatDate(selectedDate) }}</strong>
+                <span v-if="sched.waitlistCount > 0" class="ml-1 text-amber-700 font-semibold">
+                  ({{ sched.waitlistCount }} en espera)
+                </span>
               </span>
 
               <span
@@ -620,18 +800,30 @@ onMounted(async () => {
                 ✓ Ya tienes cupo reservado
               </span>
 
+              <span
+                v-else-if="isAlreadyWaitlisted(sched.id)"
+                class="inline-flex items-center rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900"
+              >
+                ⏳ En Lista de Espera
+              </span>
+
               <button
                 v-else
                 type="button"
                 @click="handleBookClass(sched)"
-                :disabled="sched.availableSpots <= 0 || bookingInProgressId === sched.id"
-                class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-500 transition-colors"
+                :disabled="bookingInProgressId === sched.id"
+                :class="
+                  sched.availableSpots <= 0
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                "
+                class="inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs font-bold shadow-sm disabled:bg-slate-200 disabled:text-slate-500 transition-colors"
               >
                 {{
                   bookingInProgressId === sched.id
-                    ? 'Reservando...'
+                    ? 'Procesando...'
                     : sched.availableSpots <= 0
-                      ? 'Sin Cupos'
+                      ? '⏳ Unirme a Lista de Espera'
                       : '📌 Reservar mi Cupo'
                 }}
               </button>
@@ -668,13 +860,124 @@ onMounted(async () => {
               </p>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100">
-              <p class="text-2xl font-black text-slate-900">{{ formatPrice(plan.price) }}</p>
-              <p class="text-xs text-slate-500 mt-0.5">
-                Vigencia: <strong>{{ plan.durationDays }} días</strong>
-              </p>
+            <div class="mt-6 pt-4 border-t border-slate-100 space-y-3">
+              <div>
+                <p class="text-2xl font-black text-slate-900">{{ formatPrice(plan.price) }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Vigencia: <strong>{{ plan.durationDays }} días</strong> (desde tu 1ª clase)
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="openPackageRenewalModal(plan)"
+                class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 text-xs font-bold shadow-sm transition-colors"
+              >
+                🔄 Solicitar / Reportar Pago de este Paquete
+              </button>
             </div>
           </article>
+        </div>
+
+        <!-- Modal de Solicitud de Renovación / Compra de Paquete -->
+        <div
+          v-if="selectedPlanForRequest"
+          class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        >
+          <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-indigo-50/60">
+              <h3 class="text-base font-bold text-slate-900">
+                🔄 Renovar / Adquirir Paquete
+              </h3>
+              <button
+                type="button"
+                @click="selectedPlanForRequest = null"
+                class="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form @submit.prevent="submitPackageRenewalRequest" class="p-6 space-y-4">
+              <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs space-y-1">
+                <p class="font-black text-slate-900 text-sm">{{ selectedPlanForRequest.name }}</p>
+                <p class="text-indigo-700 font-bold">
+                  Valor del paquete: {{ formatPrice(selectedPlanForRequest.price) }}
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">
+                  Medio de Pago Utilizado
+                </label>
+                <select
+                  v-model="packageRequestForm.paymentMethod"
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white"
+                >
+                  <option value="TRANSFERENCIA_BANCOLOMBIA">Transferencia Bancolombia</option>
+                  <option value="NEQUI">Nequi</option>
+                  <option value="EFECTIVO_SEDE">Efectivo en Sede</option>
+                  <option value="TARJETA">Tarjeta / Datáfono</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">
+                  Valor Pagado o Abonado (COP)
+                </label>
+                <input
+                  v-model.number="packageRequestForm.amountPaid"
+                  type="number"
+                  min="0"
+                  required
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold"
+                />
+                <p class="text-[11px] text-slate-400 mt-0.5">
+                  Si realizaste un abono parcial, escribe el monto abonado.
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">
+                  Número de Comprobante / Referencia de Transferencia
+                </label>
+                <input
+                  v-model="packageRequestForm.reference"
+                  type="text"
+                  placeholder="Ej: Comprobante #84920 o fecha/hora del envío"
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">
+                  Nota adicional (Opcional)
+                </label>
+                <input
+                  v-model="packageRequestForm.notes"
+                  type="text"
+                  placeholder="Ej: Envié pantallazo por WhatsApp"
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                />
+              </div>
+
+              <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  @click="selectedPlanForRequest = null"
+                  class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  :disabled="submittingPackageRequest"
+                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
+                >
+                  {{ submittingPackageRequest ? 'Enviando...' : '✅ Enviar Solicitud de Activación' }}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -694,8 +997,15 @@ onMounted(async () => {
             class="rounded-2xl bg-white p-5 shadow-sm border border-slate-200 flex items-center justify-between gap-4"
           >
             <div>
-              <span class="inline-block rounded-md bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                Confirmada · {{ formatDate(booking.bookingDate) }}
+              <span
+                :class="
+                  booking.status === 'WAITLISTED'
+                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                "
+                class="inline-block rounded-md px-2.5 py-0.5 text-xs font-bold border"
+              >
+                {{ booking.status === 'WAITLISTED' ? '⏳ En Lista de Espera' : 'Confirmada' }} · {{ formatDate(booking.bookingDate) }}
               </span>
               <h3 class="mt-2 text-base font-black text-slate-900">
                 {{ booking.schedule?.className || 'Clase de Estudio' }}

@@ -77,9 +77,41 @@ export class StudioBookingsController {
   @Post('public/book/:slug')
   createPublicBooking(
     @Param('slug') slug: string,
-    @Body() body: { customerId: string; studioScheduleId: string; bookingDate: string },
+    @Body()
+    body: {
+      customerId: string;
+      studioScheduleId: string;
+      bookingDate: string;
+      allowWaitlist?: boolean;
+    },
   ) {
     return this.studioBookingsService.createPublicBooking(slug, body);
+  }
+
+  @ApiOperation({ summary: 'Public student portal: request package renewal or purchase' })
+  @Post('public/package-request/:slug')
+  submitPublicPackageRequest(
+    @Param('slug') slug: string,
+    @Body()
+    body: {
+      customerId: string;
+      studioPlanId: string;
+      paymentMethod?: string;
+      amountPaid?: number;
+      reference?: string;
+      notes?: string;
+    },
+  ) {
+    return this.studioBookingsService.submitPublicPackageRequest(slug, body);
+  }
+
+  @ApiOperation({ summary: 'Public student portal: update student health/injury alerts' })
+  @Patch('public/medical-alerts/:slug')
+  updatePublicMedicalAlerts(
+    @Param('slug') slug: string,
+    @Body() body: { customerId: string; medicalAlerts?: string },
+  ) {
+    return this.studioBookingsService.updatePublicMedicalAlerts(slug, body);
   }
 
   @ApiOperation({ summary: 'Public student portal: cancel student own booking' })
@@ -126,6 +158,17 @@ export class StudioBookingsController {
     @Query('organizationId') organizationId: string,
   ) {
     return this.studioBookingsService.findOne(id, organizationId);
+  }
+
+  @ApiOperation({ summary: 'Promote a waitlisted booking to CONFIRMED' })
+  @Permissions('studio.update')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/promote')
+  promoteWaitlistBooking(
+    @Param('id') id: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.studioBookingsService.promoteWaitlistBooking(id, organizationId);
   }
 
   @ApiOperation({ summary: 'Cancel a booking' })

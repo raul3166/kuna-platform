@@ -251,3 +251,22 @@
     * Creating an instructor with an email automatically provisions a system `User` with role `STUDIO_INSTRUCTOR` (initial password = ID document) and granular permissions (`studio.schedules.read`, `studio.bookings.read`, `studio.attendance.write`, `studio.instructors.read`), plus automatic bidirectional synchronization.
   * **Retention, Payroll & Co-Branding (`StudioReportsView.vue`, `AppLayout.vue`):**
     * Automated instructor payroll calculation (`FIXED_PER_CLASS`, `PER_STUDENT`, `HYBRID`), student retention alerts (expiring packages, low credits, inactive > 14 days with direct WhatsApp outreach), and institutional co-branding (`KUNA + UMA`).
+
+---
+
+## v2.8.0 (Production Release — Waitlist, Portal Renewals, Health Alerts, Freeze & Accounts Receivable CxC)
+
+* **Automatic Class Waitlist (`KNA-156`, `BookingStatus.WAITLISTED`):**
+  * Students in `/portal/:slug` and admins in `StudioBookingsView.vue` can join the waitlist (`⏳ En Lista de Espera`) when a class is full (`availableSpots === 0`).
+  * Automatic FIFO promotion (`promoteNextFromWaitlist`): cancelling a `CONFIRMED` booking automatically promotes the earliest `WAITLISTED` student for that class and date to `CONFIRMED`.
+  * Manual admin promotion button (`⬆️ Confirmar Cupo`, `PATCH /studio-bookings/:id/promote-waitlist`).
+* **Public Portal Package Renewal & 1-Click Admin Approval (`KNA-157`, `StudioPackageRequest`):**
+  * New `StudioPackageRequest` model (with Supabase RLS enabled) allowing students to request package renewals from `/portal/:slug`, specifying payment method (`TRANSFERENCIA_BANCOLOMBIA`, `NEQUI`, `EFECTIVO_SEDE`, `TARJETA`), amount paid, and receipt reference.
+  * Admin approval inbox (`📲 Solicitudes del Portal`) in `StudioSubscriptionsView.vue` that activates the package and records the initial payment/installment in 1 click (`POST /studio-subscriptions/package-requests/:id/approve`).
+* **Student Health & Injury Alerts (`KNA-158`, `Customer.medicalAlerts`):**
+  * Added `medicalAlerts` to `Customer`, editable by the student in `/portal/:slug` and by admins in `StudioSubscriptionsView.vue`.
+  * Prominent `🩺` health/injury alert badge displayed to instructors on the live class roster (`StudioCheckInView.vue` and `StudioBookingsView.vue`).
+* **Package Freeze & Validity Extension (`KNA-159`):**
+  * Freeze (`PAUSED`) and Unfreeze (`ACTIVE`) workflows in `StudioSubscriptionsView.vue` that automatically calculate paused days and add them to `endDate`, plus manual `+Días` validity extension (`extendedDays`).
+* **Core — Accounts Receivable (CxC) & Partial Payments / Installments (`KNA-091`):**
+  * Tracks `totalAmount`, `paidAmount`, `balanceAmount`, `paymentStatus` (`PAID`, `PARTIAL`, `PENDING`), and `paymentNotes` on packages, with a dedicated `💰 Cuentas por Cobrar (CxC)` KPI & filter and a `💵 Abonar` modal (`POST /studio-subscriptions/:id/payments`).

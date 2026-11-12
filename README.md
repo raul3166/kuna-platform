@@ -517,6 +517,18 @@ En la versión **v2.7.0** se completó el despliegue en producción Cloud (**Clo
 * **Provisión Unificada de Instructores (`STUDIO_INSTRUCTOR`):** Creación automática de credenciales de acceso para instructores desde el directorio de instructores y sincronización bidireccional.
 * **Analítica, Liquidación de Nómina y Retención:** Cálculo automático de pago a instructores (`FIXED_PER_CLASS`, `PER_STUDENT`, `HYBRID`) y alertas de retención con contacto directo por WhatsApp.
 
+---
+
+## Sprint 31 (Lista de Espera, Renovaciones Online, Alertas de Salud, Congelamiento y CxC) — Estado: Completado (`v2.8.0`)
+
+En la versión **v2.8.0** se ampliaron las capacidades operativas del estudio y el control financiero del Core:
+
+* **Lista de Espera Automática en Clases Llenas (`KNA-156`, `WAITLISTED`):** Los alumnos pueden anotarse en lista de espera desde `/portal/:slug` cuando una clase está llena y ascienden automáticamente a `CONFIRMED` en orden de llegada cuando se libera un cupo.
+* **Solicitud y Renovación de Paquetes desde el Portal con Aprobación a 1 Clic (`KNA-157`, `StudioPackageRequest`):** Los alumnos reportan su renovación o pago por transferencia/Nequi desde el portal público y el administrador aprueba y activa el paquete en 1 clic desde `StudioSubscriptionsView.vue`.
+* **Alertas de Salud y Lesiones (`KNA-158`, `Customer.medicalAlerts`):** Registro de condiciones físicas, lesiones o embarazo visible con insignia `🩺` en el llamado a lista de las instructoras (`StudioCheckInView.vue` y `StudioBookingsView.vue`).
+* **Congelamiento y Extensión de Paquetes (`KNA-159`):** Pausa de paquetes (`❄️ PAUSED`) con recálculo automático de fecha de vencimiento al descongelar, más extensión manual de días (`+Días`).
+* **Core — Cuentas por Cobrar (CxC) y Abonos Parciales (`KNA-091`):** Control de paquetes vendidos a crédito o con pago parcial (`PAID`, `PARTIAL`, `PENDING`), KPI de cartera por cobrar y registro de abonos (`💵 Abonar`).
+
 ## 📦 Versión actual consolidada
 
-**v2.7.0 (Production)**
+**v2.8.0 (Production)**

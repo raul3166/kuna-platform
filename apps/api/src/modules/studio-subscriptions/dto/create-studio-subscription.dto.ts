@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateStudioSubscriptionDto {
   @IsString()
@@ -20,4 +21,25 @@ export class CreateStudioSubscriptionDto {
   @IsOptional()
   @IsDateString()
   startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentStatus?: string; // PAID, PARTIAL, PENDING
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  paidAmount?: number;
+
+  @IsOptional()
+  @IsString()
+  paymentNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsString()
+  medicalAlerts?: string;
 }

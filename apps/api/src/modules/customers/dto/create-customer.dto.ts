@@ -57,4 +57,8 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  medicalAlerts?: string;
 }

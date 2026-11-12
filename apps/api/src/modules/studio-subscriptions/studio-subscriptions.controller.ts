@@ -32,12 +32,85 @@ export class StudioSubscriptionsController {
     return this.subscriptionsService.findAll(organizationId, branchId, customerId);
   }
 
+  @ApiOperation({ summary: 'Listar solicitudes de compra/renovación desde el portal público' })
+  @Permissions('studio.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Get('package-requests/list')
+  listPackageRequests(
+    @Query('organizationId') organizationId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.subscriptionsService.listPackageRequests(organizationId, status);
+  }
+
+  @ApiOperation({ summary: 'Aprobar solicitud de paquete y activar suscripción automáticamente' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Post('package-requests/:id/approve')
+  approvePackageRequest(@Param('id') id: string, @Body('branchId') branchId?: string) {
+    return this.subscriptionsService.approvePackageRequest(id, branchId);
+  }
+
+  @ApiOperation({ summary: 'Rechazar solicitud de paquete' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch('package-requests/:id/reject')
+  rejectPackageRequest(@Param('id') id: string) {
+    return this.subscriptionsService.rejectPackageRequest(id);
+  }
+
+  @ApiOperation({ summary: 'Actualizar alertas médicas / lesiones de un alumno' })
+  @Permissions('studio.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch('customer/:customerId/medical-alerts')
+  updateCustomerMedicalAlerts(
+    @Param('customerId') customerId: string,
+    @Body() payload: { medicalAlerts?: string; notes?: string },
+  ) {
+    return this.subscriptionsService.updateCustomerMedicalAlerts(customerId, payload);
+  }
+
   @ApiOperation({ summary: 'Obtener detalle de una suscripción de estudio' })
   @Permissions('studio.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.subscriptionsService.findOne(id);
+  }
+
+  @ApiOperation({ summary: 'Registrar abono / pago parcial sobre una suscripción (CxC)' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Post(':id/payments')
+  recordPayment(@Param('id') id: string, @Body() payload: { amount: number; notes?: string }) {
+    return this.subscriptionsService.recordPayment(id, payload);
+  }
+
+  @ApiOperation({ summary: 'Congelar / pausar una suscripción de estudio' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/freeze')
+  freeze(@Param('id') id: string, @Body() payload: { reason?: string }) {
+    return this.subscriptionsService.freeze(id, payload);
+  }
+
+  @ApiOperation({ summary: 'Reactivar / descongelar suscripción sumando los días pausados' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/unfreeze')
+  unfreeze(@Param('id') id: string) {
+    return this.subscriptionsService.unfreeze(id);
+  }
+
+  @ApiOperation({ summary: 'Extender vigencia de una suscripción por días adicionales' })
+  @Permissions('studio.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/extend')
+  extendValidity(
+    @Param('id') id: string,
+    @Body() payload: { extraDays: number; reason?: string },
+  ) {
+    return this.subscriptionsService.extendValidity(id, payload);
   }
 
   @ApiOperation({ summary: 'Cancelar una suscripción de estudio' })

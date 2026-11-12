@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsEnum, IsBoolean } from 'class-validator';
 import { BookingStatus } from '@prisma/client';
 
 export class CreateStudioBookingDto {
@@ -32,4 +32,8 @@ export class CreateStudioBookingDto {
   @IsEnum(BookingStatus)
   @IsOptional()
   status?: BookingStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  allowWaitlist?: boolean;
 }

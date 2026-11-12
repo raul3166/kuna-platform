@@ -398,6 +398,18 @@ onMounted(() => {
               <p v-if="checkInResult.remainingClasses !== undefined && checkInResult.remainingClasses !== null" class="text-xs font-semibold text-emerald-800 mt-0.5">
                 Clases restantes en tiquetera: {{ checkInResult.remainingClasses }}
               </p>
+              <p
+                v-if="checkInResult.customer?.medicalAlerts || checkInResult.customer?.notes"
+                class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1 mt-1 inline-block"
+              >
+                🩺 Alerta de Salud: {{ checkInResult.customer?.medicalAlerts || checkInResult.customer?.notes }}
+              </p>
+              <p
+                v-if="Number(checkInResult.subscription?.balanceAmount || 0) > 0"
+                class="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 mt-1 inline-block ml-1"
+              >
+                💰 Saldo pendiente por cobrar: ${{ Number(checkInResult.subscription.balanceAmount).toLocaleString('es-CO') }}
+              </p>
               <p v-if="checkInResult.reason && checkInResult.reason !== 'Ingreso autorizado'" class="text-xs text-amber-800 mt-1 font-medium">
                 {{ checkInResult.reason }}
               </p>
@@ -481,9 +493,17 @@ onMounted(() => {
                 />
                 <span v-else class="text-emerald-600 text-base">✅</span>
                 <div class="min-w-0">
-                  <p class="text-sm font-bold text-slate-900 truncate">
-                    {{ booking.customer?.firstName }} {{ booking.customer?.lastName || '' }}
-                  </p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-sm font-bold text-slate-900 truncate">
+                      {{ booking.customer?.firstName }} {{ booking.customer?.lastName || '' }}
+                    </p>
+                    <span
+                      v-if="booking.customer?.medicalAlerts || booking.customer?.notes"
+                      class="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-bold text-rose-700"
+                    >
+                      🩺 {{ booking.customer?.medicalAlerts || booking.customer?.notes }}
+                    </span>
+                  </div>
                   <p class="text-xs text-slate-500">
                     Cédula: {{ booking.customer?.identificationNumber || 'S/D' }}
                     <span v-if="booking.customer?.phoneNumber"> · 📞 {{ booking.customer.phoneNumber }}</span>

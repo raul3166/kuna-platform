@@ -188,6 +188,7 @@ model Organization {
   studioAttendanceLogs StudioAttendanceLog[]
   studioSchedules      StudioSchedule[]
   studioClassFeedbacks StudioClassFeedback[]
+  studioPackageRequests StudioPackageRequest[]
   instructors          Instructor[]
   serviceWorkers       ServiceWorker[]
   serviceItems         ServiceItem[]
@@ -1285,6 +1286,7 @@ model Customer {
   state       String?
   country     String?
   notes       String?
+  medicalAlerts String?
   isActive    Boolean @default(true)
 
   sales                Sale[]
@@ -1295,6 +1297,7 @@ model Customer {
   studioAttendanceLogs StudioAttendanceLog[]
   bookings             StudioBooking[]
   studioClassFeedbacks StudioClassFeedback[]
+  studioPackageRequests StudioPackageRequest[]
   serviceOrders        ServiceOrder[]
   hotelReservations     HotelReservation[]
   vehicles             Vehicle[]
@@ -1497,9 +1500,10 @@ model StudioPlan {
   productId String?  @unique
   product   Product? @relation(fields: [productId], references: [id])
 
-  subscriptions StudioSubscription[]
-  organization  Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branch        Branch?              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  subscriptions   StudioSubscription[]
+  packageRequests StudioPackageRequest[]
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch          Branch?              @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1509,7 +1513,7 @@ model StudioPlan {
 }
 
 model StudioSubscription {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   organizationId   String
   branchId         String
   customerId       String
@@ -1517,8 +1521,17 @@ model StudioSubscription {
   startDate        DateTime
   endDate          DateTime
   totalClasses     Int? // Clases iniciales asignadas
-  remainingClasses Int? // Clases disponibles restates
-  status           String   @default("ACTIVE") // ACTIVE, EXPIRED, EXHAUSTED, CANCELLED
+  remainingClasses Int? // Clases disponibles restantes
+  status           String    @default("ACTIVE") // ACTIVE, PAUSED, EXPIRED, EXHAUSTED, CANCELLED
+  totalAmount      Decimal   @default(0) @db.Decimal(12, 2)
+  paidAmount       Decimal   @default(0) @db.Decimal(12, 2)
+  balanceAmount    Decimal   @default(0) @db.Decimal(12, 2)
+  paymentStatus    String    @default("PAID") // PAID, PARTIAL, PENDING
+  paymentNotes     String?
+  frozenAt         DateTime?
+  freezeReason     String?
+  extendedDays     Int       @default(0)
+  notes            String?
 
   organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch         Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -1611,6 +1624,7 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   ATTENDED
+  WAITLISTED
 }
 
 model StudioBooking {
@@ -1650,6 +1664,28 @@ model StudioClassFeedback {
 
   @@index([organizationId, createdAt])
   @@index([studioScheduleId])
+  @@index([customerId])
+}
+
+model StudioPackageRequest {
+  id             String   @id @default(cuid())
+  organizationId String
+  branchId       String?
+  customerId     String
+  studioPlanId   String
+  paymentMethod  String   @default("TRANSFER") // TRANSFER, NEQUI, CASH, CARD
+  amountPaid     Decimal  @default(0) @db.Decimal(12, 2)
+  reference      String?
+  notes          String?
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan         StudioPlan   @relation(fields: [studioPlanId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
   @@index([customerId])
 }
 

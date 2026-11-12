@@ -50,8 +50,17 @@ export class StudioBookingsService {
       },
     });
 
-    if (confirmedCount >= schedule.capacity) {
-      throw new BadRequestException('La clase ya alcanzó el cupo máximo permitido');
+    const isFull = confirmedCount >= schedule.capacity;
+    const targetStatus = isFull
+      ? dto.allowWaitlist || dto.status === BookingStatus.WAITLISTED
+        ? BookingStatus.WAITLISTED
+        : null
+      : dto.status || BookingStatus.CONFIRMED;
+
+    if (!targetStatus) {
+      throw new BadRequestException(
+        'La clase ya alcanzó el cupo máximo permitido. Puedes anotarte en la Lista de Espera.',
+      );
     }
 
     // 2. Verificar duplicados (Si ya tiene reserva para este horario y fecha)
@@ -65,8 +74,16 @@ export class StudioBookingsService {
       },
     });
 
-    if (existingBooking && existingBooking.status === BookingStatus.CONFIRMED) {
-      throw new ConflictException('El cliente ya tiene una reserva confirmada para esta clase');
+    if (
+      existingBooking &&
+      (existingBooking.status === BookingStatus.CONFIRMED ||
+        existingBooking.status === BookingStatus.WAITLISTED)
+    ) {
+      throw new ConflictException(
+        existingBooking.status === BookingStatus.WAITLISTED
+          ? 'El alumno ya se encuentra en la Lista de Espera de esta clase'
+          : 'El alumno ya tiene una reserva confirmada para esta clase',
+      );
     }
 
     // 3. Verificar que el alumno tenga suscripción/paquete vigente (sin descontar créditos)
@@ -90,7 +107,7 @@ export class StudioBookingsService {
     if (existingBooking) {
       return this.prisma.studioBooking.update({
         where: { id: existingBooking.id },
-        data: { status: BookingStatus.CONFIRMED },
+        data: { status: targetStatus },
         include: { customer: true, schedule: { include: { instructor: true } } },
       });
     }
@@ -102,7 +119,7 @@ export class StudioBookingsService {
         customerId: dto.customerId,
         studioScheduleId: dto.studioScheduleId,
         bookingDate,
-        status: dto.status || BookingStatus.CONFIRMED,
+        status: targetStatus,
       },
       include: {
         customer: true,
@@ -148,13 +165,58 @@ export class StudioBookingsService {
     return booking;
   }
 
-  async cancel(id: string, organizationId: string) {
-    await this.findOne(id, organizationId);
+  private async promoteNextFromWaitlist(studioScheduleId: string, bookingDate: Date) {
+    const nextInWaitlist = await this.prisma.studioBooking.findFirst({
+      where: {
+        studioScheduleId,
+        bookingDate,
+        status: BookingStatus.WAITLISTED,
+      },
+      include: {
+        customer: true,
+        schedule: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!nextInWaitlist) return null;
 
     return this.prisma.studioBooking.update({
+      where: { id: nextInWaitlist.id },
+      data: { status: BookingStatus.CONFIRMED },
+      include: {
+        customer: true,
+        schedule: true,
+      },
+    });
+  }
+
+  async promoteWaitlistBooking(id: string, organizationId: string) {
+    await this.findOne(id, organizationId);
+    return this.prisma.studioBooking.update({
+      where: { id },
+      data: { status: BookingStatus.CONFIRMED },
+      include: { customer: true, schedule: { include: { instructor: true } } },
+    });
+  }
+
+  async cancel(id: string, organizationId: string) {
+    const booking = await this.findOne(id, organizationId);
+    const wasConfirmed = booking.status === BookingStatus.CONFIRMED;
+
+    const cancelled = await this.prisma.studioBooking.update({
       where: { id },
       data: { status: BookingStatus.CANCELLED },
     });
+
+    const promoted = wasConfirmed
+      ? await this.promoteNextFromWaitlist(booking.studioScheduleId, booking.bookingDate)
+      : null;
+
+    return {
+      ...cancelled,
+      promotedFromWaitlist: promoted,
+    };
   }
 
   async getAvailability(organizationId: string, studioScheduleId: string, bookingDateStr: string) {
@@ -225,22 +287,29 @@ export class StudioBookingsService {
         where: {
           organizationId: org.id,
           bookingDate: targetDate,
-          status: BookingStatus.CONFIRMED,
+          status: { in: [BookingStatus.CONFIRMED, BookingStatus.WAITLISTED] },
         },
-        select: { studioScheduleId: true },
+        select: { studioScheduleId: true, status: true },
       }),
     ]);
 
     const reservedBySchedule: Record<string, number> = {};
+    const waitlistBySchedule: Record<string, number> = {};
     for (const b of bookingsForDate) {
-      reservedBySchedule[b.studioScheduleId] = (reservedBySchedule[b.studioScheduleId] || 0) + 1;
+      if (b.status === BookingStatus.WAITLISTED) {
+        waitlistBySchedule[b.studioScheduleId] = (waitlistBySchedule[b.studioScheduleId] || 0) + 1;
+      } else {
+        reservedBySchedule[b.studioScheduleId] = (reservedBySchedule[b.studioScheduleId] || 0) + 1;
+      }
     }
 
     const enrichedSchedules = schedules.map((s) => {
       const reserved = reservedBySchedule[s.id] || 0;
+      const waitlistCount = waitlistBySchedule[s.id] || 0;
       return {
         ...s,
         reservedCount: reserved,
+        waitlistCount,
         availableSpots: Math.max(0, s.capacity - reserved),
       };
     });
@@ -286,6 +355,8 @@ export class StudioBookingsService {
         identificationNumber: true,
         email: true,
         phoneNumber: true,
+        notes: true,
+        medicalAlerts: true,
       },
     });
 
@@ -295,7 +366,7 @@ export class StudioBookingsService {
       );
     }
 
-    const [subscriptions, bookings, feedbacks] = await Promise.all([
+    const [subscriptions, bookings, feedbacks, packageRequests] = await Promise.all([
       this.prisma.studioSubscription.findMany({
         where: {
           organizationId: org.id,
@@ -321,6 +392,17 @@ export class StudioBookingsService {
         orderBy: { bookingDate: 'desc' },
       }),
       this.getStudentFeedbacks(org.id, customer.id),
+      this.prisma.studioPackageRequest.findMany({
+        where: {
+          organizationId: org.id,
+          customerId: customer.id,
+        },
+        include: {
+          plan: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+      }),
     ]);
 
     return {
@@ -328,6 +410,7 @@ export class StudioBookingsService {
       subscriptions,
       bookings,
       feedbacks,
+      packageRequests,
     };
   }
 
@@ -541,7 +624,12 @@ export class StudioBookingsService {
 
   async createPublicBooking(
     slugOrId: string,
-    payload: { customerId: string; studioScheduleId: string; bookingDate: string },
+    payload: {
+      customerId: string;
+      studioScheduleId: string;
+      bookingDate: string;
+      allowWaitlist?: boolean;
+    },
   ) {
     const org = await this.resolveOrganizationBySlugOrId(slugOrId);
 
@@ -568,6 +656,7 @@ export class StudioBookingsService {
       studioScheduleId: payload.studioScheduleId,
       bookingDate: payload.bookingDate,
       status: BookingStatus.CONFIRMED,
+      allowWaitlist: payload.allowWaitlist ?? true,
     });
   }
 
@@ -586,9 +675,96 @@ export class StudioBookingsService {
       throw new NotFoundException('No se encontró la reserva para este alumno');
     }
 
-    return this.prisma.studioBooking.update({
+    const wasConfirmed = booking.status === BookingStatus.CONFIRMED;
+    const cancelled = await this.prisma.studioBooking.update({
       where: { id: bookingId },
       data: { status: BookingStatus.CANCELLED },
+    });
+
+    const promoted = wasConfirmed
+      ? await this.promoteNextFromWaitlist(booking.studioScheduleId, booking.bookingDate)
+      : null;
+
+    return {
+      ...cancelled,
+      promotedFromWaitlist: promoted,
+    };
+  }
+
+  async submitPublicPackageRequest(
+    slugOrId: string,
+    payload: {
+      customerId: string;
+      studioPlanId: string;
+      paymentMethod?: string;
+      amountPaid?: number;
+      reference?: string;
+      notes?: string;
+    },
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const [customer, plan, defaultBranch] = await Promise.all([
+      this.prisma.customer.findFirst({
+        where: { id: payload.customerId, organizationId: org.id },
+      }),
+      this.prisma.studioPlan.findFirst({
+        where: { id: payload.studioPlanId, organizationId: org.id },
+      }),
+      this.prisma.branch.findFirst({
+        where: { organizationId: org.id, isActive: true },
+      }),
+    ]);
+
+    if (!customer) {
+      throw new NotFoundException('Alumno no encontrado en este estudio');
+    }
+    if (!plan) {
+      throw new NotFoundException('El paquete seleccionado no pertenece a este estudio');
+    }
+
+    const amountPaid =
+      payload.amountPaid !== undefined && payload.amountPaid !== null
+        ? Math.max(0, Number(payload.amountPaid))
+        : Number(plan.price || 0);
+
+    return this.prisma.studioPackageRequest.create({
+      data: {
+        organizationId: org.id,
+        branchId: plan.branchId || defaultBranch?.id || null,
+        customerId: customer.id,
+        studioPlanId: plan.id,
+        paymentMethod: payload.paymentMethod || 'TRANSFER',
+        amountPaid,
+        reference: payload.reference?.trim() || null,
+        notes: payload.notes?.trim() || null,
+        status: 'PENDING',
+      },
+      include: {
+        plan: true,
+        customer: true,
+      },
+    });
+  }
+
+  async updatePublicMedicalAlerts(
+    slugOrId: string,
+    payload: { customerId: string; medicalAlerts?: string },
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: payload.customerId, organizationId: org.id },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Alumno no encontrado en este estudio');
+    }
+
+    return this.prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        medicalAlerts: payload.medicalAlerts?.trim() || null,
+      },
     });
   }
 }

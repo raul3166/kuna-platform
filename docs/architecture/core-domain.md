@@ -1,10 +1,10 @@
 # KUNA Core Domain
 
-**Versión:** 2.7.0
+**Versión:** 2.8.0
 
 **Estado:** Production
 
-**Última actualización:** 10/11/2026
+**Última actualización:** 12/11/2026
 
 ---
 

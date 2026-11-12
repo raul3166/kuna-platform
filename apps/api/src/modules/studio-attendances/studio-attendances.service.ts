@@ -119,8 +119,17 @@ export class StudioAttendancesService {
     let reason = 'Ingreso autorizado';
 
     if (!activeSubscription) {
+      const pausedSub = await this.prisma.studioSubscription.findFirst({
+        where: {
+          customerId: customer.id,
+          organizationId: dto.organizationId,
+          status: 'PAUSED',
+        },
+      });
       status = 'DENIED';
-      reason = 'No cuenta con una suscripción activa o se encuentra vencida para esta fecha';
+      reason = pausedSub
+        ? 'El paquete del alumno se encuentra CONGELADO / PAUSADO actualmente. Reactívalo en Suscripciones.'
+        : 'No cuenta con una suscripción activa o se encuentra vencida para esta fecha';
     } else {
       const plan = activeSubscription.plan;
 

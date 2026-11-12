@@ -221,10 +221,10 @@ const searchCustomers = async () => {
   }
 };
 
-// Guardar nueva reserva
+// Guardar nueva reserva (o anotar en Lista de Espera si el cupo está lleno)
 const saveBooking = async () => {
-  if (remainingSpots.value !== null && remainingSpots.value <= 0) {
-    alert('No hay cupos disponibles para la fecha u horario seleccionado.');
+  const isFull = remainingSpots.value !== null && remainingSpots.value <= 0;
+  if (isFull && !confirm('La clase está llena. ¿Deseas anotar al alumno en la Lista de Espera?')) {
     return;
   }
 
@@ -237,6 +237,7 @@ const saveBooking = async () => {
       ...form.value,
       organizationId: orgId,
       branchId: branchId,
+      allowWaitlist: true,
     };
 
     await api.post('/studio-bookings', payload);
@@ -248,6 +249,18 @@ const saveBooking = async () => {
     alert(error?.response?.data?.message || 'Error al procesar la reserva');
   } finally {
     loadingSubmit.value = false;
+  }
+};
+
+const promoteFromWaitlist = async (id: string) => {
+  try {
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
+    await api.patch(`/studio-bookings/${id}/promote`, null, {
+      params: { organizationId: orgId },
+    });
+    fetchBookings();
+  } catch (error: any) {
+    alert(error?.response?.data?.message || 'Error al pasar a confirmada');
   }
 };
 
@@ -302,6 +315,8 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case 'CONFIRMED':
       return { text: 'Confirmada', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    case 'WAITLISTED':
+      return { text: '⏳ Lista de Espera', class: 'bg-amber-50 text-amber-800 border-amber-200' };
     case 'CANCELLED':
       return { text: 'Cancelada', class: 'bg-rose-50 text-rose-700 border-rose-200' };
     default:
@@ -423,6 +438,7 @@ onMounted(() => {
           <select v-model="filterStatus" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white">
             <option value="ALL">Todos los estados</option>
             <option value="CONFIRMED">Confirmadas</option>
+            <option value="WAITLISTED">⏳ Lista de Espera</option>
             <option value="CANCELLED">Canceladas</option>
           </select>
         </div>
@@ -453,7 +469,15 @@ onMounted(() => {
             <tbody class="divide-y divide-slate-100">
               <tr v-for="b in bookings" :key="b.id" class="hover:bg-slate-50/50 transition-colors">
                 <td class="px-6 py-4">
-                  <p class="font-bold text-slate-900">{{ b.customer?.firstName }} {{ b.customer?.lastName || '' }}</p>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <p class="font-bold text-slate-900">{{ b.customer?.firstName }} {{ b.customer?.lastName || '' }}</p>
+                    <span
+                      v-if="b.customer?.medicalAlerts || b.customer?.notes"
+                      class="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2 py-0.5 text-[11px] font-bold text-rose-700"
+                    >
+                      🩺 {{ b.customer?.medicalAlerts || b.customer?.notes }}
+                    </span>
+                  </div>
                   <p class="text-xs text-slate-400">Doc: {{ b.customer?.identificationNumber || 'N/A' }}</p>
                 </td>
                 <td class="px-6 py-4">
@@ -492,6 +516,22 @@ onMounted(() => {
                     </button>
                     <button
                       v-if="!isBookingAttended(b)"
+                      @click="cancelBooking(b.id)"
+                      class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <div v-else-if="b.status === 'WAITLISTED'" class="inline-flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      @click="promoteFromWaitlist(b.id)"
+                      class="text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg border border-amber-300 transition-colors"
+                    >
+                      ⬆️ Confirmar Cupo
+                    </button>
+                    <button
+                      type="button"
                       @click="cancelBooking(b.id)"
                       class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors"
                     >
@@ -617,10 +657,16 @@ onMounted(() => {
               </button>
               <button
                 type="submit"
-                :disabled="loadingSubmit || !form.customerId || checkingSpots || (remainingSpots !== null && remainingSpots <= 0)"
+                :disabled="loadingSubmit || !form.customerId || checkingSpots"
                 class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold transition-all"
               >
-                {{ loadingSubmit ? 'Procesando...' : 'Confirmar Reserva' }}
+                {{
+                  loadingSubmit
+                    ? 'Procesando...'
+                    : remainingSpots !== null && remainingSpots <= 0
+                      ? '⏳ Anotar en Lista de Espera'
+                      : 'Confirmar Reserva'
+                }}
               </button>
             </div>
           </form>

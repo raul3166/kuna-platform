@@ -415,6 +415,22 @@ Objetivo: Desplegar la plataforma KUNA en infraestructura Cloud de producción (
 
 ---
 
+# Sprint 31 — Waitlist, Portal Renewals, Health Alerts, Package Freeze & Accounts Receivable CxC (v2.8.0)
+
+Objetivo: Incorporar gestión automática de Lista de Espera en clases con aforo completo, solicitud de renovación de paquetes desde el Portal Público con aprobación a 1 clic, alertas médicas/lesiones visibles en el llamado a lista, congelamiento/extensión de paquetes y control de Cuentas por Cobrar (CxC) con abonos parciales.
+
+| ID | Historia | Estado | Alcance |
+| --- | --- | :---: | --- |
+| KNA-091 | Cuentas por Cobrar (CxC), Venta a Crédito y Registro de Pagos Parciales / Abonos (`StudioSubscriptionsView.vue`) | ✅ | Core/Backend/Frontend |
+| KNA-156 | Lista de Espera (`WAITLISTED`) en Clases Llenas con Promoción Automática FIFO al Liberarse Cupo | ✅ | Backend/Frontend |
+| KNA-157 | Solicitud / Renovación de Paquetes desde el Portal Público (`StudioPackageRequest`) y Aprobación Admin a 1 Clic | ✅ | Backend/Frontend |
+| KNA-158 | Alertas de Salud y Lesiones del Alumno (`Customer.medicalAlerts`) Visibles en Llamado a Lista (`StudioCheckInView.vue`) | ✅ | Core/Backend/Frontend |
+| KNA-159 | Congelamiento (`PAUSED`), Reactivación con Recálculo de Vigencia y Extensión Manual de Días (`+Días`) en Paquetes | ✅ | Backend/Frontend |
+
+**Sprint 31 completado al 100%. Plataforma en producción (`v2.8.0`).**
+
+---
+
 # Resumen General del Roadmap de Verticales y Producción
 
 | Sprint | Vertical / Fase | Alcance Principal | Estado |
@@ -429,6 +445,7 @@ Objetivo: Desplegar la plataforma KUNA en infraestructura Cloud de producción (
 | **Sprint 28 (Fase 7)** | **ACADEMY / Centro Educativo** | Matrículas, cursos, grupos, asistencia de estudiantes y cobro de colegiaturas | ✅ Completado |
 | **Sprint 29 (Fase 8)** | **REAL ESTATE / Inmobiliaria** | Propiedades, contratos de arrendamiento, cánones mensuales y giros a propietarios | ✅ Completado |
 | **Sprint 30 (Prod)** | **STUDIO Enterprise Suite & Cloud** | Portal público de alumnos, vigencia por 1ra asistencia, check-in por lista, nómina, retención y feedback (`StudioClassFeedback`) | ✅ Completado (`v2.7.0`) |
+| **Sprint 31 (Prod)** | **Waitlist, Renovaciones, Salud, Freeze & CxC** | Lista de espera automática, solicitudes de paquete desde el portal, alertas de lesiones, congelamiento y abonos parciales CxC | ✅ Completado (`v2.8.0`) |
 
 
 

@@ -7,6 +7,32 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
+## [2.8.0] - 2026-11-12
+
+### Added
+
+#### Studio Wellness Suite & Core Financial Operations (`Sprint 31`)
+* **Lista de Espera Automática en Clases Llenas (`KNA-156`, `BookingStatus.WAITLISTED`):**
+  * Extensión del enum `BookingStatus` con el estado `WAITLISTED` en `schema.prisma` y PostgreSQL.
+  * Opción **`⏳ Unirme a Lista de Espera`** en el Portal Público de Alumnos (`StudioPublicPortalView.vue`) y en el panel de Reservas (`StudioBookingsView.vue`) cuando una clase alcanza el 100% de su aforo (`availableSpots === 0`).
+  * Motor de **promoción automática FIFO (`promoteNextFromWaitlist`)**: al cancelar una reserva `CONFIRMED` desde el portal público o el panel administrativo, el primer alumno en lista de espera para ese horario y fecha asciende automáticamente a `CONFIRMED`.
+  * Botón administrativo **`⬆️ Confirmar Cupo`** (`PATCH /studio-bookings/:id/promote-waitlist`) para promover manualmente a un alumno en espera.
+* **Renovación y Solicitud de Paquetes desde el Portal Público con Aprobación a 1 Clic (`KNA-157`, `StudioPackageRequest`):**
+  * Nuevo modelo relacional `StudioPackageRequest` en `schema.prisma` y PostgreSQL (con Row Level Security activo) para registrar solicitudes de compra o renovación de paquetes desde `/portal/:slug`.
+  * Modal en `StudioPublicPortalView.vue` para seleccionar el método de pago (`TRANSFERENCIA_BANCOLOMBIA`, `NEQUI`, `EFECTIVO_SEDE`, `TARJETA`), monto transferido/abonado, número de comprobante y notas (`POST /studio-bookings/public/package-request/:slug`).
+  * Bandeja **`📲 Solicitudes del Portal`** en `StudioSubscriptionsView.vue` con botón **`✅ Aprobar y Activar Paquete`** a 1 clic (`POST /studio-subscriptions/package-requests/:id/approve`), que crea automáticamente la suscripción del alumno y registra su pago/abono inicial.
+* **Alertas de Salud y Lesiones del Alumno (`KNA-158`, `Customer.medicalAlerts`):**
+  * Nuevo campo `medicalAlerts` en el modelo Core `Customer` para registrar condiciones físicas, lesiones o embarazo (ej. *"Lesión de rodilla derecha"*, *"Embarazo 14 semanas"*).
+  * Editor de alertas médicas tanto para el propio alumno desde el Portal Público (`PATCH /studio-bookings/public/medical-alerts/:slug`) como para el administrador en `StudioSubscriptionsView.vue` (`PATCH /studio-subscriptions/customers/:customerId/medical-alerts`).
+  * Insignia preventiva **`🩺 Alerta de Salud`** visible en tiempo real durante el llamado a lista de la instructora (`StudioCheckInView.vue` y `StudioBookingsView.vue`).
+* **Congelamiento y Extensión de Vigencia de Paquetes (`KNA-159`, `Freeze / Unfreeze / Extend`):**
+  * Nuevos campos `frozenAt`, `freezeReason`, `extendedDays` y `notes` en `StudioSubscription`.
+  * Endpoints y modales en `StudioSubscriptionsView.vue` para **Congelar (`❄️ PAUSED`)** un paquete por viaje o incapacidad (`PATCH /studio-subscriptions/:id/freeze`), **Descongelar / Reactivar (`☀️ ACTIVE`)** sumando automáticamente a la fecha de vencimiento (`endDate`) los días exactos que estuvo pausado (`PATCH /studio-subscriptions/:id/unfreeze`), o **Extender vigencia (`📅 +Días`)** manualmente (`PATCH /studio-subscriptions/:id/extend`).
+* **Core — Cuentas por Cobrar (CxC) y Pagos Parciales / Abonos (`KNA-091`):**
+  * Nuevos campos financieros `totalAmount`, `paidAmount`, `balanceAmount`, `paymentStatus` (`PAID`, `PARTIAL`, `PENDING`) y `paymentNotes` en `StudioSubscription`.
+  * Registro de paquetes con Pago Total, Abono Parcial o Crédito / Por Cobrar, tarjeta KPI **`💰 Cuentas por Cobrar (CxC)`**, filtro rápido de cartera pendiente y modal **`💵 Registrar Abono`** (`POST /studio-subscriptions/:id/payments`) con historial acumulado de pagos y actualización automática del saldo.
+
+---
 ## [2.7.0] - 2026-11-10
 
 ### Added
