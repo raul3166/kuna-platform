@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import AppLayout from '../components/AppLayout.vue';
@@ -8,6 +8,29 @@ const authStore = useAuthStore();
 
 const report = ref<any>(null);
 const loading = ref(false);
+
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId =
+    org?.slug ||
+    org?.id ||
+    authStore.user?.organizationId ||
+    'empresa-demo';
+  return `${window.location.origin}/hotel-portal/${slugOrId}`;
+});
+
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => {
+      copiedPortalLink.value = false;
+    }, 2500);
+  } catch {
+    window.prompt('Copia el enlace del Portal Público de Reservas del Hotel:', publicPortalUrl.value);
+  }
+};
 
 // Filtros
 const fromDate = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
@@ -50,9 +73,28 @@ onMounted(fetchReport);
   <AppLayout>
     <div class="space-y-6">
       <!-- Header -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h1 class="text-2xl font-black text-slate-900">📊 Reporte de Ocupación e Ingresos</h1>
-        <p class="text-sm text-slate-500 mt-1">Analiza la performance del hotel por período.</p>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div>
+          <h1 class="text-2xl font-black text-slate-900">📊 Reporte de Ocupación e Ingresos</h1>
+          <p class="text-sm text-slate-500 mt-1">Analiza la performance del hotel por período.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            @click="copyPublicPortalLink"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition cursor-pointer"
+          >
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Huéspedes' }}
+          </button>
+          <a
+            :href="publicPortalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition"
+          >
+            🌐 Abrir Portal Huéspedes ↗
+          </a>
+        </div>
       </div>
 
       <!-- Filtros -->

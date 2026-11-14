@@ -58,6 +58,29 @@ const formatCurrency = (val: number | string | null) => {
   }).format(num);
 };
 
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId =
+    org?.slug ||
+    org?.id ||
+    authStore.user?.organizationId ||
+    'empresa-demo';
+  return `${window.location.origin}/hotel-portal/${slugOrId}`;
+});
+
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => {
+      copiedPortalLink.value = false;
+    }, 2500);
+  } catch {
+    window.prompt('Copia el enlace del Portal Público de Reservas del Hotel:', publicPortalUrl.value);
+  }
+};
+
 // Cargar habitaciones con filtros
 const fetchRooms = async () => {
   loading.value = true;
@@ -209,12 +232,30 @@ onMounted(() => {
           <h1 class="text-2xl font-black text-slate-900 tracking-tight">Inventario de Habitaciones</h1>
           <p class="text-sm text-slate-500 mt-1">Administra la capacidad, tarifas y el estado de limpieza/mantenimiento de tus habitaciones.</p>
         </div>
-        <button
-          @click="openCreateModal"
-          class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm gap-2"
-        >
-          <span>🛏️</span> Nueva Habitación
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            @click="copyPublicPortalLink"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition cursor-pointer"
+          >
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Huéspedes' }}
+          </button>
+          <a
+            :href="publicPortalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition"
+          >
+            🌐 Abrir Portal Huéspedes ↗
+          </a>
+          <button
+            type="button"
+            @click="openCreateModal"
+            class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm gap-2"
+          >
+            <span>🛏️</span> Nueva Habitación
+          </button>
+        </div>
       </div>
 
       <!-- Tarjetas KPI -->
