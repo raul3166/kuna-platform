@@ -7,11 +7,11 @@ El formato está basado en Keep a Changelog.
 Versionado basado en Semantic Versioning.
 
 ---
-## [2.8.0] - 2026-11-12
+## [2.8.0] - 2026-11-14
 
 ### Added
 
-#### Studio Wellness Suite & Core Financial Operations (`Sprint 31`)
+#### Studio Wellness Suite, Hotel Guest Portal & Core Financial Operations (`Sprint 31`)
 * **Lista de Espera Automática en Clases Llenas (`KNA-156`, `BookingStatus.WAITLISTED`):**
   * Extensión del enum `BookingStatus` con el estado `WAITLISTED` en `schema.prisma` y PostgreSQL.
   * Opción **`⏳ Unirme a Lista de Espera`** en el Portal Público de Alumnos (`StudioPublicPortalView.vue`) y en el panel de Reservas (`StudioBookingsView.vue`) cuando una clase alcanza el 100% de su aforo (`availableSpots === 0`).
@@ -31,6 +31,11 @@ Versionado basado en Semantic Versioning.
 * **Core — Cuentas por Cobrar (CxC) y Pagos Parciales / Abonos (`KNA-091`):**
   * Nuevos campos financieros `totalAmount`, `paidAmount`, `balanceAmount`, `paymentStatus` (`PAID`, `PARTIAL`, `PENDING`) y `paymentNotes` en `StudioSubscription`.
   * Registro de paquetes con Pago Total, Abono Parcial o Crédito / Por Cobrar, tarjeta KPI **`💰 Cuentas por Cobrar (CxC)`**, filtro rápido de cartera pendiente y modal **`💵 Registrar Abono`** (`POST /studio-subscriptions/:id/payments`) con historial acumulado de pagos y actualización automática del saldo.
+* **Portal Público de Reservas de Habitaciones para Huéspedes y Confirmación a 1 Clic (`KNA-160`, `HotelPublicPortalView.vue`):**
+  * Nueva ruta pública `/hotel-portal/:slug` sin contraseña para la vertical `HOTEL`.
+  * Buscador de disponibilidad de habitaciones en tiempo real por rango de fechas (`checkInDate`, `checkOutDate`) y número de huéspedes (`GET /hotel-reservations/public/catalog/:slug`), con cálculo automático de noches y tarifa total.
+  * Solicitud de reserva online para huéspedes nuevos o recurrentes reutilizando la entidad Core `Customer` (`POST /hotel-reservations/public/book/:slug`, estado inicial `PENDING`), consulta de estado y folio de cargos por documento/correo (`GET /hotel-reservations/public/guest/:slug`) y cancelación de solicitudes previas al Check-In (`PATCH /hotel-reservations/public/cancel/:slug/:reservationId`).
+  * Botones **`🔗 Copiar Link Huéspedes`** y **`🌐 Abrir Portal Huéspedes ↗`** en todas las vistas de Hotel (`HotelDashboardView.vue`, `HotelRoomsView.vue`, `HotelReservationsView.vue`, `HotelReportsView.vue`), tarjeta KPI **`⏳ Por Confirmar (Online)`** y botón **`✔️ Confirmar Reserva`** a 1 clic en recepción (`PATCH /hotel-reservations/:id/confirm`).
 
 ---
 ## [2.7.0] - 2026-11-10

@@ -1,6 +1,6 @@
 # KUNA Product Backlog
 
-> Última actualización: 2026-11-12 (Versión actual: `v2.8.0`)
+> Última actualización: 2026-11-14 (Versión actual: `v2.8.0`)
 
 ---
 
@@ -25,7 +25,7 @@
 | EPIC-15 | Academy & Education Center Vertical (`ACADEMY`) | 🟢 Completado |
 | EPIC-16 | Real Estate & Property Management Vertical (`REAL_ESTATE`) | 🟢 Completado |
 | EPIC-17 | Cloud Production Infrastructure, RLS Security & Studio Enterprise Suite (`v2.7.0`) | 🟢 Completado |
-| EPIC-18 | Waitlist, Portal Renewals, Health Alerts, Package Freeze & Accounts Receivable CxC (`v2.8.0`) | 🟢 Completado |
+| EPIC-18 | Waitlist, Portal Renewals, Health Alerts, Package Freeze, Hotel Guest Portal & Accounts Receivable CxC (`v2.8.0`) | 🟢 Completado |
 
 ---
 
@@ -533,7 +533,7 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 
 ---
 
-# Sprint 31 — Waitlist, Portal Renewals, Health Alerts, Package Freeze & Accounts Receivable CxC (Completado — `v2.8.0`)
+# Sprint 31 — Waitlist, Portal Renewals, Health Alerts, Package Freeze, Hotel Guest Portal & Accounts Receivable CxC (Completado — `v2.8.0`)
 
 | ID | Historia | Estado | Alcance |
 | --- | --- | :---: | --- |
@@ -542,6 +542,7 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-157 | Solicitud / Renovación de Paquetes desde el Portal Público (`StudioPackageRequest`) y Aprobación Admin a 1 Clic | ✅ | Backend/Frontend |
 | KNA-158 | Alertas de Salud y Lesiones del Alumno (`Customer.medicalAlerts`) Visibles en Llamado a Lista (`StudioCheckInView.vue`) | ✅ | Core/Backend/Frontend |
 | KNA-159 | Congelamiento (`PAUSED`), Reactivación con Recálculo de Vigencia y Extensión Manual de Días (`+Días`) en Paquetes | ✅ | Backend/Frontend |
+| KNA-160 | Portal Público de Reservas de Habitaciones para Huéspedes (`/hotel-portal/:slug`, `HotelPublicPortalView.vue`) y Confirmación Admin a 1 Clic | ✅ | Core/Backend/Frontend |
 
 
 

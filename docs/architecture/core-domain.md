@@ -4,7 +4,7 @@
 
 **Estado:** Production
 
-**Última actualización:** 12/11/2026
+**Última actualización:** 14/11/2026
 
 ---
 

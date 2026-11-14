@@ -254,7 +254,7 @@
 
 ---
 
-## v2.8.0 (Production Release — Waitlist, Portal Renewals, Health Alerts, Freeze & Accounts Receivable CxC)
+## v2.8.0 (Production Release — Waitlist, Portal Renewals, Health Alerts, Freeze, Hotel Guest Portal & Accounts Receivable CxC)
 
 * **Automatic Class Waitlist (`KNA-156`, `BookingStatus.WAITLISTED`):**
   * Students in `/portal/:slug` and admins in `StudioBookingsView.vue` can join the waitlist (`⏳ En Lista de Espera`) when a class is full (`availableSpots === 0`).
@@ -270,3 +270,6 @@
   * Freeze (`PAUSED`) and Unfreeze (`ACTIVE`) workflows in `StudioSubscriptionsView.vue` that automatically calculate paused days and add them to `endDate`, plus manual `+Días` validity extension (`extendedDays`).
 * **Core — Accounts Receivable (CxC) & Partial Payments / Installments (`KNA-091`):**
   * Tracks `totalAmount`, `paidAmount`, `balanceAmount`, `paymentStatus` (`PAID`, `PARTIAL`, `PENDING`), and `paymentNotes` on packages, with a dedicated `💰 Cuentas por Cobrar (CxC)` KPI & filter and a `💵 Abonar` modal (`POST /studio-subscriptions/:id/payments`).
+* **Hotel Public Guest Booking Portal & 1-Click Reception Confirmation (`KNA-160`, `/hotel-portal/:slug`):**
+  * Public self-service portal (`HotelPublicPortalView.vue`) for `HOTEL` organizations with real-time room availability by date range (`checkInDate`, `checkOutDate`) and guest count (`GET /hotel-reservations/public/catalog/:slug`).
+  * Online reservation submission reusing Core `Customer` (`POST /hotel-reservations/public/book/:slug`, created as `PENDING`), guest folio & reservation lookup (`GET /hotel-reservations/public/guest/:slug`), and 1-click admin confirmation in `HotelReservationsView.vue` (`PATCH /hotel-reservations/:id/confirm`).
