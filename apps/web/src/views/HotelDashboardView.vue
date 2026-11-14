@@ -14,6 +14,33 @@ const loading = ref(false);
 
 const todayStr = new Date().toISOString().split('T')[0];
 
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId =
+    org?.slug ||
+    org?.id ||
+    authStore.user?.organizationId ||
+    'empresa-demo';
+  return `${window.location.origin}/hotel-portal/${slugOrId}`;
+});
+
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => {
+      copiedPortalLink.value = false;
+    }, 2500);
+  } catch {
+    window.prompt('Copia el enlace del Portal Público de Reservas del Hotel:', publicPortalUrl.value);
+  }
+};
+
+const pendingOnlineCount = computed(() =>
+  reservations.value.filter(r => r.status === 'PENDING').length
+);
+
 const fetchData = async () => {
   loading.value = true;
   try {
@@ -102,9 +129,18 @@ onMounted(fetchData);
           <h1 class="text-2xl font-black text-slate-900 tracking-tight">🛎️ Dashboard de Recepción</h1>
           <p class="text-sm text-slate-500 mt-1">Visión en tiempo real del estado del hotel. Actualizado: {{ new Date().toLocaleTimeString('es-ES') }}</p>
         </div>
-        <div class="flex gap-2">
-          <button @click="fetchData" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">🔄 Actualizar</button>
-          <button @click="router.push('/hotel-reservations')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">📋 Ver Reservas</button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" @click="copyPublicPortalLink" class="px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-xs font-bold text-indigo-700 cursor-pointer">
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Huéspedes' }}
+          </button>
+          <a :href="publicPortalUrl" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700">
+            🌐 Portal Huéspedes ↗
+          </a>
+          <button type="button" @click="fetchData" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">🔄 Actualizar</button>
+          <button type="button" @click="router.push('/hotel-reservations')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+            📋 Ver Reservas
+            <span v-if="pendingOnlineCount > 0" class="ml-1 bg-amber-300 text-slate-900 px-1.5 py-0.5 rounded-full text-xs font-black">{{ pendingOnlineCount }}</span>
+          </button>
         </div>
       </div>
 

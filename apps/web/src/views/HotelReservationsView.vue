@@ -140,11 +140,35 @@ const formatDate = (d: string) => {
 
 // ── KPIs de la vista tabla ──────────────────────────────────────────
 const kpiStats = computed(() => ({
+  pending: reservations.value.filter(r => r.status === 'PENDING').length,
   confirmed: reservations.value.filter(r => r.status === 'CONFIRMED').length,
   checkedIn: reservations.value.filter(r => r.status === 'CHECKED_IN').length,
   checkedOut: reservations.value.filter(r => r.status === 'CHECKED_OUT').length,
   cancelled: reservations.value.filter(r => ['CANCELLED', 'NO_SHOW'].includes(r.status)).length,
 }));
+
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId =
+    org?.slug ||
+    org?.id ||
+    authStore.user?.organizationId ||
+    'empresa-demo';
+  return `${window.location.origin}/hotel-portal/${slugOrId}`;
+});
+
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => {
+      copiedPortalLink.value = false;
+    }, 2500);
+  } catch {
+    window.prompt('Copia el enlace del Portal Público de Reservas del Hotel:', publicPortalUrl.value);
+  }
+};
 
 // ── API Calls ───────────────────────────────────────────────────────
 const fetchData = async () => {
@@ -245,6 +269,17 @@ const createReservation = async () => {
     alert(e?.response?.data?.message || 'Error al crear la reserva');
   } finally {
     loadingSubmit.value = false;
+  }
+};
+
+const doConfirmReservation = async (r: any) => {
+  if (!confirm(`¿Confirmar la solicitud de reserva online de ${r.customer?.firstName} ${r.customer?.lastName || ''} en Hab. ${r.hotelRoom?.roomNumber}?`)) return;
+  try {
+    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    await api.patch(`/hotel-reservations/${r.id}/confirm`, {}, { params: { organizationId: orgId } });
+    fetchData();
+  } catch (e: any) {
+    alert(e?.response?.data?.message || 'Error al confirmar la reserva');
   }
 };
 
@@ -418,6 +453,7 @@ const doCancel = async () => {
 // ── Status helpers ───────────────────────────────────────────────────
 const getStatusBadge = (status: string) => {
   switch (status) {
+    case 'PENDING': return { text: '⏳ Por Confirmar', class: 'bg-amber-50 text-amber-800 border-amber-300' };
     case 'CONFIRMED': return { text: 'Confirmada', class: 'bg-blue-50 text-blue-700 border-blue-200' };
     case 'CHECKED_IN': return { text: 'En Estadía', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
     case 'CHECKED_OUT': return { text: 'Check-Out', class: 'bg-slate-50 text-slate-600 border-slate-200' };
@@ -438,26 +474,46 @@ onMounted(fetchData);
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <h1 class="text-2xl font-black text-slate-900 tracking-tight">Reservas de Hotel</h1>
-          <p class="text-sm text-slate-500 mt-1">Gestiona check-in, check-out, traslados y extensiones de estadía.</p>
+          <p class="text-sm text-slate-500 mt-1">Gestiona solicitudes online de huéspedes, check-in, check-out, traslados y extensiones.</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Botones del Portal Público de Huéspedes -->
+          <button
+            type="button"
+            @click="copyPublicPortalLink"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition cursor-pointer"
+          >
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Huéspedes' }}
+          </button>
+          <a
+            :href="publicPortalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition"
+          >
+            🌐 Abrir Portal Huéspedes ↗
+          </a>
           <!-- Toggle vista -->
           <div class="inline-flex bg-slate-100 p-1 rounded-xl">
-            <button @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">📋 Lista</button>
-            <button @click="viewMode = 'rack'" :class="viewMode === 'rack' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">🏨 Rack</button>
+            <button type="button" @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">📋 Lista</button>
+            <button type="button" @click="viewMode = 'rack'" :class="viewMode === 'rack' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">🏨 Rack</button>
           </div>
-          <button @click="showCreateModal = true" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm text-sm">
+          <button type="button" @click="showCreateModal = true" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm text-sm">
             ➕ Nueva Reserva
           </button>
         </div>
       </div>
 
       <!-- KPIs -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white border border-blue-100 rounded-xl p-4 text-center"><span class="text-xs font-bold uppercase text-blue-600 block">Confirmadas</span><span class="text-2xl font-black text-blue-700">{{ kpiStats.confirmed }}</span></div>
-        <div class="bg-white border border-emerald-100 rounded-xl p-4 text-center"><span class="text-xs font-bold uppercase text-emerald-600 block">En Estadía</span><span class="text-2xl font-black text-emerald-700">{{ kpiStats.checkedIn }}</span></div>
-        <div class="bg-white border border-slate-100 rounded-xl p-4 text-center"><span class="text-xs font-bold uppercase text-slate-400 block">Check-Out</span><span class="text-2xl font-black text-slate-600">{{ kpiStats.checkedOut }}</span></div>
-        <div class="bg-white border border-rose-100 rounded-xl p-4 text-center"><span class="text-xs font-bold uppercase text-rose-500 block">Cancel./No-Show</span><span class="text-2xl font-black text-rose-600">{{ kpiStats.cancelled }}</span></div>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div @click="filterStatus = 'PENDING'" class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-center cursor-pointer hover:bg-amber-50 transition">
+          <span class="text-xs font-bold uppercase text-amber-700 block">⏳ Por Confirmar (Online)</span>
+          <span class="text-2xl font-black text-amber-800">{{ kpiStats.pending }}</span>
+        </div>
+        <div @click="filterStatus = 'CONFIRMED'" class="bg-white border border-blue-100 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"><span class="text-xs font-bold uppercase text-blue-600 block">Confirmadas</span><span class="text-2xl font-black text-blue-700">{{ kpiStats.confirmed }}</span></div>
+        <div @click="filterStatus = 'CHECKED_IN'" class="bg-white border border-emerald-100 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"><span class="text-xs font-bold uppercase text-emerald-600 block">En Estadía</span><span class="text-2xl font-black text-emerald-700">{{ kpiStats.checkedIn }}</span></div>
+        <div @click="filterStatus = 'CHECKED_OUT'" class="bg-white border border-slate-100 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"><span class="text-xs font-bold uppercase text-slate-400 block">Check-Out</span><span class="text-2xl font-black text-slate-600">{{ kpiStats.checkedOut }}</span></div>
+        <div @click="filterStatus = 'ALL'" class="bg-white border border-rose-100 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-50 transition"><span class="text-xs font-bold uppercase text-rose-500 block">Cancel./No-Show</span><span class="text-2xl font-black text-rose-600">{{ kpiStats.cancelled }}</span></div>
       </div>
 
       <!-- Filtros -->
@@ -466,6 +522,7 @@ onMounted(fetchData);
           <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Estado</label>
           <select v-model="filterStatus" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white">
             <option value="ALL">Todos</option>
+            <option value="PENDING">⏳ Por Confirmar (Portal Huésped)</option>
             <option value="CONFIRMED">Confirmadas</option>
             <option value="CHECKED_IN">En Estadía</option>
             <option value="CHECKED_OUT">Check-Out</option>
@@ -525,22 +582,24 @@ onMounted(fetchData);
                 </td>
                 <td class="px-4 py-3">
                   <div class="flex flex-wrap justify-end gap-1">
+                    <!-- Confirmar Reserva Online (1 clic para admin) -->
+                    <button v-if="r.status === 'PENDING'" type="button" @click="doConfirmReservation(r)" class="px-2.5 py-1 rounded-lg border text-xs font-bold bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700 shadow-sm cursor-pointer">✔️ Confirmar Reserva</button>
                     <!-- Folio (siempre visible en activas) -->
-                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" @click="openFolio(r)" title="Ver Folio" class="px-2 py-1 rounded-lg border text-xs font-bold bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100">📋 Folio</button>
+                    <button v-if="['PENDING','CONFIRMED','CHECKED_IN'].includes(r.status)" type="button" @click="openFolio(r)" title="Ver Folio" class="px-2 py-1 rounded-lg border text-xs font-bold bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100">📋 Folio</button>
                     <!-- Check-In -->
-                    <button v-if="r.status === 'CONFIRMED'" @click="doCheckIn(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100">✅ Check-In</button>
+                    <button v-if="r.status === 'CONFIRMED'" type="button" @click="doCheckIn(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100">✅ Check-In</button>
                     <!-- Check-Out -->
-                    <button v-if="r.status === 'CHECKED_IN'" @click="openCheckOut(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">🏁 Check-Out</button>
+                    <button v-if="r.status === 'CHECKED_IN'" type="button" @click="openCheckOut(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">🏁 Check-Out</button>
                     <!-- Cargos extra -->
-                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" @click="openCharges(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100">🍽️ Cargos</button>
+                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" type="button" @click="openCharges(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100">🍽️ Cargos</button>
                     <!-- Cambio habitación -->
-                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" @click="openTransfer(r)" title="Cambio Habitación" class="px-2 py-1 rounded-lg border text-xs font-bold bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">🔄 Cambio</button>
+                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" type="button" @click="openTransfer(r)" title="Cambio Habitación" class="px-2 py-1 rounded-lg border text-xs font-bold bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">🔄 Cambio</button>
                     <!-- Extensión -->
-                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" @click="openExtend(r)" title="Extender Estadía" class="px-2 py-1 rounded-lg border text-xs font-bold bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100">🌙 Extender</button>
+                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" type="button" @click="openExtend(r)" title="Extender Estadía" class="px-2 py-1 rounded-lg border text-xs font-bold bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100">🌙 Extender</button>
                     <!-- No-Show -->
-                    <button v-if="r.status === 'CONFIRMED'" @click="doNoShow(r)" title="Marcar No-Show" class="px-2 py-1 rounded-lg border text-xs font-bold bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">👻 No-Show</button>
+                    <button v-if="['PENDING','CONFIRMED'].includes(r.status)" type="button" @click="doNoShow(r)" title="Marcar No-Show" class="px-2 py-1 rounded-lg border text-xs font-bold bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">👻 No-Show</button>
                     <!-- Cancelar -->
-                    <button v-if="['CONFIRMED','CHECKED_IN'].includes(r.status)" @click="openCancel(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100">✕ Cancelar</button>
+                    <button v-if="['PENDING','CONFIRMED','CHECKED_IN'].includes(r.status)" type="button" @click="openCancel(r)" class="px-2 py-1 rounded-lg border text-xs font-bold bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100">✕ Cancelar</button>
                   </div>
                 </td>
               </tr>

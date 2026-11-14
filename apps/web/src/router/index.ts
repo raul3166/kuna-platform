@@ -27,6 +27,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/hotel-portal/:slug',
+    name: 'hotel-public-portal',
+    component: () => import('../views/HotelPublicPortalView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     // 1. Tu panel de bienvenida original
     path: '/dashboard',
     name: 'dashboard',

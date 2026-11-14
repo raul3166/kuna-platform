@@ -59,6 +59,65 @@ export class HotelReservationsController {
     return this.hotelReservationsService.getOccupancyReport(organizationId, branchId, from, to);
   }
 
+  // =========================================================================
+  // ENDPOINTS PÚBLICOS (AUTOGESTIÓN DE HUÉSPEDES SIN LOGIN)
+  // =========================================================================
+
+  @ApiOperation({ summary: 'Public hotel catalog and room availability by date range' })
+  @Get('public/catalog/:slug')
+  getPublicCatalog(
+    @Param('slug') slug: string,
+    @Query('checkInDate') checkInDate?: string,
+    @Query('checkOutDate') checkOutDate?: string,
+    @Query('guests') guests?: string,
+  ) {
+    return this.hotelReservationsService.getPublicHotelCatalog(slug, checkInDate, checkOutDate, guests);
+  }
+
+  @ApiOperation({ summary: 'Public guest lookup by document, email or phone' })
+  @Get('public/guest/:slug')
+  getPublicGuestStatus(
+    @Param('slug') slug: string,
+    @Query('identifier') identifier: string,
+  ) {
+    return this.hotelReservationsService.getPublicGuestStatus(slug, identifier);
+  }
+
+  @ApiOperation({ summary: 'Public guest reservation request (creates PENDING reservation)' })
+  @Post('public/book/:slug')
+  createPublicReservation(
+    @Param('slug') slug: string,
+    @Body()
+    body: {
+      hotelRoomId: string;
+      checkInDate: string;
+      checkOutDate: string;
+      guests?: number;
+      customerId?: string;
+      firstName?: string;
+      lastName?: string;
+      identificationType?: string;
+      identificationNumber?: string;
+      email?: string;
+      phoneNumber?: string;
+      paymentMethod?: string;
+      paymentReference?: string;
+      notes?: string;
+    },
+  ) {
+    return this.hotelReservationsService.createPublicReservation(slug, body);
+  }
+
+  @ApiOperation({ summary: 'Public guest reservation cancellation' })
+  @Patch('public/cancel/:slug/:reservationId')
+  cancelPublicReservation(
+    @Param('slug') slug: string,
+    @Param('reservationId') reservationId: string,
+    @Body() body: { customerId: string; reason?: string },
+  ) {
+    return this.hotelReservationsService.cancelPublicReservation(slug, reservationId, body.customerId, body.reason);
+  }
+
   @ApiOperation({ summary: 'Get reservation detail by ID' })
   @Permissions('hotel.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -68,6 +127,17 @@ export class HotelReservationsController {
     @Query('organizationId') organizationId: string,
   ) {
     return this.hotelReservationsService.findOne(id, organizationId);
+  }
+
+  @ApiOperation({ summary: 'Confirm a pending reservation (1-click approval by hotel admin)' })
+  @Permissions('hotel.update')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/confirm')
+  confirmReservation(
+    @Param('id') id: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.hotelReservationsService.confirmReservation(id, organizationId);
   }
 
   @ApiOperation({ summary: 'Check-In: reservation to CHECKED_IN & room to OCCUPIED' })

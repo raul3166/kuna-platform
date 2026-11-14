@@ -161,6 +161,37 @@ export class HotelReservationsService {
     });
   }
 
+  async confirmReservation(id: string, organizationId: string) {
+    const reservation = await this.findOne(id, organizationId);
+
+    if (reservation.status !== ReservationStatus.PENDING) {
+      throw new ConflictException('Solo se pueden confirmar reservas que estén en estado PENDING');
+    }
+
+    // Validar que no exista otra reserva confirmada/en estancia que se solape
+    const overlap = await this.prisma.hotelReservation.findFirst({
+      where: {
+        hotelRoomId: reservation.hotelRoomId,
+        id: { not: id },
+        status: { in: [ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN] },
+        checkInDate: { lt: reservation.checkOutDate },
+        checkOutDate: { gt: reservation.checkInDate },
+      },
+    });
+
+    if (overlap) {
+      throw new ConflictException('La habitación ya tiene una reserva confirmada o en estancia para esas fechas');
+    }
+
+    return this.prisma.hotelReservation.update({
+      where: { id },
+      data: {
+        status: ReservationStatus.CONFIRMED,
+      },
+      include: { customer: true, hotelRoom: true, charges: true },
+    });
+  }
+
   async checkOut(id: string, organizationId?: string, dto?: CheckOutReservationDto) {
     const orgId = organizationId || dto?.organizationId;
     if (!orgId) {
@@ -570,6 +601,346 @@ export class HotelReservationsService {
 
     return this.prisma.hotelRoomCharge.delete({
       where: { id: chargeId },
+    });
+  }
+
+  // =========================================================================
+  // PORTAL PÚBLICO DE RESERVAS DE HOTEL (SIN AUTENTICACIÓN)
+  // =========================================================================
+
+  private async resolveOrganizationBySlugOrId(slugOrId: string) {
+    const org = await this.prisma.organization.findFirst({
+      where: {
+        isActive: true,
+        OR: [{ slug: slugOrId }, { id: slugOrId }],
+      },
+    });
+
+    if (!org) {
+      throw new NotFoundException('Hotel u organización no encontrada');
+    }
+
+    return org;
+  }
+
+  async getPublicHotelCatalog(
+    slugOrId: string,
+    checkInStr?: string,
+    checkOutStr?: string,
+    guestsStr?: string,
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const defaultCheckIn = today.toISOString().split('T')[0];
+    const defaultCheckOut = tomorrow.toISOString().split('T')[0];
+
+    const checkInDateStr = checkInStr || defaultCheckIn;
+    const checkOutDateStr = checkOutStr || defaultCheckOut;
+    const guests = Math.max(1, Number(guestsStr || 1));
+
+    const checkInDate = this.parseLocalDate(checkInDateStr);
+    let checkOutDate = this.parseLocalDate(checkOutDateStr);
+    if (checkOutDate <= checkInDate) {
+      checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkInDate.getDate() + 1);
+    }
+
+    const nights = this.calculateNights(checkInDate, checkOutDate);
+
+    const [branches, rooms, overlappingReservations] = await Promise.all([
+      this.prisma.branch.findMany({
+        where: { organizationId: org.id, isActive: true },
+        select: { id: true, name: true, address: true, city: true, phoneNumber: true },
+      }),
+      this.prisma.hotelRoom.findMany({
+        where: {
+          organizationId: org.id,
+          status: { notIn: [HotelRoomStatus.OUT_OF_ORDER, HotelRoomStatus.MAINTENANCE] },
+        },
+        include: {
+          branch: { select: { id: true, name: true, city: true, address: true, phoneNumber: true } },
+        },
+        orderBy: [{ pricePerNight: 'asc' }, { roomNumber: 'asc' }],
+      }),
+      this.prisma.hotelReservation.findMany({
+        where: {
+          organizationId: org.id,
+          status: { notIn: [ReservationStatus.CANCELLED, ReservationStatus.CHECKED_OUT, ReservationStatus.NO_SHOW] },
+          checkInDate: { lt: checkOutDate },
+          checkOutDate: { gt: checkInDate },
+        },
+        select: { hotelRoomId: true, status: true },
+      }),
+    ]);
+
+    const busyRoomIds = new Set(overlappingReservations.map((r) => r.hotelRoomId));
+
+    const enrichedRooms = rooms.map((room) => {
+      const isDateAvailable = !busyRoomIds.has(room.id);
+      const meetsCapacity = Number(room.capacity || 1) >= guests;
+      const nightlyRate = Number(room.pricePerNight || 0);
+      return {
+        ...room,
+        nightlyRate,
+        nights,
+        estimatedTotal: nights * nightlyRate,
+        isDateAvailable,
+        meetsCapacity,
+        canBook: isDateAvailable && meetsCapacity,
+      };
+    });
+
+    return {
+      organization: {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        country: org.country,
+        timezone: org.timezone,
+      },
+      branches,
+      rooms: enrichedRooms,
+      search: {
+        checkInDate: checkInDateStr,
+        checkOutDate: checkOutDate.toISOString().split('T')[0],
+        guests,
+        nights,
+      },
+    };
+  }
+
+  async getPublicGuestStatus(slugOrId: string, identifier: string) {
+    const cleanId = (identifier || '').trim();
+    if (!cleanId) {
+      throw new BadRequestException('Ingresa tu número de documento, pasaporte, celular o correo electrónico');
+    }
+
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        organizationId: org.id,
+        isActive: true,
+        OR: [
+          { identificationNumber: { equals: cleanId, mode: 'insensitive' } },
+          { email: { equals: cleanId, mode: 'insensitive' } },
+          { phoneNumber: { equals: cleanId } },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        identificationType: true,
+        identificationNumber: true,
+        email: true,
+        phoneNumber: true,
+        medicalAlerts: true,
+        notes: true,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(
+        'No encontramos un huésped registrado con ese documento o correo. Puedes registrarte directamente al reservar tu habitación.',
+      );
+    }
+
+    const reservations = await this.prisma.hotelReservation.findMany({
+      where: {
+        organizationId: org.id,
+        customerId: customer.id,
+      },
+      include: {
+        hotelRoom: {
+          include: {
+            branch: { select: { id: true, name: true, city: true, address: true, phoneNumber: true } },
+          },
+        },
+        charges: true,
+      },
+      orderBy: { checkInDate: 'desc' },
+    });
+
+    return {
+      customer,
+      reservations,
+    };
+  }
+
+  async createPublicReservation(
+    slugOrId: string,
+    payload: {
+      hotelRoomId: string;
+      checkInDate: string;
+      checkOutDate: string;
+      guests?: number;
+      customerId?: string;
+      firstName?: string;
+      lastName?: string;
+      identificationType?: string;
+      identificationNumber?: string;
+      email?: string;
+      phoneNumber?: string;
+      paymentMethod?: string;
+      paymentReference?: string;
+      notes?: string;
+    },
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    if (!payload.hotelRoomId || !payload.checkInDate || !payload.checkOutDate) {
+      throw new BadRequestException('Habitación, fecha de entrada y fecha de salida son obligatorias');
+    }
+
+    const checkInDate = this.parseLocalDate(payload.checkInDate);
+    const checkOutDate = this.parseLocalDate(payload.checkOutDate);
+
+    if (checkInDate >= checkOutDate) {
+      throw new BadRequestException('La fecha de salida (check-out) debe ser posterior a la de entrada (check-in)');
+    }
+
+    const room = await this.prisma.hotelRoom.findFirst({
+      where: {
+        id: payload.hotelRoomId,
+        organizationId: org.id,
+      },
+    });
+
+    if (!room) {
+      throw new NotFoundException('La habitación seleccionada no existe');
+    }
+
+    const overlapping = await this.prisma.hotelReservation.findFirst({
+      where: {
+        hotelRoomId: room.id,
+        status: { notIn: [ReservationStatus.CANCELLED, ReservationStatus.CHECKED_OUT, ReservationStatus.NO_SHOW] },
+        checkInDate: { lt: checkOutDate },
+        checkOutDate: { gt: checkInDate },
+      },
+    });
+
+    if (overlapping) {
+      throw new ConflictException('Esta habitación ya fue reservada para las fechas seleccionadas. Por favor elige otra habitación o fechas.');
+    }
+
+    // Resolver o crear el Huésped (Customer Core)
+    let customerId = payload.customerId;
+    if (!customerId) {
+      const idNumber = (payload.identificationNumber || '').trim();
+      const email = (payload.email || '').trim().toLowerCase();
+      const firstName = (payload.firstName || '').trim();
+      const lastName = (payload.lastName || '').trim();
+      const phoneNumber = (payload.phoneNumber || '').trim();
+
+      if (!idNumber || !firstName) {
+        throw new BadRequestException('Ingresa tu nombre y número de documento/pasaporte para completar la reserva');
+      }
+
+      const existingCustomer = await this.prisma.customer.findFirst({
+        where: {
+          organizationId: org.id,
+          OR: [
+            { identificationNumber: { equals: idNumber, mode: 'insensitive' } },
+            ...(email ? [{ email: { equals: email, mode: 'insensitive' as const } }] : []),
+          ],
+        },
+      });
+
+      if (existingCustomer) {
+        const updated = await this.prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            firstName: firstName || existingCustomer.firstName,
+            lastName: lastName || existingCustomer.lastName,
+            phoneNumber: phoneNumber || existingCustomer.phoneNumber,
+            email: email || existingCustomer.email,
+          },
+        });
+        customerId = updated.id;
+      } else {
+        const created = await this.prisma.customer.create({
+          data: {
+            organizationId: org.id,
+            identificationType: payload.identificationType || 'CC',
+            identificationNumber: idNumber,
+            firstName,
+            lastName: lastName || null,
+            email: email || null,
+            phoneNumber: phoneNumber || null,
+          },
+        });
+        customerId = created.id;
+      }
+    }
+
+    const nights = this.calculateNights(checkInDate, checkOutDate);
+    const nightlyRate = Number(room.pricePerNight || 0);
+    const totalAmount = nights * nightlyRate;
+
+    const noteParts: string[] = ['[Reserva Online Portal Huésped]'];
+    if (payload.guests) noteParts.push(`Huéspedes: ${payload.guests}`);
+    if (payload.paymentMethod) noteParts.push(`Medio de pago preferido: ${payload.paymentMethod}`);
+    if (payload.paymentReference) noteParts.push(`Ref/Comprobante: ${payload.paymentReference}`);
+    if (payload.notes) noteParts.push(`Solicitudes: ${payload.notes}`);
+
+    return this.prisma.hotelReservation.create({
+      data: {
+        organizationId: org.id,
+        branchId: room.branchId,
+        customerId,
+        hotelRoomId: room.id,
+        checkInDate,
+        checkOutDate,
+        nightlyRate,
+        totalAmount,
+        notes: noteParts.join(' | '),
+        status: ReservationStatus.PENDING,
+      },
+      include: {
+        customer: true,
+        hotelRoom: true,
+        charges: true,
+      },
+    });
+  }
+
+  async cancelPublicReservation(
+    slugOrId: string,
+    reservationId: string,
+    customerId: string,
+    reason?: string,
+  ) {
+    const org = await this.resolveOrganizationBySlugOrId(slugOrId);
+
+    const reservation = await this.prisma.hotelReservation.findFirst({
+      where: {
+        id: reservationId,
+        organizationId: org.id,
+        customerId,
+      },
+      include: { hotelRoom: true },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('No se encontró la reserva para este huésped');
+    }
+
+    if (reservation.status !== ReservationStatus.PENDING && reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new ConflictException('Solo puedes cancelar reservas que aún no hayan iniciado Check-In');
+    }
+
+    return this.prisma.hotelReservation.update({
+      where: { id: reservation.id },
+      data: {
+        status: ReservationStatus.CANCELLED,
+        cancellationReason: reason || 'Cancelada por el huésped desde el Portal Público',
+      },
+      include: { customer: true, hotelRoom: true },
     });
   }
 }
