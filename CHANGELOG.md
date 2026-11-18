@@ -36,6 +36,10 @@ Versionado basado en Semantic Versioning.
   * Buscador de disponibilidad de habitaciones en tiempo real por rango de fechas (`checkInDate`, `checkOutDate`) y número de huéspedes (`GET /hotel-reservations/public/catalog/:slug`), con cálculo automático de noches y tarifa total.
   * Solicitud de reserva online para huéspedes nuevos o recurrentes reutilizando la entidad Core `Customer` (`POST /hotel-reservations/public/book/:slug`, estado inicial `PENDING`), consulta de estado y folio de cargos por documento/correo (`GET /hotel-reservations/public/guest/:slug`) y cancelación de solicitudes previas al Check-In (`PATCH /hotel-reservations/public/cancel/:slug/:reservationId`).
   * Botones **`🔗 Copiar Link Huéspedes`** y **`🌐 Abrir Portal Huéspedes ↗`** en todas las vistas de Hotel (`HotelDashboardView.vue`, `HotelRoomsView.vue`, `HotelReservationsView.vue`, `HotelReportsView.vue`), tarjeta KPI **`⏳ Por Confirmar (Online)`** y botón **`✔️ Confirmar Reserva`** a 1 clic en recepción (`PATCH /hotel-reservations/:id/confirm`).
+* **Core — Gastos Operativos y Estado de Resultados Real / Flujo de Caja (`KNA-161`, `OperatingExpense`):**
+  * Nuevo modelo relacional Core `OperatingExpense` en `schema.prisma` y PostgreSQL (con Row Level Security activo) para registrar egresos operativos categorizados (`RENT`, `UTILITIES`, `PAYROLL`, `MARKETING`, `MAINTENANCE`, `SUPPLIES`, `TAXES`, `OTHER`), estado (`PAID` / `PENDING`) y método de pago (`TRANSFER`, `NEQUI`, `CASH`, `PETTY_CASH`, `CARD`).
+  * Motor transversal `getCashFlowSummary` (`GET /operating-expenses/summary`) que consolida en tiempo real los ingresos de la organización (`Sale` POS, paquetes/abonos `StudioSubscription`, membresías `GymSubscription`, `ServiceOrder` y `HotelReservation`) frente a `OperatingExpense` y `PurchaseInvoice`, calculando la **Utilidad Neta Real** y el margen de rentabilidad (%).
+  * Nueva vista Core **`💸 Gastos y Flujo de Caja`** (`/operating-expenses`, `OperatingExpensesView.vue`) accesible desde la sección `Core` del menú lateral para todas las verticales.
 
 ---
 ## [2.7.0] - 2026-11-10

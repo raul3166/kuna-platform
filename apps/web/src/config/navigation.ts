@@ -27,6 +27,7 @@ export const navigationSections: NavigationSection[] = [
     items: [
       { label: 'Bienvenida', icon: '👋', to: '/dashboard' },
       { label: 'Clientes / Alumnos (CRM)', icon: '👥', to: '/customers', requiredPermission: 'customers.create' },
+      { label: 'Gastos y Flujo de Caja', icon: '💸', to: '/operating-expenses' },
       { label: 'Organizaciones', icon: '🏢', to: '/organizations', requiredPermission: 'organizations.read' },
     ],
   },

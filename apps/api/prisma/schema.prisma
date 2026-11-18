@@ -217,6 +217,7 @@ model Organization {
   realEstateProperties RealEstateProperty[]
   realEstateLeases     RealEstateLease[]
   realEstateRentCharges RealEstateRentCharge[]
+  operatingExpenses    OperatingExpense[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 }
@@ -274,6 +275,7 @@ model Branch {
   realEstateProperties RealEstateProperty[]
   realEstateLeases     RealEstateLease[]
   realEstateRentCharges RealEstateRentCharge[]
+  operatingExpenses    OperatingExpense[]
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -2576,4 +2578,65 @@ model RealEstateRentCharge {
   @@unique([leaseId, periodLabel])
   @@index([organizationId, branchId])
   @@index([leaseId])
+}
+
+// ============================================================
+// CORE TRANSVERSAL — GASTOS OPERATIVOS Y FLUJO DE CAJA REAL
+// ============================================================
+
+model OperatingExpense {
+  id              String   @id @default(cuid())
+  organizationId  String
+  branchId        String?
+  expenseNumber   String   // Ej: "EGR-2026-0001"
+  category        String   @default("OTHER") // RENT, UTILITIES, PAYROLL, MARKETING, MAINTENANCE, SUPPLIES, TAXES, OTHER
+  description     String
+  beneficiaryName String?  // Proveedor, arrendador, empresa de servicios o beneficiario
+  amount          Decimal  @db.Decimal(12, 2)
+  paymentMethod   String   @default("TRANSFER") // CASH, TRANSFER, NEQUI, CARD, PETTY_CASH
+  status          String   @default("PAID") // PAID, PENDING, CANCELLED
+  expenseDate     DateTime @default(now())
+  reference       String?  // Nro de factura, recibo o comprobante
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, expenseNumber])
+  @@index([organizationId, expenseDate])
+  @@index([organizationId, category])
+  @@index([branchId])
+}
+
+
+// ============================================================
+// CORE TRANSVERSAL — GASTOS OPERATIVOS Y FLUJO DE CAJA REAL
+// ============================================================
+
+model OperatingExpense {
+  id              String   @id @default(cuid())
+  organizationId  String
+  branchId        String?
+  expenseNumber   String   // Ej: "EGR-2026-0001"
+  category        String   @default("OTHER") // RENT, UTILITIES, PAYROLL, MARKETING, MAINTENANCE, SUPPLIES, TAXES, OTHER
+  description     String
+  beneficiaryName String?  // Proveedor, arrendador, empresa de servicios o beneficiario
+  amount          Decimal  @db.Decimal(12, 2)
+  paymentMethod   String   @default("TRANSFER") // CASH, TRANSFER, NEQUI, CARD, PETTY_CASH
+  status          String   @default("PAID") // PAID, PENDING, CANCELLED
+  expenseDate     DateTime @default(now())
+  reference       String?  // Nro de factura, recibo o comprobante
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, expenseNumber])
+  @@index([organizationId, expenseDate])
+  @@index([organizationId, category])
+  @@index([branchId])
 }

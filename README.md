@@ -529,6 +529,7 @@ En la versión **v2.8.0** se ampliaron las capacidades operativas de `STUDIO`, `
 * **Congelamiento y Extensión de Paquetes (`KNA-159`):** Pausa de paquetes (`❄️ PAUSED`) con recálculo automático de fecha de vencimiento al descongelar, más extensión manual de días (`+Días`).
 * **Core — Cuentas por Cobrar (CxC) y Abonos Parciales (`KNA-091`):** Control de paquetes vendidos a crédito o con pago parcial (`PAID`, `PARTIAL`, `PENDING`), KPI de cartera por cobrar y registro de abonos (`💵 Abonar`).
 * **Portal Público de Reservas de Habitaciones para Huéspedes (`KNA-160`, `/hotel-portal/:slug`):** Buscador de disponibilidad de habitaciones por rango de fechas y capacidad, solicitud de reserva online (`PENDING`) reutilizando `Customer`, consulta de folio en vivo y confirmación a 1 clic (`✔️ Confirmar Reserva`) por parte del administrador del hotel.
+* **Core — Gastos Operativos y Estado de Resultados Real (`KNA-161`, `OperatingExpense`):** Registro transversal de egresos operativos (arriendo, servicios, nómina, marketing, mantenimiento, insumos, impuestos) y cálculo en tiempo real de la **Utilidad Neta Real** ($\text{Ingresos Consolidados} - \text{Gastos Operativos} - \text{Compras}$) en `/operating-expenses`.
 
 ## 📦 Versión actual consolidada
 

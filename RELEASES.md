@@ -273,3 +273,6 @@
 * **Hotel Public Guest Booking Portal & 1-Click Reception Confirmation (`KNA-160`, `/hotel-portal/:slug`):**
   * Public self-service portal (`HotelPublicPortalView.vue`) for `HOTEL` organizations with real-time room availability by date range (`checkInDate`, `checkOutDate`) and guest count (`GET /hotel-reservations/public/catalog/:slug`).
   * Online reservation submission reusing Core `Customer` (`POST /hotel-reservations/public/book/:slug`, created as `PENDING`), guest folio & reservation lookup (`GET /hotel-reservations/public/guest/:slug`), and 1-click admin confirmation in `HotelReservationsView.vue` (`PATCH /hotel-reservations/:id/confirm`).
+* **Core — Operating Expenses & Real Net Profit / Cash Flow Statement (`KNA-161`, `OperatingExpense`):**
+  * New Core `OperatingExpense` table (with Supabase RLS enabled) and `/operating-expenses` module (`OperatingExpensesView.vue`) to track rent, utilities, payroll, marketing, maintenance, supplies, and taxes (`PAID` or `PENDING`).
+  * Cross-vertical Cash Flow & Net Profit engine (`GET /operating-expenses/summary`) aggregating revenues across POS sales, Studio packages/installments, Gym memberships, Service Orders, and Hotel reservations against operating expenses and inventory purchase invoices.

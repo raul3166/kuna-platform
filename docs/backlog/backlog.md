@@ -543,6 +543,7 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-158 | Alertas de Salud y Lesiones del Alumno (`Customer.medicalAlerts`) Visibles en Llamado a Lista (`StudioCheckInView.vue`) | ✅ | Core/Backend/Frontend |
 | KNA-159 | Congelamiento (`PAUSED`), Reactivación con Recálculo de Vigencia y Extensión Manual de Días (`+Días`) en Paquetes | ✅ | Backend/Frontend |
 | KNA-160 | Portal Público de Reservas de Habitaciones para Huéspedes (`/hotel-portal/:slug`, `HotelPublicPortalView.vue`) y Confirmación Admin a 1 Clic | ✅ | Core/Backend/Frontend |
+| KNA-161 | Core — Gastos Operativos (`OperatingExpense`) y Estado de Resultados Real / Flujo de Caja (`OperatingExpensesView.vue`) | ✅ | Core/Backend/Frontend |
 
 
 

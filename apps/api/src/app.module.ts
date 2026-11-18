@@ -69,6 +69,7 @@ import { LaundryModule } from './modules/laundry/laundry.module';
 import { BakeryModule } from './modules/bakery/bakery.module';
 import { AcademyModule } from './modules/academy/academy.module';
 import { RealEstateModule } from './modules/real-estate/real-estate.module';
+import { OperatingExpensesModule } from './modules/operating-expenses/operating-expenses.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -137,6 +138,7 @@ import { RealEstateModule } from './modules/real-estate/real-estate.module';
     BakeryModule,
     AcademyModule,
     RealEstateModule,
+    OperatingExpensesModule,
   ],
   controllers: [AppController],
   providers: [
