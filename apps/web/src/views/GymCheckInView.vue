@@ -79,11 +79,23 @@ const handleCheckIn = async () => {
         </h2>
         <p class="text-sm font-medium opacity-90">{{ checkInResult.reason }}</p>
 
-        <div v-if="checkInResult.customer" class="mt-4 text-left border-t border-slate-200/60 pt-4 text-sm space-y-1">
-          <p><strong>Socio:</strong> {{ checkInResult.customer.name || `${checkInResult.customer.firstName} ${checkInResult.customer.lastName}` }}</p>
+        <div v-if="checkInResult.customer" class="mt-4 text-left border-t border-slate-200/60 pt-4 text-sm space-y-1.5">
+          <p><strong>Socio:</strong> {{ checkInResult.customer.name || `${checkInResult.customer.firstName} ${checkInResult.customer.lastName || ''}` }}</p>
           <p><strong>Plan Actual:</strong> {{ checkInResult.plan?.name || 'Sin plan asignado' }}</p>
           <p><strong>Vence el:</strong> {{ checkInResult.subscription?.endDate ? new Date(checkInResult.subscription.endDate).toLocaleDateString() : '-' }}</p>
           <p><strong>Ingresos en este plan:</strong> <span class="font-semibold text-blue-600">{{ checkInResult.totalCheckIns || 1 }} veces</span></p>
+          <div
+            v-if="checkInResult.customer.medicalAlerts"
+            class="mt-2 p-2.5 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold"
+          >
+            🩺 Alerta de Salud / Lesión: {{ checkInResult.customer.medicalAlerts }}
+          </div>
+          <div
+            v-if="Number(checkInResult.subscription?.balanceAmount || 0) > 0"
+            class="mt-2 p-2.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold"
+          >
+            💰 Saldo Pendiente (CxC): ${{ Number(checkInResult.subscription.balanceAmount).toLocaleString('es-CO') }}
+          </div>
         </div>
       </div>
     </div>

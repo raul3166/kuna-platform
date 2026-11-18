@@ -32,6 +32,58 @@ export class GymSubscriptionsController {
     return this.subscriptionsService.findAll(organizationId, branchId);
   }
 
+  @ApiOperation({ summary: 'Record partial payment / installment on gym membership (CxC)' })
+  @Permissions('gym.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Post(':id/payments')
+  recordPayment(
+    @Param('id') id: string,
+    @Body() body: { amount: number; notes?: string },
+  ) {
+    return this.subscriptionsService.recordPayment(id, body);
+  }
+
+  @ApiOperation({ summary: 'Freeze / Pause an active gym membership' })
+  @Permissions('gym.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/freeze')
+  freeze(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.subscriptionsService.freeze(id, body?.reason);
+  }
+
+  @ApiOperation({ summary: 'Unfreeze / Reactivate a paused gym membership and recalculate endDate' })
+  @Permissions('gym.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/unfreeze')
+  unfreeze(@Param('id') id: string) {
+    return this.subscriptionsService.unfreeze(id);
+  }
+
+  @ApiOperation({ summary: 'Extend gym membership validity by extra days' })
+  @Permissions('gym.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch(':id/extend')
+  extendValidity(
+    @Param('id') id: string,
+    @Body() body: { days: number; reason?: string },
+  ) {
+    return this.subscriptionsService.extendValidity(id, Number(body.days), body.reason);
+  }
+
+  @ApiOperation({ summary: 'Update gym member medical/injury alerts' })
+  @Permissions('gym.create')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch('customers/:customerId/medical-alerts')
+  updateMedicalAlerts(
+    @Param('customerId') customerId: string,
+    @Body() body: { medicalAlerts?: string },
+  ) {
+    return this.subscriptionsService.updateCustomerMedicalAlerts(customerId, body.medicalAlerts);
+  }
+
   @ApiOperation({ summary: 'Get a single subscription by id' })
   @Permissions('gym.read')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

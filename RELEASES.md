@@ -279,3 +279,6 @@
 * **Core — Loyalty Points Program & Universal Customer Satisfaction CSAT 1–5 ★ (`KNA-162`, `Customer.loyaltyPoints`, `CustomerFeedback`):**
   * Automatic loyalty point accrual on `Customer` (1 pt per $1,000 COP on confirmed POS sales, Hotel check-outs, and Studio packages/installments, plus +10 pts for submitting a review), VIP tiers (`Bronce`, `Plata`, `Oro`, `Diamante VIP`), and manual point award/redemption (`PATCH /loyalty-feedback/customers/:id/points`).
   * New Core `CustomerFeedback` table (with Supabase RLS enabled) and `/loyalty-feedback` 360° dashboard (`LoyaltyFeedbackView.vue`), plus public guest stay rating tab in `HotelPublicPortalView.vue`.
+* **Gym Vertical — Membership Freeze, Validity Extension, Partial Payments CxC & Health Alerts (`KNA-163`, `GymSubscription`):**
+  * Extended `GymSubscription` with `totalAmount`, `paidAmount`, `balanceAmount`, `paymentNotes`, `frozenAt`, `freezeReason`, and `extendedDays`.
+  * Added CxC KPIs & partial payment installments (`💵 Abonar`), membership freeze/unfreeze with automatic `endDate` recalculation (`❄️ Congelar` / `☀️ Reactivar`), manual `+Días` extension, and `🩺` health/injury alerts in `GymSubscriptionsView.vue` and `GymCheckInView.vue`.

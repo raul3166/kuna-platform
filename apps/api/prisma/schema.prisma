@@ -1357,17 +1357,30 @@ model GymMembershipPlan {
 }
 
 model GymSubscription {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   organizationId   String
   branchId         String
   customerId       String // Vinculado al cliente/socio del CRM general
   membershipPlanId String
   startDate        DateTime
   endDate          DateTime
-  status           String   @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
-  paymentStatus    String   @default("PAID") // PAID, PENDING
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  status           String    @default("ACTIVE") // ACTIVE, PAUSED, EXPIRED, CANCELLED
+
+  // Core — Cuentas por Cobrar (CxC) y Pagos Parciales / Abonos
+  totalAmount      Decimal   @default(0) @db.Decimal(12, 2)
+  paidAmount       Decimal   @default(0) @db.Decimal(12, 2)
+  balanceAmount    Decimal   @default(0) @db.Decimal(12, 2)
+  paymentStatus    String    @default("PAID") // PAID, PARTIAL, PENDING
+  paymentNotes     String?
+
+  // Congelamiento (Freeze) y Extensión de vigencia
+  frozenAt         DateTime?
+  freezeReason     String?
+  extendedDays     Int       @default(0)
+  notes            String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch       Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)

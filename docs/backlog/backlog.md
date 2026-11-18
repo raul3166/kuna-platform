@@ -545,6 +545,7 @@ Objetivo: Módulo especializado para talleres automotrices y motos.
 | KNA-160 | Portal Público de Reservas de Habitaciones para Huéspedes (`/hotel-portal/:slug`, `HotelPublicPortalView.vue`) y Confirmación Admin a 1 Clic | ✅ | Core/Backend/Frontend |
 | KNA-161 | Core — Gastos Operativos (`OperatingExpense`) y Estado de Resultados Real / Flujo de Caja (`OperatingExpensesView.vue`) | ✅ | Core/Backend/Frontend |
 | KNA-162 | Core — Fidelización (`Customer.loyaltyPoints`) y Motor Universal de Reseñas CSAT 1–5 ★ (`CustomerFeedback`, `LoyaltyFeedbackView.vue`) | ✅ | Core/Backend/Frontend |
+| KNA-163 | Extensión de Congelamiento (`PAUSED`), Abonos Parciales CxC y Alertas Médicas (`🩺`) a Membresías de Gimnasio (`GymSubscription`) | ✅ | Core/Backend/Frontend |
 
 
 

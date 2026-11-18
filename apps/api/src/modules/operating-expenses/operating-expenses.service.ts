@@ -191,13 +191,12 @@ export class OperatingExpensesService {
         },
         include: { plan: { select: { price: true } } },
       }),
-      // 3. Membresías de Gimnasio
+      // 3. Membresías de Gimnasio (Pagos totales y abonos parciales)
       this.prisma.gymSubscription.findMany({
         where: {
           organizationId: params.organizationId,
           ...branchFilter,
           status: { not: 'CANCELLED' },
-          paymentStatus: 'PAID',
           createdAt: { gte: fromDate, lte: toDate },
         },
         include: { plan: { select: { price: true } } },
@@ -260,7 +259,18 @@ export class OperatingExpensesService {
       0,
     );
 
-    const gymIncome = gymSubs.reduce((sum, g) => sum + Number(g.plan?.price || 0), 0);
+    const gymIncome = gymSubs.reduce((sum, g) => {
+      const paid = Number(g.paidAmount || 0);
+      if (paid > 0) return sum + paid;
+      if (g.paymentStatus === 'PAID') {
+        return sum + Number(g.totalAmount || g.plan?.price || 0);
+      }
+      return sum;
+    }, 0);
+    const gymPendingReceivable = gymSubs.reduce(
+      (sum, g) => sum + Number(g.balanceAmount || 0),
+      0,
+    );
     const serviceOrdersIncome = serviceOrders.reduce((sum, so) => sum + Number(so.total || 0), 0);
     const hotelDirectIncome = hotelReservations.reduce(
       (sum, hr) => sum + Number(hr.totalAmount || 0),
@@ -309,7 +319,7 @@ export class OperatingExpensesService {
         serviceOrders: serviceOrdersIncome,
         hotelReservations: hotelDirectIncome,
         totalIncome,
-        pendingReceivables: studioPendingReceivable,
+        pendingReceivables: studioPendingReceivable + gymPendingReceivable,
       },
       outflowBreakdown: {
         paidOperatingExpenses: paidExpenses,

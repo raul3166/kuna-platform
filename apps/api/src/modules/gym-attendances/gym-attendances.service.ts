@@ -28,19 +28,31 @@ export class GymAttendancesService {
       where: {
         customerId: customer.id,
         status: 'ACTIVE',
-        paymentStatus: 'PAID',
+        paymentStatus: { in: ['PAID', 'PARTIAL'] },
         startDate: { lte: todayEnd },
         endDate: { gte: todayStart },
       },
       include: { plan: true },
     });
 
+    const pausedSubscription = !activeSubscription
+      ? await this.prisma.gymSubscription.findFirst({
+          where: {
+            customerId: customer.id,
+            status: 'PAUSED',
+          },
+          include: { plan: true },
+        })
+      : null;
+
     let status = 'ALLOWED';
     let reason = 'Membresía activa y al día';
 
     if (!activeSubscription) {
       status = 'DENIED';
-      reason = 'No cuenta con una membresía activa o se encuentra vencida/pendiente de pago';
+      reason = pausedSubscription
+        ? `Tu membresía (${pausedSubscription.plan?.name || 'Plan'}) se encuentra CONGELADA (${pausedSubscription.freezeReason || 'Pausa temporal'}). Solicita reactivarla en recepción.`
+        : 'No cuenta con una membresía activa o se encuentra vencida/pendiente de pago';
     } else {
       // Validar si el plan es limitado (ej. 1 entrada al día) usando el campo accessType
       if (activeSubscription.plan.accessType === 'LIMITED_DAILY') {

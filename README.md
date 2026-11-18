@@ -531,6 +531,7 @@ En la versión **v2.8.0** se ampliaron las capacidades operativas de `STUDIO`, `
 * **Portal Público de Reservas de Habitaciones para Huéspedes (`KNA-160`, `/hotel-portal/:slug`):** Buscador de disponibilidad de habitaciones por rango de fechas y capacidad, solicitud de reserva online (`PENDING`) reutilizando `Customer`, consulta de folio en vivo y confirmación a 1 clic (`✔️ Confirmar Reserva`) por parte del administrador del hotel.
 * **Core — Gastos Operativos y Estado de Resultados Real (`KNA-161`, `OperatingExpense`):** Registro transversal de egresos operativos (arriendo, servicios, nómina, marketing, mantenimiento, insumos, impuestos) y cálculo en tiempo real de la **Utilidad Neta Real** ($\text{Ingresos Consolidados} - \text{Gastos Operativos} - \text{Compras}$) en `/operating-expenses`.
 * **Core — Fidelización (Puntos VIP) y Satisfacción Multi-Vertical CSAT 1–5 ★ (`KNA-162`, `Customer.loyaltyPoints`, `CustomerFeedback`):** Acumulación automática de puntos en compras/servicios, redención de beneficios, niveles VIP y tablero central de reseñas 1–5 estrellas en `/loyalty-feedback`.
+* **Gimnasios (`GYM`) — Congelamiento, Extensión, Cartera CxC y Alertas de Salud (`KNA-163`, `GymSubscription`):** Reutilización del motor de congelamiento (`PAUSED`) con recálculo de vencimiento, abonos parciales CxC y alertas de lesiones `🩺` en `GymSubscriptionsView.vue` y `GymCheckInView.vue`.
 
 ## 📦 Versión actual consolidada
 

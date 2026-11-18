@@ -44,6 +44,10 @@ Versionado basado en Semantic Versioning.
   * Nuevo campo `loyaltyPoints` en `Customer` con acumulación automática transversal (1 punto por cada $1.000 COP en ventas POS confirmadas, check-outs de Hotel, paquetes/abonos de Studio y +10 puntos por enviar reseña de satisfacción).
   * Nuevo modelo relacional Core `CustomerFeedback` (con Row Level Security activo en Supabase) que unifica las reseñas de las 14 verticales junto con `StudioClassFeedback`.
   * Nueva vista Core **`⭐ Fidelización y Reseñas (CSAT)`** (`/loyalty-feedback`, `LoyaltyFeedbackView.vue`) con clasificación automática de niveles VIP (`Bronce`, `Plata`, `Oro`, `Diamante VIP`), otorgamiento/redención de puntos (`PATCH /loyalty-feedback/customers/:id/points`), índice CSAT (%) y pestaña **`⭐ Calificar Estadía (+10 pts)`** en `HotelPublicPortalView.vue`.
+* **Extensión del Motor de Congelamiento (`PAUSED`), Abonos Parciales CxC y Alertas de Salud a Gimnasios (`KNA-163`, `GymSubscription`):**
+  * Extensión de `GymSubscription` en `schema.prisma` y PostgreSQL con `totalAmount`, `paidAmount`, `balanceAmount`, `paymentNotes`, `frozenAt`, `freezeReason`, `extendedDays` y `notes`.
+  * Endpoints y modales en `GymSubscriptionsView.vue` para venta con **Pago Total (`PAID`)**, **Abono Parcial (`PARTIAL`)** o **A Crédito (`PENDING`)**, registro de abonos (`POST /gym-subscriptions/:id/payments`), congelamiento (`PATCH /gym-subscriptions/:id/freeze`), reactivación con recálculo automático de fecha de vencimiento (`PATCH /gym-subscriptions/:id/unfreeze`), extensión manual de días (`PATCH /gym-subscriptions/:id/extend`) y edición de alertas médicas (`PATCH /gym-subscriptions/customers/:customerId/medical-alerts`).
+  * Visualización en vivo de la insignia **`🩺 Alerta de Salud / Lesión`** y **`💰 Saldo Pendiente (CxC)`** en la terminal de acceso `GymCheckInView.vue`.
 
 ---
 ## [2.7.0] - 2026-11-10
