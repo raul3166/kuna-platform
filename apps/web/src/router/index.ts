@@ -33,6 +33,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/public-portal/:slug',
+    name: 'universal-public-portal',
+    component: () => import('../views/UniversalPublicPortalView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     // 1. Tu panel de bienvenida original
     path: '/dashboard',
     name: 'dashboard',

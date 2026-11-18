@@ -17,6 +17,21 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            @click="copyPublicPortalLink"
+            class="px-3.5 py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition cursor-pointer"
+          >
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Carnet Mascotas' }}
+          </button>
+          <a
+            :href="publicPortalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-3.5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition"
+          >
+            🌐 Portal Mascotas ↗
+          </a>
           <router-link
             to="/veterinary-pets"
             class="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition"
@@ -348,7 +363,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AppLayout from '../components/AppLayout.vue';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
@@ -380,6 +395,22 @@ const configForm = ref({
 
 const getOrgId = () =>
   authStore.currentOrganization?.id || authStore.user?.organizationId || undefined;
+
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo';
+  return `${window.location.origin}/public-portal/${slugOrId}`;
+});
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => { copiedPortalLink.value = false; }, 2500);
+  } catch {
+    window.prompt('Copia el enlace del Portal Público Veterinario y Carnet Digital:', publicPortalUrl.value);
+  }
+};
 
 const formatCustomerName = (c?: any) => {
   if (!c) return 'N/A';

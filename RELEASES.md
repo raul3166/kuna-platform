@@ -282,3 +282,6 @@
 * **Gym Vertical — Membership Freeze, Validity Extension, Partial Payments CxC & Health Alerts (`KNA-163`, `GymSubscription`):**
   * Extended `GymSubscription` with `totalAmount`, `paidAmount`, `balanceAmount`, `paymentNotes`, `frozenAt`, `freezeReason`, and `extendedDays`.
   * Added CxC KPIs & partial payment installments (`💵 Abonar`), membership freeze/unfreeze with automatic `endDate` recalculation (`❄️ Congelar` / `☀️ Reactivar`), manual `+Días` extension, and `🩺` health/injury alerts in `GymSubscriptionsView.vue` and `GymCheckInView.vue`.
+* **Universal Public Customer Portal — Live Order/Laundry Tracking, Online Appointments & Digital Pet Vaccination Card (`KNA-164`, `/public-portal/:slug`):**
+  * New `PublicPortalModule` and `UniversalPublicPortalView.vue` enabling passwordless lookup by ID document, vehicle license plate, laundry ticket number, or email (`GET /public-portal/track/:slug`).
+  * Live visual progress tracker for 5-stage Laundry tickets (`LaundryTicket` + rack location) and 4-stage Automotive/Service orders (`ServiceOrder`), online appointment booking (`Appointment` with `ServiceItem` & `ServiceWorker`), digital Pet Vaccination Card (`PetVaccination`), and direct portal link buttons in `BeautyAgendaView.vue`, `AutomotiveDashboardView.vue`, `LaundryDashboardView.vue`, and `VeterinaryDashboardView.vue`.

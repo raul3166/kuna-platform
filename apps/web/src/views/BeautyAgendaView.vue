@@ -53,6 +53,22 @@ const successMessage = ref('')
 
 const orgId = () => authStore.user?.organizationId || authStore.currentOrganization?.id
 
+const copiedPortalLink = ref(false)
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any
+  const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo'
+  return `${window.location.origin}/public-portal/${slugOrId}`
+})
+async function copyPublicPortalLink() {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value)
+    copiedPortalLink.value = true
+    setTimeout(() => { copiedPortalLink.value = false }, 2500)
+  } catch {
+    window.prompt('Copia el enlace del Portal Público de Citas:', publicPortalUrl.value)
+  }
+}
+
 function flash(kind: 'ok' | 'err', msg: string) {
   if (kind === 'ok') { successMessage.value = msg; errorMessage.value = '' }
   else { errorMessage.value = msg; successMessage.value = '' }
@@ -287,7 +303,13 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button @click="shiftDay(-1)" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50">←</button>
+          <button type="button" @click="copyPublicPortalLink" class="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 cursor-pointer">
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Citas Online' }}
+          </button>
+          <a :href="publicPortalUrl" target="_blank" rel="noopener noreferrer" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50">
+            🌐 Portal Clientes ↗
+          </a>
+          <button type="button" @click="shiftDay(-1)" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50">←</button>
           <input v-model="selectedDate" type="date" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold" />
           <button @click="shiftDay(1)" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50">→</button>
           <button @click="selectedDate = todayStr()" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">Hoy</button>

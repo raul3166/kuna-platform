@@ -71,6 +71,7 @@ import { AcademyModule } from './modules/academy/academy.module';
 import { RealEstateModule } from './modules/real-estate/real-estate.module';
 import { OperatingExpensesModule } from './modules/operating-expenses/operating-expenses.module';
 import { LoyaltyFeedbackModule } from './modules/loyalty-feedback/loyalty-feedback.module';
+import { PublicPortalModule } from './modules/public-portal/public-portal.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -141,6 +142,7 @@ import { LoyaltyFeedbackModule } from './modules/loyalty-feedback/loyalty-feedba
     RealEstateModule,
     OperatingExpensesModule,
     LoyaltyFeedbackModule,
+    PublicPortalModule,
   ],
   controllers: [AppController],
   providers: [

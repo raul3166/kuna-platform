@@ -532,6 +532,7 @@ En la versión **v2.8.0** se ampliaron las capacidades operativas de `STUDIO`, `
 * **Core — Gastos Operativos y Estado de Resultados Real (`KNA-161`, `OperatingExpense`):** Registro transversal de egresos operativos (arriendo, servicios, nómina, marketing, mantenimiento, insumos, impuestos) y cálculo en tiempo real de la **Utilidad Neta Real** ($\text{Ingresos Consolidados} - \text{Gastos Operativos} - \text{Compras}$) en `/operating-expenses`.
 * **Core — Fidelización (Puntos VIP) y Satisfacción Multi-Vertical CSAT 1–5 ★ (`KNA-162`, `Customer.loyaltyPoints`, `CustomerFeedback`):** Acumulación automática de puntos en compras/servicios, redención de beneficios, niveles VIP y tablero central de reseñas 1–5 estrellas en `/loyalty-feedback`.
 * **Gimnasios (`GYM`) — Congelamiento, Extensión, Cartera CxC y Alertas de Salud (`KNA-163`, `GymSubscription`):** Reutilización del motor de congelamiento (`PAUSED`) con recálculo de vencimiento, abonos parciales CxC y alertas de lesiones `🩺` en `GymSubscriptionsView.vue` y `GymCheckInView.vue`.
+* **Portal Público Universal de Citas, Carnet Veterinario y Tracking en Vivo (`KNA-164`, `/public-portal/:slug`):** Seguimiento en vivo por cédula, placa o ticket para Taller Automotriz (`AUTOMOTIVE`) y Lavandería (`LAUNDRY`), agendamiento online de citas para Salón/Spa (`BEAUTY`) y Veterinaria (`VETERINARY`), y carnet digital de vacunación de mascotas.
 
 ## 📦 Versión actual consolidada
 

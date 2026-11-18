@@ -18,6 +18,22 @@
 
         <div class="flex flex-wrap items-center gap-3">
           <button
+            type="button"
+            @click="copyPublicPortalLink"
+            class="px-3.5 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100 transition cursor-pointer"
+          >
+            {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Tracking Clientes' }}
+          </button>
+          <a
+            :href="publicPortalUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-3.5 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 transition"
+          >
+            🌐 Portal Tracking ↗
+          </a>
+          <button
+            type="button"
             @click="loadDashboard"
             class="px-3.5 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition"
           >
@@ -299,7 +315,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AppLayout from '../components/AppLayout.vue';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
@@ -382,6 +398,22 @@ const formatCustomerName = (c?: any) => {
   if (c.companyName) return c.companyName;
   const full = `${c.firstName || ''} ${c.lastName || ''}`.trim();
   return full || c.name || 'Cliente';
+};
+
+const copiedPortalLink = ref(false);
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any;
+  const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo';
+  return `${window.location.origin}/public-portal/${slugOrId}`;
+});
+const copyPublicPortalLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value);
+    copiedPortalLink.value = true;
+    setTimeout(() => { copiedPortalLink.value = false; }, 2500);
+  } catch {
+    window.prompt('Copia el enlace de Tracking de Lavandería:', publicPortalUrl.value);
+  }
 };
 
 const formatProcess = (proc?: string) => {

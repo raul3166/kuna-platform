@@ -48,6 +48,12 @@ Versionado basado en Semantic Versioning.
   * Extensión de `GymSubscription` en `schema.prisma` y PostgreSQL con `totalAmount`, `paidAmount`, `balanceAmount`, `paymentNotes`, `frozenAt`, `freezeReason`, `extendedDays` y `notes`.
   * Endpoints y modales en `GymSubscriptionsView.vue` para venta con **Pago Total (`PAID`)**, **Abono Parcial (`PARTIAL`)** o **A Crédito (`PENDING`)**, registro de abonos (`POST /gym-subscriptions/:id/payments`), congelamiento (`PATCH /gym-subscriptions/:id/freeze`), reactivación con recálculo automático de fecha de vencimiento (`PATCH /gym-subscriptions/:id/unfreeze`), extensión manual de días (`PATCH /gym-subscriptions/:id/extend`) y edición de alertas médicas (`PATCH /gym-subscriptions/customers/:customerId/medical-alerts`).
   * Visualización en vivo de la insignia **`🩺 Alerta de Salud / Lesión`** y **`💰 Saldo Pendiente (CxC)`** en la terminal de acceso `GymCheckInView.vue`.
+* **Portal Público Universal de Citas, Carnet Digital de Mascotas y Tracking en Vivo Multi-Vertical (`KNA-164`, `/public-portal/:slug`):**
+  * Nuevo módulo Core `PublicPortalModule` (`GET /public-portal/catalog/:slug`, `GET /public-portal/track/:slug`, `POST /public-portal/appointments/:slug`, `PATCH /public-portal/appointments/:slug/:id/cancel`) y vista pública `UniversalPublicPortalView.vue` sin contraseña.
+  * **Tracking en Vivo por Cédula, Placa (`ABC-123`) o Ticket:** Seguimiento visual de las 5 etapas de Lavandería (`RECEIVED` → `WASHING` → `DRYING` → `IRONING` → `READY` + ubicación en perchero) y de las 4 etapas de Órdenes de Taller Automotriz / Servicios (`PENDING` → `IN_PROGRESS` → `COMPLETED` → `BILLED`).
+  * **Agendamiento Online de Citas (`BEAUTY`, `VETERINARY`, `AUTOMOTIVE`, `SERVICES`):** Selección de servicio (`ServiceItem`), especialista (`ServiceWorker`), fecha y hora, creando o vinculando automáticamente al cliente en `Customer` Core.
+  * **Carnet Digital de Vacunación de Mascotas (`VETERINARY`):** Consulta pública del expediente de mascotas, vacunas aplicadas y fechas de próximos refuerzos.
+  * Botones **`🔗 Copiar Link Portal Clientes`** y **`🌐 Abrir Portal ↗`** integrados en `BeautyAgendaView.vue`, `AutomotiveDashboardView.vue`, `LaundryDashboardView.vue` y `VeterinaryDashboardView.vue`.
 
 ---
 ## [2.7.0] - 2026-11-10

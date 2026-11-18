@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
@@ -88,6 +88,22 @@ const isConfigModalOpen = ref(false)
 const isSavingConfig = ref(false)
 const selectedOrder = ref<YardOrder | null>(null)
 const isDetailModalOpen = ref(false)
+
+const copiedPortalLink = ref(false)
+const publicPortalUrl = computed(() => {
+  const org = authStore.currentOrganization as any
+  const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo'
+  return `${window.location.origin}/public-portal/${slugOrId}`
+})
+async function copyPublicPortalLink() {
+  try {
+    await navigator.clipboard.writeText(publicPortalUrl.value)
+    copiedPortalLink.value = true
+    setTimeout(() => { copiedPortalLink.value = false }, 2500)
+  } catch {
+    window.prompt('Copia el enlace de Tracking en Vivo para Clientes:', publicPortalUrl.value)
+  }
+}
 
 function formatCurrency(amount: number | string | undefined): string {
   if (amount === undefined || amount === null) return '$0'
@@ -201,6 +217,23 @@ onMounted(() => {
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          @click="copyPublicPortalLink"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200 transition-all cursor-pointer"
+        >
+          {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Tracking Clientes' }}
+        </button>
+
+        <a
+          :href="publicPortalUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-all"
+        >
+          🌐 Portal Tracking ↗
+        </a>
+
         <router-link
           to="/automotive-checkin"
           class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 transition-all cursor-pointer"
