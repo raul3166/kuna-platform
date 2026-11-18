@@ -536,6 +536,9 @@ model PurchaseInvoice {
   subtotal Decimal @default(0) @db.Decimal(12, 2)
   tax      Decimal @default(0) @db.Decimal(12, 2)
   total    Decimal @default(0) @db.Decimal(12, 2)
+  paidAmount    Decimal @default(0) @db.Decimal(12, 2)
+  balanceAmount Decimal @default(0) @db.Decimal(12, 2)
+  paymentNotes  String?
   notes    String?
 
   createdAt DateTime @default(now())
@@ -1081,6 +1084,10 @@ model ServiceOrder {
   laborTotal       Decimal            @default(0) @db.Decimal(12, 2)
   materialsTotal   Decimal            @default(0) @db.Decimal(12, 2)
   total            Decimal            @default(0) @db.Decimal(12, 2)
+  paidAmount       Decimal            @default(0) @db.Decimal(12, 2)
+  balanceAmount    Decimal            @default(0) @db.Decimal(12, 2)
+  paymentStatus    String             @default("PENDING") // PAID, PARTIAL, PENDING
+  paymentNotes     String?
   saleId           String?            @unique
   serviceItemId    String?         // <-- Asegúrate de tener este campo
   vehicleId        String?

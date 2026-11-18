@@ -54,6 +54,11 @@ Versionado basado en Semantic Versioning.
   * **Agendamiento Online de Citas (`BEAUTY`, `VETERINARY`, `AUTOMOTIVE`, `SERVICES`):** Selección de servicio (`ServiceItem`), especialista (`ServiceWorker`), fecha y hora, creando o vinculando automáticamente al cliente en `Customer` Core.
   * **Carnet Digital de Vacunación de Mascotas (`VETERINARY`):** Consulta pública del expediente de mascotas, vacunas aplicadas y fechas de próximos refuerzos.
   * Botones **`🔗 Copiar Link Portal Clientes`** y **`🌐 Abrir Portal ↗`** integrados en `BeautyAgendaView.vue`, `AutomotiveDashboardView.vue`, `LaundryDashboardView.vue` y `VeterinaryDashboardView.vue`.
+* **Core — Tablero Central 360° de Cartera: Cuentas por Cobrar (CxC) y Cuentas por Pagar (CxP) (`KNA-165`, `AccountsPortfolioModule`):**
+  * Extensión de `ServiceOrder` y `PurchaseInvoice` en `schema.prisma` y PostgreSQL con `paidAmount`, `balanceAmount`, `paymentStatus` y `paymentNotes` para soportar anticipos en órdenes de servicio y abonos a facturas de proveedores.
+  * Nuevo módulo Core `AccountsPortfolioModule` (`GET /accounts-portfolio/dashboard`, `POST /accounts-portfolio/receivables/pay`, `POST /accounts-portfolio/payables/pay`) y vista `/accounts-portfolio` (`AccountsPortfolioView.vue`) en el menú `Core`.
+  * **Cuentas por Cobrar (CxC) con Edades de Cartera:** Unifica saldos pendientes de Facturas POS (`Sale`), Órdenes de Servicio (`ServiceOrder`), Paquetes de Studio (`StudioSubscription`) y Membresías de Gym (`GymSubscription`), clasificándolos en **Al día (≤7d)**, **8–30 días** y **Mora >30 días**, con registro de abonos y recordatorio de cobro por WhatsApp a 1 clic.
+  * **Cuentas por Pagar (CxP):** Unifica Facturas de Proveedores (`PurchaseInvoice`) y Gastos Operativos por pagar (`OperatingExpense`) con botón **`💸 Abonar CxP`** tanto en la cartera central como en `PurchaseInvoicesView.vue` y `ServiceOrdersView.vue`.
 
 ---
 ## [2.7.0] - 2026-11-10

@@ -10,3 +10,4 @@ import { PublicPortalService } from './public-portal.service';
   exports: [PublicPortalService],
 })
 export class PublicPortalModule {}
+

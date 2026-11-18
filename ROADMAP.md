@@ -431,6 +431,7 @@ Objetivo: Incorporar gestión automática de Lista de Espera en clases con aforo
 | KNA-162 | Core — Fidelización (`Customer.loyaltyPoints`) y Motor Universal de Reseñas CSAT 1–5 ★ (`CustomerFeedback`, `LoyaltyFeedbackView.vue`) | ✅ | Core/Backend/Frontend |
 | KNA-163 | Extensión de Congelamiento (`PAUSED`), Abonos Parciales CxC y Alertas Médicas (`🩺`) a Membresías de Gimnasio (`GymSubscription`) | ✅ | Core/Backend/Frontend |
 | KNA-164 | Portal Público Universal de Tracking en Vivo (Taller/Lavandería), Citas Online (Belleza/Spa) y Carnet Digital de Mascotas (`/public-portal/:slug`) | ✅ | Core/Backend/Frontend |
+| KNA-165 | Core — Cartera Central 360° (CxC y CxP) con Edades de Cartera, Anticipos en `ServiceOrder` y Abonos a `PurchaseInvoice` (`AccountsPortfolioView.vue`) | ✅ | Core/Backend/Frontend |
 
 **Sprint 31 completado al 100%. Plataforma en producción (`v2.8.0`).**
 

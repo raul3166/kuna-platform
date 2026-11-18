@@ -21,6 +21,39 @@ const loadingSubmit = ref(false);
 const showCreateModal = ref(false);
 const showDetailModal = ref(false);
 const selectedOrder = ref<any>(null);
+const selectedOrderForAdvance = ref<any>(null);
+const advanceAmount = ref<number>(0);
+const advanceNotes = ref<string>('');
+
+const openAdvanceModal = (order: any) => {
+  selectedOrderForAdvance.value = order;
+  const total = Number(order.total || 0);
+  const paid = Number(order.paidAmount || 0);
+  advanceAmount.value = Math.max(0, total - paid);
+  advanceNotes.value = '';
+};
+
+const submitAdvancePayment = async () => {
+  if (!selectedOrderForAdvance.value) return;
+  loadingSubmit.value = true;
+  try {
+    const orgId = authStore.user?.organizationId || authStore.currentOrganization?.id;
+    await api.post('/accounts-portfolio/receivables/pay', {
+      organizationId: orgId,
+      sourceType: 'SERVICE_ORDER',
+      sourceId: selectedOrderForAdvance.value.id,
+      amount: Number(advanceAmount.value),
+      paymentMethod: 'TRANSFER',
+      notes: advanceNotes.value || undefined,
+    });
+    selectedOrderForAdvance.value = null;
+    await fetchServiceOrders();
+  } catch (err: any) {
+    alert(err?.response?.data?.message || 'Error al registrar el anticipo');
+  } finally {
+    loadingSubmit.value = false;
+  }
+};
 
 // Formulario para nuevo material/repuesto
 const newMaterial = ref({
@@ -411,8 +444,22 @@ onMounted(() => {
                   >
                     {{ getStatusBadge(order.status).text }}
                   </span>
+                  <div v-if="Number(order.total || 0) > 0" class="mt-1 text-[11px]">
+                    <span class="text-slate-600">Total: <strong>${{ Number(order.total).toLocaleString('es-CO') }}</strong></span>
+                    <span v-if="Number(order.paidAmount || 0) > 0" class="text-emerald-700 font-bold ml-1">
+                      (Anticipo: ${{ Number(order.paidAmount).toLocaleString('es-CO') }})
+                    </span>
+                  </div>
                 </td>
                 <td class="px-6 py-4 text-right space-x-2">
+                  <button
+                    v-if="Number(order.total || 0) > Number(order.paidAmount || 0) && order.status !== 'BILLED'"
+                    type="button"
+                    @click="openAdvanceModal(order)"
+                    class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                  >
+                    💵 Anticipo / Abono
+                  </button>
                   <button
                     v-if="order.status === 'PENDING'"
                     @click="updateOrderStatus(order.id, 'in-progress')"
@@ -680,6 +727,7 @@ onMounted(() => {
                 <span>🛒</span> Facturar en el POS
               </button>
               <button
+                type="button"
                 @click="showDetailModal = false"
                 class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
               >
@@ -687,6 +735,41 @@ onMounted(() => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- MODAL DE ANTICIPO / ABONO EN ORDEN DE SERVICIO -->
+      <div v-if="selectedOrderForAdvance" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-100 overflow-hidden">
+          <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 id="modal-so-advance-title" class="text-base font-bold text-slate-900">
+              💵 Registrar Anticipo / Abono en Orden
+            </h3>
+            <button type="button" @click="selectedOrderForAdvance = null" class="text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+          </div>
+          <form @submit.prevent="submitAdvancePayment" aria-labelledby="modal-so-advance-title" class="p-6 space-y-4">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs">
+              <p class="font-bold text-emerald-900">Orden #{{ selectedOrderForAdvance.orderNumber }} — {{ selectedOrderForAdvance.assetName }}</p>
+              <p class="text-emerald-800 mt-0.5">
+                Total Orden: <strong>${{ Number(selectedOrderForAdvance.total || 0).toLocaleString('es-CO') }}</strong> •
+                Abonado: <strong>${{ Number(selectedOrderForAdvance.paidAmount || 0).toLocaleString('es-CO') }}</strong>
+              </p>
+            </div>
+            <div>
+              <label for="so-adv-amt" class="block text-xs font-bold uppercase text-slate-500 mb-1">Valor del Anticipo / Abono (COP)</label>
+              <input id="so-adv-amt" v-model.number="advanceAmount" type="number" min="1" required class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-bold" />
+            </div>
+            <div>
+              <label for="so-adv-notes" class="block text-xs font-bold uppercase text-slate-500 mb-1">Medio de Pago / Comprobante</label>
+              <input id="so-adv-notes" v-model="advanceNotes" type="text" placeholder="Ej: Anticipo 50% Nequi / Efectivo..." class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm" />
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button type="button" @click="selectedOrderForAdvance = null" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer">Cancelar</button>
+              <button type="submit" :disabled="loadingSubmit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
+                {{ loadingSubmit ? 'Guardando...' : 'Confirmar Anticipo' }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

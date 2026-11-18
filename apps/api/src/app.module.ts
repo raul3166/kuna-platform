@@ -72,6 +72,7 @@ import { RealEstateModule } from './modules/real-estate/real-estate.module';
 import { OperatingExpensesModule } from './modules/operating-expenses/operating-expenses.module';
 import { LoyaltyFeedbackModule } from './modules/loyalty-feedback/loyalty-feedback.module';
 import { PublicPortalModule } from './modules/public-portal/public-portal.module';
+import { AccountsPortfolioModule } from './modules/accounts-portfolio/accounts-portfolio.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -143,6 +144,7 @@ import { PublicPortalModule } from './modules/public-portal/public-portal.module
     OperatingExpensesModule,
     LoyaltyFeedbackModule,
     PublicPortalModule,
+    AccountsPortfolioModule,
   ],
   controllers: [AppController],
   providers: [

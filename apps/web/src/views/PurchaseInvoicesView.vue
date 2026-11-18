@@ -15,7 +15,43 @@ interface PurchaseInvoice {
   dueDate?: string | null
   status: 'DRAFT' | 'POSTED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED'
   total: number | string
+  paidAmount?: number | string
+  balanceAmount?: number | string
   supplier: Supplier
+}
+
+const selectedInvoiceForPay = ref<PurchaseInvoice | null>(null)
+const payAmount = ref<number>(0)
+const payNotes = ref('')
+
+function openPayInvoiceModal(inv: PurchaseInvoice) {
+  selectedInvoiceForPay.value = inv
+  const total = Number(inv.total || 0)
+  const paid = Number(inv.paidAmount || 0)
+  payAmount.value = Math.max(0, total - paid)
+  payNotes.value = ''
+}
+
+async function submitInvoicePayment() {
+  if (!selectedInvoiceForPay.value) return
+  isSubmitting.value = true
+  try {
+    await api.post('/accounts-portfolio/payables/pay', {
+      organizationId: authStore.currentOrganization?.id || authStore.user?.organizationId || '',
+      sourceType: 'PURCHASE_INVOICE',
+      sourceId: selectedInvoiceForPay.value.id,
+      amount: Number(payAmount.value),
+      paymentMethod: 'TRANSFER',
+      notes: payNotes.value || undefined,
+    })
+    selectedInvoiceForPay.value = null
+    successMessage.value = 'Pago registrado exitosamente en la factura del proveedor.'
+    await loadInvoicesModuleData()
+  } catch (err: any) {
+    errorMessage.value = err?.response?.data?.message || 'No se pudo registrar el pago.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const activeTab = ref<'list' | 'create'>('list')
@@ -151,7 +187,8 @@ onMounted(() => { loadInvoicesModuleData() })
                 <th class="px-6 py-3">Razón Social / Entidad</th>
                 <th class="px-6 py-3">Fechas (Emisión / Vence)</th>
                 <th class="px-6 py-3">Estado de Pago</th>
-                <th class="px-6 py-3 text-right">Valor Total</th>
+                <th class="px-6 py-3 text-right">Valor Total / Saldo CxP</th>
+                <th class="px-6 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-sans">
@@ -170,7 +207,22 @@ onMounted(() => { loadInvoicesModuleData() })
                     {{ inv.status }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-right font-mono font-bold text-slate-950">{{ formatCurrency(inv.total) }}</td>
+                <td class="px-6 py-4 text-right font-mono">
+                  <div class="font-bold text-slate-950">{{ formatCurrency(inv.total) }}</div>
+                  <div v-if="Number(inv.paidAmount || 0) > 0" class="text-[11px] text-emerald-700">
+                    Abonado: {{ formatCurrency(inv.paidAmount || 0) }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button
+                    v-if="inv.status !== 'PAID' && inv.status !== 'CANCELLED' && Number(inv.total || 0) > Number(inv.paidAmount || 0)"
+                    type="button"
+                    @click="openPayInvoiceModal(inv)"
+                    class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer"
+                  >
+                    💸 Abonar CxP
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -223,6 +275,38 @@ onMounted(() => { loadInvoicesModuleData() })
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- MODAL DE ABONO / PAGO A PROVEEDOR (CxP) -->
+      <div v-if="selectedInvoiceForPay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-100 overflow-hidden">
+          <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 id="modal-cxp-inv-title" class="text-base font-bold text-slate-900">
+              💸 Registrar Pago a Proveedor (CxP)
+            </h3>
+            <button type="button" @click="selectedInvoiceForPay = null" class="text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+          </div>
+          <form @submit.prevent="submitInvoicePayment" aria-labelledby="modal-cxp-inv-title" class="p-6 space-y-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs">
+              <p class="font-bold text-slate-900">{{ selectedInvoiceForPay.supplier?.companyName }}</p>
+              <p class="text-slate-600">Factura: {{ selectedInvoiceForPay.invoiceNumber }} — Total: {{ formatCurrency(selectedInvoiceForPay.total) }}</p>
+            </div>
+            <div>
+              <label for="cxp-pay-amt" class="block text-xs font-bold uppercase text-slate-500 mb-1">Valor a Pagar / Abonar (COP)</label>
+              <input id="cxp-pay-amt" v-model.number="payAmount" type="number" min="1" required class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-bold" />
+            </div>
+            <div>
+              <label for="cxp-pay-notes" class="block text-xs font-bold uppercase text-slate-500 mb-1">Comprobante / Referencia</label>
+              <input id="cxp-pay-notes" v-model="payNotes" type="text" placeholder="Ej: Transferencia Bancolombia #1129..." class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm" />
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button type="button" @click="selectedInvoiceForPay = null" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer">Cancelar</button>
+              <button type="submit" :disabled="isSubmitting" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                {{ isSubmitting ? 'Guardando...' : 'Confirmar Pago' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </AppLayout>
