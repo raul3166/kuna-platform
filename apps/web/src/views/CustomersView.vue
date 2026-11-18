@@ -20,6 +20,7 @@ interface Customer {
   state?: string | null;
   country?: string | null;
   notes?: string | null;
+  loyaltyPoints?: number | null;
   isActive: boolean;
 }
 
@@ -212,6 +213,7 @@ onMounted(() => { fetchCustomers() })
                 <th class="px-6 py-3">Nombre Completo / Empresa</th>
                 <th class="px-6 py-3">Identificación Legal</th>
                 <th class="px-6 py-3">Contacto</th>
+                <th class="px-6 py-3">Puntos Fidelidad</th>
                 <th class="px-6 py-3">Ubicación</th>
                 <th class="px-6 py-3 text-right">Acciones</th>
               </tr>
@@ -232,6 +234,11 @@ onMounted(() => { fetchCustomers() })
                   <div v-if="c.email" class="font-medium text-blue-600">{{ c.email }}</div>
                   <div v-if="c.phoneNumber" class="text-slate-500 font-mono mt-0.5">📞 {{ c.phoneNumber }}</div>
                   <div v-if="!c.email && !c.phoneNumber" class="text-slate-400 italic">Sin canales</div>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    ⭐ {{ Number(c.loyaltyPoints || 0).toLocaleString('es-CO') }} pts
+                  </span>
                 </td>
                 <td class="px-6 py-4 text-xs text-slate-500">
                   <div v-if="c.address" class="text-slate-700">{{ c.address }}</div>

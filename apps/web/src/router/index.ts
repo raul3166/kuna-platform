@@ -125,6 +125,12 @@ const routes: Array<RouteRecordRaw> = [
   meta: { requiresAuth: true }
 },
 {
+  path: '/loyalty-feedback',
+  name: 'loyalty-feedback',
+  component: () => import('../views/LoyaltyFeedbackView.vue'),
+  meta: { requiresAuth: true }
+},
+{
   path: '/users',
   name: 'users',
   component: () => import('../views/UsersView.vue'),

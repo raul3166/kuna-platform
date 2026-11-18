@@ -276,3 +276,6 @@
 * **Core — Operating Expenses & Real Net Profit / Cash Flow Statement (`KNA-161`, `OperatingExpense`):**
   * New Core `OperatingExpense` table (with Supabase RLS enabled) and `/operating-expenses` module (`OperatingExpensesView.vue`) to track rent, utilities, payroll, marketing, maintenance, supplies, and taxes (`PAID` or `PENDING`).
   * Cross-vertical Cash Flow & Net Profit engine (`GET /operating-expenses/summary`) aggregating revenues across POS sales, Studio packages/installments, Gym memberships, Service Orders, and Hotel reservations against operating expenses and inventory purchase invoices.
+* **Core — Loyalty Points Program & Universal Customer Satisfaction CSAT 1–5 ★ (`KNA-162`, `Customer.loyaltyPoints`, `CustomerFeedback`):**
+  * Automatic loyalty point accrual on `Customer` (1 pt per $1,000 COP on confirmed POS sales, Hotel check-outs, and Studio packages/installments, plus +10 pts for submitting a review), VIP tiers (`Bronce`, `Plata`, `Oro`, `Diamante VIP`), and manual point award/redemption (`PATCH /loyalty-feedback/customers/:id/points`).
+  * New Core `CustomerFeedback` table (with Supabase RLS enabled) and `/loyalty-feedback` 360° dashboard (`LoyaltyFeedbackView.vue`), plus public guest stay rating tab in `HotelPublicPortalView.vue`.

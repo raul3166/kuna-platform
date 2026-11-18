@@ -105,6 +105,16 @@ export class StudioSubscriptionsService {
       });
     }
 
+    if (paidAmount >= 1000) {
+      const earnedPoints = Math.floor(paidAmount / 1000);
+      if (earnedPoints > 0) {
+        await this.prisma.customer.update({
+          where: { id: dto.customerId },
+          data: { loyaltyPoints: { increment: earnedPoints } },
+        });
+      }
+    }
+
     return this.prisma.studioSubscription.create({
       data: {
         organizationId: dto.organizationId,
@@ -221,6 +231,16 @@ export class StudioSubscriptionsService {
     const stamp = new Date().toLocaleDateString('es-CO');
     const logLine = `[${stamp}] Abono +$${amount.toLocaleString('es-CO')}${payload.notes ? ` (${payload.notes.trim()})` : ''}`;
     const updatedNotes = [sub.paymentNotes, logLine].filter(Boolean).join(' | ');
+
+    if (amount >= 1000 && sub.customerId) {
+      const earnedPoints = Math.floor(amount / 1000);
+      if (earnedPoints > 0) {
+        await this.prisma.customer.update({
+          where: { id: sub.customerId },
+          data: { loyaltyPoints: { increment: earnedPoints } },
+        });
+      }
+    }
 
     return this.prisma.studioSubscription.update({
       where: { id },

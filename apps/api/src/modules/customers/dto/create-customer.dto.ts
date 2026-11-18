@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -61,4 +62,8 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   medicalAlerts?: string;
+
+  @IsOptional()
+  @IsInt()
+  loyaltyPoints?: number;
 }

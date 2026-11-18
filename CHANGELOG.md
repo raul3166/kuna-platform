@@ -40,6 +40,10 @@ Versionado basado en Semantic Versioning.
   * Nuevo modelo relacional Core `OperatingExpense` en `schema.prisma` y PostgreSQL (con Row Level Security activo) para registrar egresos operativos categorizados (`RENT`, `UTILITIES`, `PAYROLL`, `MARKETING`, `MAINTENANCE`, `SUPPLIES`, `TAXES`, `OTHER`), estado (`PAID` / `PENDING`) y método de pago (`TRANSFER`, `NEQUI`, `CASH`, `PETTY_CASH`, `CARD`).
   * Motor transversal `getCashFlowSummary` (`GET /operating-expenses/summary`) que consolida en tiempo real los ingresos de la organización (`Sale` POS, paquetes/abonos `StudioSubscription`, membresías `GymSubscription`, `ServiceOrder` y `HotelReservation`) frente a `OperatingExpense` y `PurchaseInvoice`, calculando la **Utilidad Neta Real** y el margen de rentabilidad (%).
   * Nueva vista Core **`💸 Gastos y Flujo de Caja`** (`/operating-expenses`, `OperatingExpensesView.vue`) accesible desde la sección `Core` del menú lateral para todas las verticales.
+* **Core — Fidelización (Puntos / Niveles VIP) y Motor Universal de Satisfacción CSAT 1–5 ★ (`KNA-162`, `Customer.loyaltyPoints`, `CustomerFeedback`):**
+  * Nuevo campo `loyaltyPoints` en `Customer` con acumulación automática transversal (1 punto por cada $1.000 COP en ventas POS confirmadas, check-outs de Hotel, paquetes/abonos de Studio y +10 puntos por enviar reseña de satisfacción).
+  * Nuevo modelo relacional Core `CustomerFeedback` (con Row Level Security activo en Supabase) que unifica las reseñas de las 14 verticales junto con `StudioClassFeedback`.
+  * Nueva vista Core **`⭐ Fidelización y Reseñas (CSAT)`** (`/loyalty-feedback`, `LoyaltyFeedbackView.vue`) con clasificación automática de niveles VIP (`Bronce`, `Plata`, `Oro`, `Diamante VIP`), otorgamiento/redención de puntos (`PATCH /loyalty-feedback/customers/:id/points`), índice CSAT (%) y pestaña **`⭐ Calificar Estadía (+10 pts)`** en `HotelPublicPortalView.vue`.
 
 ---
 ## [2.7.0] - 2026-11-10

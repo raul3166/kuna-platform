@@ -428,6 +428,7 @@ Objetivo: Incorporar gestión automática de Lista de Espera en clases con aforo
 | KNA-159 | Congelamiento (`PAUSED`), Reactivación con Recálculo de Vigencia y Extensión Manual de Días (`+Días`) en Paquetes | ✅ | Backend/Frontend |
 | KNA-160 | Portal Público de Reservas de Habitaciones para Huéspedes (`/hotel-portal/:slug`, `HotelPublicPortalView.vue`) y Confirmación Admin a 1 Clic | ✅ | Core/Backend/Frontend |
 | KNA-161 | Core — Gastos Operativos (`OperatingExpense`) y Estado de Resultados Real / Flujo de Caja (`OperatingExpensesView.vue`) | ✅ | Core/Backend/Frontend |
+| KNA-162 | Core — Fidelización (`Customer.loyaltyPoints`) y Motor Universal de Reseñas CSAT 1–5 ★ (`CustomerFeedback`, `LoyaltyFeedbackView.vue`) | ✅ | Core/Backend/Frontend |
 
 **Sprint 31 completado al 100%. Plataforma en producción (`v2.8.0`).**
 

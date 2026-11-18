@@ -292,6 +292,17 @@ export class HotelReservationsService {
         data: { status: HotelRoomStatus.CLEANING },
       });
 
+      // Acumular puntos de fidelidad por estadía liquidada (1 punto por cada $1.000 COP)
+      if (reservation.customerId && grandTotal >= 1000) {
+        const earnedPoints = Math.floor(grandTotal / 1000);
+        if (earnedPoints > 0) {
+          await tx.customer.update({
+            where: { id: reservation.customerId },
+            data: { loyaltyPoints: { increment: earnedPoints } },
+          });
+        }
+      }
+
       return updatedReservation;
     });
   }
@@ -740,6 +751,7 @@ export class HotelReservationsService {
         email: true,
         phoneNumber: true,
         medicalAlerts: true,
+        loyaltyPoints: true,
         notes: true,
       },
     });

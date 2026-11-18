@@ -70,6 +70,7 @@ import { BakeryModule } from './modules/bakery/bakery.module';
 import { AcademyModule } from './modules/academy/academy.module';
 import { RealEstateModule } from './modules/real-estate/real-estate.module';
 import { OperatingExpensesModule } from './modules/operating-expenses/operating-expenses.module';
+import { LoyaltyFeedbackModule } from './modules/loyalty-feedback/loyalty-feedback.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -139,6 +140,7 @@ import { OperatingExpensesModule } from './modules/operating-expenses/operating-
     AcademyModule,
     RealEstateModule,
     OperatingExpensesModule,
+    LoyaltyFeedbackModule,
   ],
   controllers: [AppController],
   providers: [

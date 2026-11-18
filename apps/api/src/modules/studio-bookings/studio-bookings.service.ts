@@ -357,6 +357,7 @@ export class StudioBookingsService {
         phoneNumber: true,
         notes: true,
         medicalAlerts: true,
+        loyaltyPoints: true,
       },
     });
 

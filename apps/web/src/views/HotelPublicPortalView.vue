@@ -22,8 +22,16 @@ const branches = ref<any[]>([])
 const rooms = ref<any[]>([])
 const nightsCount = ref<number>(1)
 
-const activeTab = ref<'rooms' | 'my-reservations'>('rooms')
+const activeTab = ref<'rooms' | 'my-reservations' | 'feedback'>('rooms')
 const actionMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+
+// Formulario de Calificación de Estadía (1-5 ★)
+const feedbackRoomLabel = ref('')
+const feedbackStaffName = ref('')
+const feedbackRating = ref<number>(5)
+const feedbackComment = ref('')
+const feedbackAnonymous = ref(false)
+const submittingFeedback = ref(false)
 
 // Estado del Huésped identificado
 const guestIdentifier = ref(localStorage.getItem('kuna_portal_guest_id') || '')
@@ -326,6 +334,39 @@ function getReservationChargesTotal(reservation: any): number {
   )
 }
 
+async function submitGuestFeedback() {
+  submittingFeedback.value = true
+  actionMessage.value = null
+  try {
+    await api.post(`/loyalty-feedback/public/feedback/${slug.value}`, {
+      customerId: guestData.value?.customer?.id || undefined,
+      customerIdentifier: guestIdentifier.value.trim() || undefined,
+      verticalCode: 'HOTEL',
+      sourceType: 'HOTEL_STAY',
+      subjectName: feedbackRoomLabel.value || 'Estadía en el Hotel',
+      staffName: feedbackStaffName.value || undefined,
+      rating: Number(feedbackRating.value),
+      comment: feedbackComment.value || undefined,
+      isAnonymous: feedbackAnonymous.value,
+    })
+    feedbackComment.value = ''
+    actionMessage.value = {
+      type: 'success',
+      text: '⭐ ¡Gracias por calificar tu estadía! Si estabas identificado como huésped, sumaste +10 puntos de fidelidad.',
+    }
+    if (guestData.value) {
+      await lookupGuest(true)
+    }
+  } catch (err: any) {
+    actionMessage.value = {
+      type: 'error',
+      text: err?.response?.data?.message || 'No se pudo enviar tu calificación.',
+    }
+  } finally {
+    submittingFeedback.value = false
+  }
+}
+
 function getWhatsAppHotelLink(room?: any): string {
   const rawPhone = branches.value[0]?.phoneNumber || ''
   const cleanPhone = rawPhone.replace(/\D/g, '')
@@ -427,13 +468,16 @@ onMounted(async () => {
           <!-- Perfil del Huésped Identificado -->
           <div v-else class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <p class="text-sm sm:text-base font-bold text-white">
                   ¡Hola, {{ guestData.customer.firstName }} {{ guestData.customer.lastName || '' }}!
                 </p>
                 <span class="text-xs bg-white/15 px-2.5 py-0.5 rounded-full text-blue-100">
                   Doc: {{ guestData.customer.identificationNumber }}
+                </span>
+                <span class="text-xs bg-amber-400/20 border border-amber-300/40 px-2.5 py-0.5 rounded-full text-amber-200 font-bold">
+                  ⭐ {{ Number(guestData.customer.loyaltyPoints || 0).toLocaleString('es-CO') }} pts fidelidad
                 </span>
               </div>
               <p class="text-xs text-blue-200 mt-1">
@@ -512,6 +556,18 @@ onMounted(async () => {
           >
             {{ activeReservationsCount }}
           </span>
+        </button>
+        <button
+          type="button"
+          @click="activeTab = 'feedback'"
+          class="px-4 py-2 rounded-xl text-sm font-bold transition cursor-pointer"
+          :class="
+            activeTab === 'feedback'
+              ? 'bg-amber-500 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          "
+        >
+          ⭐ Calificar Estadía (+10 pts)
         </button>
       </div>
 
@@ -808,6 +864,112 @@ onMounted(async () => {
               📝 <strong>Detalles:</strong> {{ res.notes }}
             </p>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: CALIFICAR ESTADÍA Y SERVICIO (1-5 ★) -->
+      <section v-if="activeTab === 'feedback'">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm max-w-2xl mx-auto">
+          <h2 id="hotel-feedback-heading" class="text-lg font-black text-slate-900">
+            ⭐ Califica tu Estadía y Atención en {{ organization?.name || 'el Hotel' }}
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Tu opinión nos ayuda a brindarte una mejor experiencia. Además, si estás identificado como huésped, recibes <strong>+10 puntos de fidelidad</strong>.
+          </p>
+
+          <form @submit.prevent="submitGuestFeedback" aria-labelledby="hotel-feedback-heading" class="mt-5 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="hotel-fb-room" class="block text-xs font-bold uppercase text-slate-600 mb-1">
+                  Habitación o Área Evaluada
+                </label>
+                <input
+                  id="hotel-fb-room"
+                  v-model="feedbackRoomLabel"
+                  name="subjectName"
+                  type="text"
+                  placeholder="Ej: Habitación 102, Recepción, Restaurante..."
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label for="hotel-fb-staff" class="block text-xs font-bold uppercase text-slate-600 mb-1">
+                  Personal que te atendió (Opcional)
+                </label>
+                <input
+                  id="hotel-fb-staff"
+                  v-model="feedbackStaffName"
+                  name="staffName"
+                  type="text"
+                  placeholder="Ej: Recepción turno mañana..."
+                  class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            <fieldset class="border border-slate-200 rounded-xl p-3.5">
+              <legend class="text-xs font-bold uppercase text-slate-600 px-1">
+                Tu Calificación (1 a 5 Estrellas)
+              </legend>
+              <div class="grid grid-cols-5 gap-2 mt-1">
+                <div
+                  v-for="star in [1, 2, 3, 4, 5]"
+                  :key="star"
+                  class="flex items-center justify-center gap-1.5 py-2 rounded-lg border"
+                  :class="feedbackRating === star ? 'bg-amber-50 border-amber-400 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-600'"
+                >
+                  <input
+                    :id="`hotel-star-${star}`"
+                    v-model.number="feedbackRating"
+                    type="radio"
+                    name="rating"
+                    :value="star"
+                    class="accent-amber-500"
+                  />
+                  <label :for="`hotel-star-${star}`" class="text-xs font-black cursor-pointer">
+                    {{ star }} ★
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+
+            <div>
+              <label for="hotel-fb-comment" class="block text-xs font-bold uppercase text-slate-600 mb-1">
+                Comentarios o Sugerencias
+              </label>
+              <textarea
+                id="hotel-fb-comment"
+                v-model="feedbackComment"
+                name="comment"
+                rows="3"
+                placeholder="Cuéntanos cómo fue tu descanso, limpieza de la habitación y atención..."
+                class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm"
+              ></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input
+                id="hotel-fb-anon"
+                v-model="feedbackAnonymous"
+                name="isAnonymous"
+                type="checkbox"
+                class="accent-blue-600"
+              />
+              <label for="hotel-fb-anon" class="text-xs font-semibold text-slate-600 cursor-pointer">
+                Enviar mi reseña de forma anónima
+              </label>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+              <button
+                type="submit"
+                :disabled="submittingFeedback"
+                class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {{ submittingFeedback ? 'Enviando...' : '⭐ Enviar Calificación' }}
+              </button>
+            </div>
+          </form>
         </div>
       </section>
     </main>

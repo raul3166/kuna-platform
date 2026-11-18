@@ -43,6 +43,8 @@ export const customerSelect = {
   state: true,
   country: true,
   notes: true,
+  medicalAlerts: true,
+  loyaltyPoints: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,

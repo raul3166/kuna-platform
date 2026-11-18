@@ -804,6 +804,21 @@ async confirm(id: string) {
     }
 
     // ==========================================================
+    // ACUMULAR PUNTOS DE FIDELIZACIÓN EN EL CLIENTE (1 PTO / $1.000)
+    // ==========================================================
+    if (sale.customerId && Number(sale.total || 0) >= 1000) {
+      const earnedPoints = Math.floor(Number(sale.total || 0) / 1000);
+      if (earnedPoints > 0) {
+        await tx.customer.update({
+          where: { id: sale.customerId },
+          data: {
+            loyaltyPoints: { increment: earnedPoints },
+          },
+        });
+      }
+    }
+
+    // ==========================================================
     // SELLAR VENTA
     // ==========================================================
     return tx.sale.update({
