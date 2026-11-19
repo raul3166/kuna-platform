@@ -12,6 +12,7 @@ const organization = ref<any>(null)
 const branches = ref<any[]>([])
 const plans = ref<any[]>([])
 const schedules = ref<any[]>([])
+const cancellationHoursBeforeClass = ref<number>(2)
 
 const selectedDate = ref<string>(new Date().toISOString().split('T')[0] || '')
 const showAllWeek = ref(false)
@@ -91,6 +92,18 @@ const confirmedBookings = computed(() => {
   )
 })
 
+function findActiveBookingForSchedule(scheduleId: string) {
+  if (!studentData.value?.bookings) return null
+  return studentData.value.bookings.find((b: any) => {
+    const bDate = String(b.bookingDate || '').slice(0, 10)
+    return (
+      b.studioScheduleId === scheduleId &&
+      bDate === selectedDate.value &&
+      (b.status === 'CONFIRMED' || b.status === 'WAITLISTED')
+    )
+  })
+}
+
 function isAlreadyBooked(scheduleId: string): boolean {
   if (!studentData.value?.bookings) return false
   return studentData.value.bookings.some((b: any) => {
@@ -153,6 +166,9 @@ async function loadCatalog() {
     branches.value = data.branches || []
     plans.value = data.plans || []
     schedules.value = data.schedules || []
+    if (data.bookingSettings?.cancellationHoursBeforeClass !== undefined) {
+      cancellationHoursBeforeClass.value = Number(data.bookingSettings.cancellationHoursBeforeClass)
+    }
   } catch (err: any) {
     catalogError.value =
       err.response?.data?.message || 'No fue posible cargar la información del estudio.'
@@ -793,19 +809,31 @@ onMounted(async () => {
                 </span>
               </span>
 
-              <span
-                v-if="isAlreadyBooked(sched.id)"
-                class="inline-flex items-center rounded-xl bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-800"
-              >
-                ✓ Ya tienes cupo reservado
-              </span>
+              <div v-if="isAlreadyBooked(sched.id)" class="flex items-center gap-2">
+                <span class="inline-flex items-center rounded-xl bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-800">
+                  ✓ Cupo reservado
+                </span>
+                <button
+                  type="button"
+                  @click="handleCancelBooking(findActiveBookingForSchedule(sched.id))"
+                  class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
 
-              <span
-                v-else-if="isAlreadyWaitlisted(sched.id)"
-                class="inline-flex items-center rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-900"
-              >
-                ⏳ En Lista de Espera
-              </span>
+              <div v-else-if="isAlreadyWaitlisted(sched.id)" class="flex items-center gap-2">
+                <span class="inline-flex items-center rounded-xl bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900">
+                  ⏳ En Lista de Espera
+                </span>
+                <button
+                  type="button"
+                  @click="handleCancelBooking(findActiveBookingForSchedule(sched.id))"
+                  class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                >
+                  Salir
+                </button>
+              </div>
 
               <button
                 v-else
@@ -983,6 +1011,16 @@ onMounted(async () => {
 
       <!-- TAB 3: MIS RESERVAS ACTIVAS -->
       <section v-if="activeTab === 'my-bookings' && studentData?.customer" class="space-y-4">
+        <div
+          v-if="cancellationHoursBeforeClass > 0"
+          class="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-xs text-indigo-800 flex items-center gap-2"
+        >
+          <span>⏱️</span>
+          <span>
+            <strong>Política del estudio:</strong> Puedes cancelar tus reservas desde el portal con al menos
+            <strong>{{ cancellationHoursBeforeClass }} hora(s)</strong> de anticipación al inicio de la clase.
+          </span>
+        </div>
         <div
           v-if="confirmedBookings.length === 0"
           class="rounded-2xl bg-white p-10 text-center text-sm text-slate-500 border border-slate-200"

@@ -55,6 +55,25 @@ export class StudioBookingsController {
     return this.studioBookingsService.getAvailability(organizationId, studioScheduleId, bookingDate);
   }
 
+  @ApiOperation({ summary: 'Get studio booking & cancellation policy settings' })
+  @Permissions('studio.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Get('settings')
+  getBookingSettings(@Query('organizationId') organizationId: string) {
+    return this.studioBookingsService.getStudioBookingSettings(organizationId);
+  }
+
+  @ApiOperation({ summary: 'Update studio booking & cancellation policy settings' })
+  @Permissions('studio.read')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Patch('settings')
+  updateBookingSettings(
+    @Query('organizationId') organizationId: string,
+    @Body() body: { cancellationHoursBeforeClass: number },
+  ) {
+    return this.studioBookingsService.updateStudioBookingSettings(organizationId, body);
+  }
+
   @ApiOperation({ summary: 'Public student portal: get studio plans, schedules and availability' })
   @Get('public/catalog/:slug')
   getPublicCatalog(

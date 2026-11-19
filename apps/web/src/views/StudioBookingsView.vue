@@ -354,6 +354,42 @@ watch(() => form.value.studioScheduleId, () => {
 });
 
 const portalCopied = ref(false);
+const showPolicyModal = ref(false);
+const savingPolicy = ref(false);
+const cancellationHoursBeforeClass = ref<number>(2);
+
+const fetchBookingSettings = async () => {
+  try {
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
+    if (!orgId) return;
+    const { data } = await api.get('/studio-bookings/settings', {
+      params: { organizationId: orgId },
+    });
+    if (data?.cancellationHoursBeforeClass !== undefined) {
+      cancellationHoursBeforeClass.value = Number(data.cancellationHoursBeforeClass);
+    }
+  } catch (err) {
+    console.error('Error cargando política de cancelación:', err);
+  }
+};
+
+const saveBookingSettings = async () => {
+  savingPolicy.value = true;
+  try {
+    const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId;
+    if (!orgId) return;
+    await api.patch(
+      '/studio-bookings/settings',
+      { cancellationHoursBeforeClass: Number(cancellationHoursBeforeClass.value || 0) },
+      { params: { organizationId: orgId } },
+    );
+    showPolicyModal.value = false;
+  } catch (err: any) {
+    alert(err?.response?.data?.message || 'No se pudo guardar la política de cancelación');
+  } finally {
+    savingPolicy.value = false;
+  }
+};
 
 const getPortalUrl = () => {
   const orgId = authStore.currentOrganization?.id || authStore.user?.organizationId || 'empresa-demo';
@@ -375,6 +411,7 @@ const copyStudentPortalLink = async () => {
 onMounted(() => {
   fetchSchedules();
   fetchBookings();
+  fetchBookingSettings();
 });
 </script>
 
@@ -388,6 +425,13 @@ onMounted(() => {
           <p class="text-sm text-slate-500 mt-1">Administra cupos para las clases del estudio o comparte el portal de autogestión con tus alumnos.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            @click="showPolicyModal = true"
+            class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors gap-1.5 cursor-pointer"
+          >
+            <span>⏱️</span> Política Cancelación ({{ cancellationHoursBeforeClass === 0 ? 'Sin límite' : `${cancellationHoursBeforeClass}h antes` }})
+          </button>
           <a
             :href="getPortalUrl()"
             target="_blank"
@@ -667,6 +711,63 @@ onMounted(() => {
                       ? '⏳ Anotar en Lista de Espera'
                       : 'Confirmar Reserva'
                 }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal de Configuración: Política de Cancelación en Portal de Alumnos -->
+      <div v-if="showPolicyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-100 overflow-hidden">
+          <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-amber-50/70">
+            <h3 id="modal-cancel-policy-title" class="text-base font-bold text-slate-900">
+              ⏱️ Configurar Política de Cancelación
+            </h3>
+            <button type="button" @click="showPolicyModal = false" class="text-slate-400 hover:text-slate-600 font-bold cursor-pointer">
+              ✕
+            </button>
+          </div>
+          <form @submit.prevent="saveBookingSettings" aria-labelledby="modal-cancel-policy-title" class="p-6 space-y-4">
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Define con cuántas horas mínimas de anticipación un alumno puede cancelar su reserva por sí mismo desde el <strong>Portal Público de Alumnos</strong>.
+            </p>
+
+            <div>
+              <label for="cancel-hours-input" class="block text-xs font-bold uppercase text-slate-500 mb-1">
+                Horas mínimas antes del inicio de la clase
+              </label>
+              <input
+                id="cancel-hours-input"
+                v-model.number="cancellationHoursBeforeClass"
+                name="cancellationHoursBeforeClass"
+                type="number"
+                min="0"
+                max="72"
+                step="1"
+                required
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-bold"
+              />
+              <p class="text-[11px] text-slate-500 mt-1.5">
+                • Escribe <strong>0</strong> si deseas permitir que cancelen hasta el último minuto sin restricción.<br />
+                • Ejemplo: <strong>2</strong> = solo pueden cancelar hasta 2 horas antes de la clase.
+              </p>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                @click="showPolicyModal = false"
+                class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                :disabled="savingPolicy"
+                class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {{ savingPolicy ? 'Guardando...' : 'Guardar Política' }}
               </button>
             </div>
           </form>

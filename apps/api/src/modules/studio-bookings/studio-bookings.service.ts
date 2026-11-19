@@ -260,12 +260,89 @@ export class StudioBookingsService {
     return org;
   }
 
+  async getStudioBookingSettings(organizationId: string) {
+    if (!organizationId) {
+      return { cancellationHoursBeforeClass: 2 };
+    }
+    const orgVert = await this.prisma.organizationVertical.findFirst({
+      where: {
+        organizationId,
+        vertical: { code: 'STUDIO' },
+      },
+    });
+    const cfg = (orgVert?.config as Record<string, any>) || {};
+    const hours =
+      cfg.cancellationHoursBeforeClass !== undefined && cfg.cancellationHoursBeforeClass !== null
+        ? Math.max(0, Number(cfg.cancellationHoursBeforeClass))
+        : 2;
+    return {
+      cancellationHoursBeforeClass: Number.isFinite(hours) ? hours : 2,
+    };
+  }
+
+  async updateStudioBookingSettings(
+    organizationId: string,
+    payload: { cancellationHoursBeforeClass: number },
+  ) {
+    if (!organizationId) {
+      throw new BadRequestException('organizationId es requerido');
+    }
+    const hours = Math.max(0, Number(payload.cancellationHoursBeforeClass ?? 2));
+
+    let studioVertical = await this.prisma.vertical.findUnique({
+      where: { code: 'STUDIO' },
+    });
+    if (!studioVertical) {
+      studioVertical = await this.prisma.vertical.create({
+        data: {
+          code: 'STUDIO',
+          name: 'Estudio (Yoga / Pilates / Barre)',
+          icon: '🧘‍♀️',
+          isActive: true,
+        },
+      });
+    }
+
+    const existing = await this.prisma.organizationVertical.findUnique({
+      where: {
+        organizationId_verticalId: {
+          organizationId,
+          verticalId: studioVertical.id,
+        },
+      },
+    });
+
+    const currentConfig = ((existing?.config as Record<string, any>) || {});
+    const newConfig = {
+      ...currentConfig,
+      cancellationHoursBeforeClass: hours,
+    };
+
+    await this.prisma.organizationVertical.upsert({
+      where: {
+        organizationId_verticalId: {
+          organizationId,
+          verticalId: studioVertical.id,
+        },
+      },
+      update: { config: newConfig },
+      create: {
+        organizationId,
+        verticalId: studioVertical.id,
+        isActive: true,
+        config: newConfig,
+      },
+    });
+
+    return { cancellationHoursBeforeClass: hours };
+  }
+
   async getPublicCatalog(slugOrId: string, dateStr?: string) {
     const org = await this.resolveOrganizationBySlugOrId(slugOrId);
     const targetDateStr = dateStr || new Date().toISOString().split('T')[0];
     const targetDate = this.parseLocalDate(targetDateStr);
 
-    const [branches, plans, schedules, bookingsForDate] = await Promise.all([
+    const [branches, plans, schedules, bookingsForDate, bookingSettings] = await Promise.all([
       this.prisma.branch.findMany({
         where: { organizationId: org.id, isActive: true },
         select: { id: true, name: true, address: true, city: true, phoneNumber: true },
@@ -291,6 +368,7 @@ export class StudioBookingsService {
         },
         select: { studioScheduleId: true, status: true },
       }),
+      this.getStudioBookingSettings(org.id),
     ]);
 
     const reservedBySchedule: Record<string, number> = {};
@@ -326,6 +404,7 @@ export class StudioBookingsService {
       plans,
       schedules: enrichedSchedules,
       selectedDate: targetDateStr,
+      bookingSettings,
     };
   }
 
@@ -670,10 +749,31 @@ export class StudioBookingsService {
         organizationId: org.id,
         customerId,
       },
+      include: {
+        schedule: true,
+      },
     });
 
     if (!booking) {
       throw new NotFoundException('No se encontró la reserva para este alumno');
+    }
+
+    // Validar tiempo mínimo de anticipación configurado por el estudio (para reservas CONFIRMED)
+    if (booking.status === BookingStatus.CONFIRMED && booking.schedule?.startTime) {
+      const { cancellationHoursBeforeClass } = await this.getStudioBookingSettings(org.id);
+      if (cancellationHoursBeforeClass > 0) {
+        const bDateStr = new Date(booking.bookingDate).toISOString().split('T')[0];
+        const [y, m, d] = bDateStr.split('-').map(Number);
+        const [hh, mm] = String(booking.schedule.startTime).split(':').map(Number);
+        const classStart = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0);
+        const diffHours = (classStart.getTime() - Date.now()) / (1000 * 60 * 60);
+
+        if (diffHours < cancellationHoursBeforeClass) {
+          throw new BadRequestException(
+            `Las reservas solo pueden cancelarse con al menos ${cancellationHoursBeforeClass} hora(s) de anticipación al inicio de la clase. Por favor comunícate con el estudio.`,
+          );
+        }
+      }
     }
 
     const wasConfirmed = booking.status === BookingStatus.CONFIRMED;
