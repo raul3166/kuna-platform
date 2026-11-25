@@ -1655,6 +1655,7 @@ enum BookingStatus {
   CANCELLED
   ATTENDED
   WAITLISTED
+  PENDING_APPROVAL
 }
 
 model StudioBooking {

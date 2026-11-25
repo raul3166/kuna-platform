@@ -46,16 +46,21 @@ export class StudioBookingsService {
       where: {
         studioScheduleId: dto.studioScheduleId,
         bookingDate,
-        status: BookingStatus.CONFIRMED,
+        status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING_APPROVAL] },
       },
     });
 
     const isFull = confirmedCount >= schedule.capacity;
+    const defaultActiveStatus =
+      dto.status ||
+      (schedule.deductFromTiquetera === false
+        ? BookingStatus.PENDING_APPROVAL
+        : BookingStatus.CONFIRMED);
     const targetStatus = isFull
       ? dto.allowWaitlist || dto.status === BookingStatus.WAITLISTED
         ? BookingStatus.WAITLISTED
         : null
-      : dto.status || BookingStatus.CONFIRMED;
+      : defaultActiveStatus;
 
     if (!targetStatus) {
       throw new BadRequestException(
@@ -77,12 +82,15 @@ export class StudioBookingsService {
     if (
       existingBooking &&
       (existingBooking.status === BookingStatus.CONFIRMED ||
+        existingBooking.status === BookingStatus.PENDING_APPROVAL ||
         existingBooking.status === BookingStatus.WAITLISTED)
     ) {
       throw new ConflictException(
         existingBooking.status === BookingStatus.WAITLISTED
           ? 'El alumno ya se encuentra en la Lista de Espera de esta clase'
-          : 'El alumno ya tiene una reserva confirmada para esta clase',
+          : existingBooking.status === BookingStatus.PENDING_APPROVAL
+            ? 'El alumno ya tiene una solicitud pendiente de aprobación para esta clase'
+            : 'El alumno ya tiene una reserva confirmada para esta clase',
       );
     }
 
@@ -366,7 +374,13 @@ export class StudioBookingsService {
         where: {
           organizationId: org.id,
           bookingDate: targetDate,
-          status: { in: [BookingStatus.CONFIRMED, BookingStatus.WAITLISTED] },
+          status: {
+            in: [
+              BookingStatus.CONFIRMED,
+              BookingStatus.PENDING_APPROVAL,
+              BookingStatus.WAITLISTED,
+            ],
+          },
         },
         select: { studioScheduleId: true, status: true },
       }),
@@ -737,7 +751,10 @@ export class StudioBookingsService {
       customerId: payload.customerId,
       studioScheduleId: payload.studioScheduleId,
       bookingDate: payload.bookingDate,
-      status: BookingStatus.CONFIRMED,
+      status:
+        schedule.deductFromTiquetera === false
+          ? BookingStatus.PENDING_APPROVAL
+          : BookingStatus.CONFIRMED,
       allowWaitlist: payload.allowWaitlist ?? true,
     });
   }

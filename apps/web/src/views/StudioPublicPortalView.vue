@@ -93,7 +93,10 @@ const hasValidTiquetera = computed(() => {
 const confirmedBookings = computed(() => {
   if (!studentData.value?.bookings) return []
   return studentData.value.bookings.filter(
-    (b: any) => b.status === 'CONFIRMED' || b.status === 'WAITLISTED'
+    (b: any) =>
+      b.status === 'CONFIRMED' ||
+      b.status === 'PENDING_APPROVAL' ||
+      b.status === 'WAITLISTED'
   )
 })
 
@@ -104,7 +107,9 @@ function findActiveBookingForSchedule(scheduleId: string) {
     return (
       b.studioScheduleId === scheduleId &&
       bDate === selectedDate.value &&
-      (b.status === 'CONFIRMED' || b.status === 'WAITLISTED')
+      (b.status === 'CONFIRMED' ||
+        b.status === 'PENDING_APPROVAL' ||
+        b.status === 'WAITLISTED')
     )
   })
 }
@@ -117,6 +122,18 @@ function isAlreadyBooked(scheduleId: string): boolean {
       b.studioScheduleId === scheduleId &&
       bDate === selectedDate.value &&
       b.status === 'CONFIRMED'
+    )
+  })
+}
+
+function isAlreadyPendingApproval(scheduleId: string): boolean {
+  if (!studentData.value?.bookings) return false
+  return studentData.value.bookings.some((b: any) => {
+    const bDate = String(b.bookingDate || '').slice(0, 10)
+    return (
+      b.studioScheduleId === scheduleId &&
+      bDate === selectedDate.value &&
+      b.status === 'PENDING_APPROVAL'
     )
   })
 }
@@ -251,7 +268,9 @@ async function handleBookClass(schedule: any) {
       text:
         created?.status === 'WAITLISTED'
           ? `⏳ La clase estaba llena y quedaste anotada(o) en la Lista de Espera para ${schedule.className} (${schedule.startTime}). Si se libera un cupo, pasarás a Confirmada automáticamente.`
-          : `¡Tu cupo para ${schedule.className} (${schedule.startTime}) el ${formatDate(selectedDate.value)} quedó reservado con éxito!`,
+          : created?.status === 'PENDING_APPROVAL'
+            ? `💵 ¡Tu solicitud de cupo para "${schedule.className}" (${schedule.startTime}) quedó registrada como PENDIENTE DE PAGO / APROBACIÓN! La administración del estudio verificará tu pago y autorizará tu cupo.`
+            : `¡Tu cupo para ${schedule.className} (${schedule.startTime}) el ${formatDate(selectedDate.value)} quedó reservado con éxito!`,
     }
 
     await Promise.all([loadCatalog(), lookupStudent(true)])
@@ -847,6 +866,19 @@ onMounted(async () => {
                 </button>
               </div>
 
+              <div v-else-if="isAlreadyPendingApproval(sched.id)" class="flex items-center gap-2">
+                <span class="inline-flex items-center rounded-xl bg-purple-100 px-3 py-2 text-xs font-bold text-purple-900">
+                  💵 Pendiente Aprobación de Pago
+                </span>
+                <button
+                  type="button"
+                  @click="handleCancelBooking(findActiveBookingForSchedule(sched.id))"
+                  class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+
               <div v-else-if="isAlreadyWaitlisted(sched.id)" class="flex items-center gap-2">
                 <span class="inline-flex items-center rounded-xl bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900">
                   ⏳ En Lista de Espera
@@ -877,7 +909,9 @@ onMounted(async () => {
                     ? 'Procesando...'
                     : sched.availableSpots <= 0
                       ? '⏳ Unirme a Lista de Espera'
-                      : '📌 Reservar mi Cupo'
+                      : sched.deductFromTiquetera === false
+                        ? '💵 Solicitar Cupo (Pago Aparte)'
+                        : '📌 Reservar mi Cupo'
                 }}
               </button>
             </div>
@@ -1064,11 +1098,19 @@ onMounted(async () => {
                 :class="
                   booking.status === 'WAITLISTED'
                     ? 'bg-amber-50 text-amber-800 border-amber-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : booking.status === 'PENDING_APPROVAL'
+                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 "
                 class="inline-block rounded-md px-2.5 py-0.5 text-xs font-bold border"
               >
-                {{ booking.status === 'WAITLISTED' ? '⏳ En Lista de Espera' : 'Confirmada' }} · {{ formatDate(booking.bookingDate) }}
+                {{
+                  booking.status === 'WAITLISTED'
+                    ? '⏳ En Lista de Espera'
+                    : booking.status === 'PENDING_APPROVAL'
+                      ? '💵 Pendiente Aprobación de Pago'
+                      : 'Confirmada'
+                }} · {{ formatDate(booking.bookingDate) }}
               </span>
               <h3 class="mt-2 text-base font-black text-slate-900">
                 {{ booking.schedule?.className || 'Clase de Estudio' }}

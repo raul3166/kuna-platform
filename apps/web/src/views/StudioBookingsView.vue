@@ -315,6 +315,8 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case 'CONFIRMED':
       return { text: 'Confirmada', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    case 'PENDING_APPROVAL':
+      return { text: '💵 Pendiente Pago / Aprobación', class: 'bg-purple-50 text-purple-800 border-purple-200' };
     case 'WAITLISTED':
       return { text: '⏳ Lista de Espera', class: 'bg-amber-50 text-amber-800 border-amber-200' };
     case 'CANCELLED':
@@ -482,6 +484,7 @@ onMounted(() => {
           <select v-model="filterStatus" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white">
             <option value="ALL">Todos los estados</option>
             <option value="CONFIRMED">Confirmadas</option>
+            <option value="PENDING_APPROVAL">💵 Pendientes de Pago / Aprobación</option>
             <option value="WAITLISTED">⏳ Lista de Espera</option>
             <option value="CANCELLED">Canceladas</option>
           </select>
@@ -564,6 +567,22 @@ onMounted(() => {
                       class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors"
                     >
                       Cancelar
+                    </button>
+                  </div>
+                  <div v-else-if="b.status === 'PENDING_APPROVAL'" class="inline-flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      @click="promoteFromWaitlist(b.id)"
+                      class="text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg shadow-sm transition-colors cursor-pointer"
+                    >
+                      ✅ Autorizar / Pago Recibido
+                    </button>
+                    <button
+                      type="button"
+                      @click="cancelBooking(b.id)"
+                      class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition-colors cursor-pointer"
+                    >
+                      Rechazar
                     </button>
                   </div>
                   <div v-else-if="b.status === 'WAITLISTED'" class="inline-flex items-center justify-end gap-2">
