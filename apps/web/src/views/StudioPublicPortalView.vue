@@ -67,7 +67,12 @@ const selectedDayOfWeek = computed(() => {
 
 const filteredSchedules = computed(() => {
   if (showAllWeek.value) return schedules.value
-  return schedules.value.filter((s) => Number(s.dayOfWeek) === selectedDayOfWeek.value)
+  return schedules.value.filter((s) => {
+    if (s.isSpecialEvent && s.specificDate) {
+      return s.specificDate === selectedDate.value
+    }
+    return Number(s.dayOfWeek) === selectedDayOfWeek.value
+  })
 })
 
 const activeSubscriptions = computed(() => {
@@ -224,7 +229,7 @@ async function handleBookClass(schedule: any) {
     return
   }
 
-  if (!hasValidTiquetera.value) {
+  if (schedule.deductFromTiquetera !== false && !hasValidTiquetera.value) {
     actionMessage.value = {
       type: 'error',
       text: 'No cuentas con una tiquetera activa o con clases disponibles. Acércate a recepción para adquirir o renovar tu paquete.',
@@ -764,9 +769,29 @@ onMounted(async () => {
             <div>
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <span class="inline-block rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 border border-indigo-100">
-                    {{ daysOfWeekNames[sched.dayOfWeek] }} · {{ sched.startTime }} - {{ sched.endTime }}
-                  </span>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="inline-block rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 border border-indigo-100">
+                      {{ daysOfWeekNames[sched.dayOfWeek] }} · {{ sched.startTime }} - {{ sched.endTime }}
+                    </span>
+                    <span
+                      v-if="sched.isSpecialEvent"
+                      class="inline-block rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200"
+                    >
+                      ✨ Clase / Evento Especial{{ sched.specificDate ? ` (${sched.specificDate})` : '' }}
+                    </span>
+                    <span
+                      v-if="sched.deductFromTiquetera === false"
+                      class="inline-block rounded-md bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple-800 border border-purple-200"
+                    >
+                      💵 Pago Aparte{{ Number(sched.specialPrice) > 0 ? `: ${formatPrice(sched.specialPrice)}` : '' }} (No descuenta de tu tiquetera)
+                    </span>
+                    <span
+                      v-else-if="sched.isSpecialEvent"
+                      class="inline-block rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200"
+                    >
+                      🎟️ Incluida en tu Tiquetera
+                    </span>
+                  </div>
                   <h3 class="mt-2 text-lg font-black text-slate-900">
                     {{ sched.className }}
                   </h3>

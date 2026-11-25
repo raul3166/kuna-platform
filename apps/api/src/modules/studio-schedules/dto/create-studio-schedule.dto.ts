@@ -58,6 +58,26 @@ export class CreateStudioScheduleDto {
   @IsOptional()
   isActive?: boolean;
 
+  @ApiPropertyOptional({ example: false, default: false })
+  @IsBoolean()
+  @IsOptional()
+  isSpecialEvent?: boolean;
+
+  @ApiPropertyOptional({ example: '2026-12-15' })
+  @IsString()
+  @IsOptional()
+  specificDate?: string;
+
+  @ApiPropertyOptional({ example: true, default: true })
+  @IsBoolean()
+  @IsOptional()
+  deductFromTiquetera?: boolean;
+
+  @ApiPropertyOptional({ example: 65000 })
+  @IsNumber()
+  @IsOptional()
+  specialPrice?: number;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()

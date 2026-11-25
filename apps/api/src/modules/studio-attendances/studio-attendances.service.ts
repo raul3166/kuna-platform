@@ -27,22 +27,37 @@ export class StudioAttendancesService {
     }
 
     let resolvedBranchId = dto.branchId;
+    let targetSchedule: {
+      id: string;
+      branchId: string | null;
+      className: string;
+      isSpecialEvent: boolean;
+      deductFromTiquetera: boolean;
+    } | null = null;
+
+    if (dto.studioScheduleId) {
+      targetSchedule = await this.prisma.studioSchedule.findUnique({
+        where: { id: dto.studioScheduleId },
+        select: {
+          id: true,
+          branchId: true,
+          className: true,
+          isSpecialEvent: true,
+          deductFromTiquetera: true,
+        },
+      });
+      if (!resolvedBranchId && targetSchedule?.branchId) {
+        resolvedBranchId = targetSchedule.branchId;
+      }
+    }
+
     if (!resolvedBranchId) {
-      if (dto.studioScheduleId) {
-        const sched = await this.prisma.studioSchedule.findUnique({
-          where: { id: dto.studioScheduleId },
-          select: { branchId: true },
-        });
-        if (sched?.branchId) resolvedBranchId = sched.branchId;
-      }
-      if (!resolvedBranchId) {
-        const firstBranch = await this.prisma.branch.findFirst({
-          where: { organizationId: dto.organizationId, isActive: true },
-          orderBy: { createdAt: 'asc' },
-          select: { id: true },
-        });
-        resolvedBranchId = firstBranch?.id || '';
-      }
+      const firstBranch = await this.prisma.branch.findFirst({
+        where: { organizationId: dto.organizationId, isActive: true },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+      resolvedBranchId = firstBranch?.id || '';
     }
 
     // Determinar la fecha objetivo (si viene dto.date 'YYYY-MM-DD', o usa la hora actual)
@@ -115,54 +130,59 @@ export class StudioAttendancesService {
       orderBy: { createdAt: 'asc' },
     });
 
+    const isSeparatePaymentClass = targetSchedule?.deductFromTiquetera === false;
     let status = 'ALLOWED';
-    let reason = 'Ingreso autorizado';
+    let reason = isSeparatePaymentClass
+      ? 'Asistencia a Clase / Evento Especial (Pago aparte — No descuenta de tiquetera)'
+      : 'Ingreso autorizado';
 
-    if (!activeSubscription) {
-      const pausedSub = await this.prisma.studioSubscription.findFirst({
-        where: {
-          customerId: customer.id,
-          organizationId: dto.organizationId,
-          status: 'PAUSED',
-        },
-      });
-      status = 'DENIED';
-      reason = pausedSub
-        ? 'El paquete del alumno se encuentra CONGELADO / PAUSADO actualmente. Reactívalo en Suscripciones.'
-        : 'No cuenta con una suscripción activa o se encuentra vencida para esta fecha';
-    } else {
-      const plan = activeSubscription.plan;
-
-      // Validar si es paquete de clases agotado
-      if (plan.type === 'CLASS_PACK' && (activeSubscription.remainingClasses ?? 0) <= 0) {
-        status = 'DENIED';
-        reason = 'Acceso denegado: El paquete de clases asignado ya se encuentra agotado';
-      } else {
-        // Validar límite diario para la fecha seleccionada
-        const maxAllowed = plan.maxDailyCheckIns ?? 2;
-        const existingCheckInsToday = await this.prisma.studioAttendanceLog.count({
+    if (!isSeparatePaymentClass) {
+      if (!activeSubscription) {
+        const pausedSub = await this.prisma.studioSubscription.findFirst({
           where: {
             customerId: customer.id,
-            status: 'ALLOWED',
-            checkInAt: {
-              gte: dayStart,
-              lte: dayEnd,
-            },
+            organizationId: dto.organizationId,
+            status: 'PAUSED',
           },
         });
+        status = 'DENIED';
+        reason = pausedSub
+          ? 'El paquete del alumno se encuentra CONGELADO / PAUSADO actualmente. Reactívalo en Suscripciones.'
+          : 'No cuenta con una suscripción activa o se encuentra vencida para esta fecha';
+      } else {
+        const plan = activeSubscription.plan;
 
-        if (existingCheckInsToday >= maxAllowed) {
+        // Validar si es paquete de clases agotado
+        if (plan.type === 'CLASS_PACK' && (activeSubscription.remainingClasses ?? 0) <= 0) {
           status = 'DENIED';
-          reason = `Acceso denegado: Superó el límite de ${maxAllowed} ingresos permitidos para esta fecha`;
+          reason = 'Acceso denegado: El paquete de clases asignado ya se encuentra agotado';
+        } else {
+          // Validar límite diario para la fecha seleccionada
+          const maxAllowed = plan.maxDailyCheckIns ?? 2;
+          const existingCheckInsToday = await this.prisma.studioAttendanceLog.count({
+            where: {
+              customerId: customer.id,
+              status: 'ALLOWED',
+              checkInAt: {
+                gte: dayStart,
+                lte: dayEnd,
+              },
+            },
+          });
+
+          if (existingCheckInsToday >= maxAllowed) {
+            status = 'DENIED';
+            reason = `Acceso denegado: Superó el límite de ${maxAllowed} ingresos permitidos para esta fecha`;
+          }
         }
       }
     }
 
-    // 3. Transacción para registrar el log, activar vigencia desde la 1ª clase y actualizar saldos
+    // 3. Transacción para registrar el log, activar vigencia desde la 1ª clase y actualizar saldos (solo si descuenta de tiquetera)
     return this.prisma.$transaction(async (tx) => {
       let updatedRemaining = activeSubscription?.remainingClasses ?? null;
 
-      if (status === 'ALLOWED' && activeSubscription) {
+      if (status === 'ALLOWED' && activeSubscription && !isSeparatePaymentClass) {
         const isPack = activeSubscription.plan.type === 'CLASS_PACK';
         const isFirstClassAttended = (activeSubscription._count?.attendanceLogs ?? 0) === 0;
 

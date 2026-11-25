@@ -86,21 +86,23 @@ export class StudioBookingsService {
       );
     }
 
-    // 3. Verificar que el alumno tenga suscripción/paquete vigente (sin descontar créditos)
-    const activeSubscription = await this.prisma.studioSubscription.findFirst({
-      where: {
-        customerId: dto.customerId,
-        organizationId: dto.organizationId,
-        status: 'ACTIVE',
-        OR: [
-          { remainingClasses: { gt: 0 } },
-          { remainingClasses: null }, // Planes ilimitados
-        ],
-      },
-    });
+    // 3. Verificar que el alumno tenga suscripción/paquete vigente (solo si la clase descuenta de tiquetera)
+    if (schedule.deductFromTiquetera !== false) {
+      const activeSubscription = await this.prisma.studioSubscription.findFirst({
+        where: {
+          customerId: dto.customerId,
+          organizationId: dto.organizationId,
+          status: 'ACTIVE',
+          OR: [
+            { remainingClasses: { gt: 0 } },
+            { remainingClasses: null }, // Planes ilimitados
+          ],
+        },
+      });
 
-    if (!activeSubscription) {
-      throw new BadRequestException('El cliente no cuenta con una membresía o paquete de clases activo');
+      if (!activeSubscription) {
+        throw new BadRequestException('El cliente no cuenta con una membresía o paquete de clases activo');
+      }
     }
 
     // 4. Crear o reactivar reserva

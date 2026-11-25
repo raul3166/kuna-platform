@@ -28,9 +28,30 @@ const initialForm = {
   endTime: '10:00',
   capacity: 15,
   notes: '',
+  isSpecialEvent: false,
+  specificDate: '',
+  deductFromTiquetera: true,
+  specialPrice: 0,
 };
 
 const form = ref({ ...initialForm });
+
+const formatPrice = (val: number | string) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(Number(val) || 0);
+};
+
+const onSpecificDateChange = () => {
+  if (form.value.specificDate) {
+    const [y, m, d] = form.value.specificDate.split('-').map(Number);
+    if (y && m && d) {
+      form.value.dayOfWeek = new Date(y, m - 1, d).getDay();
+    }
+  }
+};
 
 const daysOfWeek = [
   { id: 1, name: 'Lunes' },
@@ -109,6 +130,10 @@ const openModal = (scheduleToEdit: any = null) => {
       endTime: scheduleToEdit.endTime,
       capacity: scheduleToEdit.capacity,
       notes: scheduleToEdit.notes || '',
+      isSpecialEvent: Boolean(scheduleToEdit.isSpecialEvent),
+      specificDate: scheduleToEdit.specificDate || '',
+      deductFromTiquetera: scheduleToEdit.deductFromTiquetera !== false,
+      specialPrice: Number(scheduleToEdit.specialPrice || 0),
     };
   } else {
     editingId.value = null;
@@ -136,6 +161,10 @@ const saveSchedule = async () => {
       notes: form.value.notes,
       instructorId: form.value.instructorId || undefined,
       instructorName: resolvedInstructorName || undefined,
+      isSpecialEvent: Boolean(form.value.isSpecialEvent),
+      specificDate: form.value.isSpecialEvent && form.value.specificDate ? form.value.specificDate : null,
+      deductFromTiquetera: Boolean(form.value.deductFromTiquetera),
+      specialPrice: !form.value.deductFromTiquetera ? Number(form.value.specialPrice || 0) : null,
       organizationId: orgId,
     };
 
@@ -271,11 +300,32 @@ onMounted(() => {
           @click="openModal(sch)"
           class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3 relative hover:border-blue-300 transition-all cursor-pointer group"
         >
-          <div class="flex justify-between items-start">
-            <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200">
-              🗓️ {{ getDayName(sch.dayOfWeek) }}
-            </span>
+          <div class="flex justify-between items-start gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200">
+                🗓️ {{ getDayName(sch.dayOfWeek) }}
+              </span>
+              <span
+                v-if="sch.isSpecialEvent"
+                class="px-2.5 py-1 bg-amber-50 text-amber-800 text-xs font-bold rounded-lg border border-amber-200"
+              >
+                ✨ Evento Especial{{ sch.specificDate ? ` (${sch.specificDate})` : '' }}
+              </span>
+              <span
+                v-if="sch.deductFromTiquetera === false"
+                class="px-2.5 py-1 bg-purple-50 text-purple-800 text-xs font-bold rounded-lg border border-purple-200"
+              >
+                💵 Pago Aparte{{ Number(sch.specialPrice) > 0 ? `: ${formatPrice(sch.specialPrice)}` : '' }}
+              </span>
+              <span
+                v-else-if="sch.isSpecialEvent"
+                class="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200"
+              >
+                🎟️ Descuenta Tiquetera
+              </span>
+            </div>
             <button
+              type="button"
               @click.stop="deleteSchedule(sch.id)"
               class="text-slate-400 hover:text-rose-600 text-sm p-1 rounded-lg hover:bg-rose-50 transition-colors"
             >
@@ -379,6 +429,72 @@ onMounted(() => {
             <div>
               <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Notas / Reglas (Opcional)</label>
               <input v-model="form.notes" placeholder="Ej: Llegada máxima 7:00 am" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm" />
+            </div>
+
+            <!-- Configuración de Clase / Evento Especial y Modalidad de Cobro -->
+            <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 space-y-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  v-model="form.isSpecialEvent"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <span class="text-xs font-black text-amber-900">
+                  ✨ Es una Clase Especial / Workshop / Evento Especial
+                </span>
+              </label>
+
+              <div v-if="form.isSpecialEvent">
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Fecha específica del Evento (Opcional — déjalo vacío si se repite cada semana)
+                </label>
+                <input
+                  v-model="form.specificDate"
+                  type="date"
+                  @change="onSpecificDateChange"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs"
+                />
+              </div>
+
+              <fieldset class="space-y-1.5 pt-1 border-t border-amber-200/60">
+                <legend class="text-[11px] font-bold uppercase text-slate-600 mb-1">
+                  Modalidad de Acceso / Tiquetera
+                </legend>
+                <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                  <input
+                    v-model="form.deductFromTiquetera"
+                    type="radio"
+                    :value="true"
+                    name="deductMode"
+                    class="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>🎟️ Incluida en Tiquetera (Descuenta 1 clase al tomar asistencia)</span>
+                </label>
+                <label class="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                  <input
+                    v-model="form.deductFromTiquetera"
+                    type="radio"
+                    :value="false"
+                    name="deductMode"
+                    class="text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>💵 Pago Aparte / Evento Externo (NO descuenta de la tiquetera)</span>
+                </label>
+              </fieldset>
+
+              <div v-if="!form.deductFromTiquetera">
+                <label class="block text-[11px] font-bold uppercase text-purple-800 mb-1">
+                  Valor de la Clase / Evento Especial (COP)
+                </label>
+                <input
+                  v-model.number="form.specialPrice"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  placeholder="Ej: 65000"
+                  class="w-full rounded-xl border border-purple-200 bg-white px-3 py-1.5 text-sm font-bold text-purple-900"
+                />
+              </div>
             </div>
 
             <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">

@@ -33,7 +33,11 @@ export class StudioSchedulesService {
       ],
     });
 
-    return schedules.map(({ classInstructors, ...schedule }) => ({
+    const filtered = date
+      ? schedules.filter((s) => !s.isSpecialEvent || !s.specificDate || s.specificDate === date)
+      : schedules;
+
+    return filtered.map(({ classInstructors, ...schedule }) => ({
       ...schedule,
       effectiveInstructor: classInstructors?.[0]?.instructor || schedule.instructor,
     }));
