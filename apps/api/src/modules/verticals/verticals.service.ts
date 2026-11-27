@@ -10,10 +10,27 @@ import { UpdateVerticalConfigDto } from './dto/update-vertical-config.dto';
 export class VerticalsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async ensureHolisticVerticalExists() {
+    await this.prisma.vertical.upsert({
+      where: { code: 'HOLISTIC' },
+      update: {},
+      create: {
+        code: 'HOLISTIC',
+        name: 'Terapias Holísticas & Bienestar',
+        description:
+          'Agenda de sesiones y terapias holísticas por terapeuta, expediente de pacientes, horarios y portal de reservas online.',
+        icon: 'leaf',
+        isCore: false,
+        isActive: true,
+      },
+    });
+  }
+
   /**
    * Obtiene el catálogo maestro de todos los verticales disponibles en KUNA
    */
   async findAll() {
+    await this.ensureHolisticVerticalExists();
     return this.prisma.vertical.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
@@ -24,6 +41,7 @@ export class VerticalsService {
    * Obtiene los verticales activos y disponibles para una organización específica
    */
   async findByOrganization(organizationId: string) {
+    await this.ensureHolisticVerticalExists();
     const organization = await this.prisma.organization.findUnique({
       where: { id: organizationId },
     });

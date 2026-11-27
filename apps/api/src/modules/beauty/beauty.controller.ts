@@ -34,10 +34,10 @@ import {
   UpdateBeautyConfigDto,
 } from './dto/beauty-misc.dto';
 
-@ApiTags('Vertical Belleza (Salón / Barbería / Spa)')
+@ApiTags('Vertical Belleza (Salón / Barbería / Spa) y Terapias Holísticas')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, PermissionsGuard, VerticalGuard)
-@RequiresVertical('BEAUTY')
+@RequiresVertical('BEAUTY', 'HOLISTIC')
 @Controller('beauty')
 export class BeautyController {
   constructor(private readonly beautyService: BeautyService) {}

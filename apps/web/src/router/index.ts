@@ -365,6 +365,24 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, requiredVertical: 'BEAUTY' },
   },
   {
+    path: '/holistic-agenda',
+    name: 'holistic-agenda',
+    component: () => import('../views/BeautyAgendaView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'HOLISTIC' },
+  },
+  {
+    path: '/holistic-staff',
+    name: 'holistic-staff',
+    component: () => import('../views/BeautyStaffView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'HOLISTIC' },
+  },
+  {
+    path: '/holistic-patients',
+    name: 'holistic-patients',
+    component: () => import('../views/BeautyClientsView.vue'),
+    meta: { requiresAuth: true, requiredVertical: 'HOLISTIC' },
+  },
+  {
     path: '/veterinary-dashboard',
     name: 'veterinary-dashboard',
     component: () => import('../views/VeterinaryDashboardView.vue'),

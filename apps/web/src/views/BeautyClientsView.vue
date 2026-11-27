@@ -1,49 +1,34 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
-import { useVerticalsStore } from '../stores/verticals'
 
+const route = useRoute()
 const authStore = useAuthStore()
-const verticalsStore = useVerticalsStore()
+const isHolisticRoute = computed(() => route.path.startsWith('/holistic'))
 
 const clientsLabels = computed(() => {
-  switch (verticalsStore.beautyFocusMode) {
-    case 'HOLISTIC':
-      return {
-        title: 'Pacientes y Expediente Holístico',
-        subtitle:
-          'Historial de sesiones, evolución energética/física, alergias y notas terapéuticas de cada paciente.',
-        notesTitle: 'Expediente y Notas de Terapia',
-        noteTitlePlaceholder: 'Título (ej. Sesión Reiki / Diagnóstico energético / Observación)',
-        noteContentPlaceholder: 'Detalle de la sesión, intención trabajada, recomendaciones, contraindicaciones…',
-      }
-    case 'PSYCHOLOGY':
-      return {
-        title: 'Pacientes y Seguimiento Clínico',
-        subtitle: 'Historial de consultas psicológicas y notas de evolución del paciente.',
-        notesTitle: 'Notas de Evolución y Seguimiento',
-        noteTitlePlaceholder: 'Título (ej. Sesión #1 - Valoración inicial)',
-        noteContentPlaceholder: 'Observaciones de la sesión, objetivos terapéuticos y seguimiento…',
-      }
-    case 'SPA':
-      return {
-        title: 'Clientes y Preferencias de Spa',
-        subtitle: 'Historial de rituales, presión de masaje preferida, aromas y alergias.',
-        notesTitle: 'Preferencias y Notas de Cabina',
-        noteTitlePlaceholder: 'Título (ej. Preferencia de masaje / Alergias)',
-        noteContentPlaceholder: 'Detalle: presión, aceites esenciales, zonas de tensión, alergias…',
-      }
-    default:
-      return {
-        title: 'Clientes y Fórmulas',
-        subtitle:
-          'Historial de visitas, gasto y notas técnicas (fórmulas de color, preferencias, alergias).',
-        notesTitle: 'Notas y fórmulas',
-        noteTitlePlaceholder: 'Título (ej. Fórmula de color)',
-        noteContentPlaceholder: 'Detalle: tintes, oxidante, tiempos, alergias, preferencias…',
-      }
+  if (isHolisticRoute.value) {
+    return {
+      title: 'Pacientes y Expediente Holístico',
+      subtitle:
+        'Historial de sesiones, evolución energética/física, alergias y notas terapéuticas de cada paciente.',
+      notesTitle: 'Expediente y Notas de Terapia',
+      noteTitlePlaceholder: 'Título (ej. Sesión Reiki / Diagnóstico energético / Observación)',
+      noteContentPlaceholder: 'Detalle de la sesión, intención trabajada, recomendaciones, contraindicaciones…',
+      agendaBackRoute: '/holistic-agenda',
+    }
+  }
+  return {
+    title: 'Clientes y Fórmulas',
+    subtitle:
+      'Historial de visitas, gasto y notas técnicas (fórmulas de color, preferencias, alergias).',
+    notesTitle: 'Notas y fórmulas',
+    noteTitlePlaceholder: 'Título (ej. Fórmula de color)',
+    noteContentPlaceholder: 'Detalle: tintes, oxidante, tiempos, alergias, preferencias…',
+    agendaBackRoute: '/beauty-agenda',
   }
 })
 
@@ -179,7 +164,7 @@ onMounted(loadBase)
             Los datos de contacto se administran en el CRM de Clientes.
           </p>
         </div>
-        <router-link to="/beauty-agenda" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 self-start">← Agenda</router-link>
+        <router-link :to="clientsLabels.agendaBackRoute" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 self-start">← Agenda</router-link>
       </header>
 
       <div v-if="message" :class="['p-3 rounded-xl border text-xs font-bold', isError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-green-50 border-green-200 text-green-800']">{{ message }}</div>

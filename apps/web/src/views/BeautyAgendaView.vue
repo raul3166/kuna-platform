@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
-import { useVerticalsStore, type BeautyFocusMode } from '../stores/verticals'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
-const verticalsStore = useVerticalsStore()
+const isHolisticRoute = computed(() => route.path.startsWith('/holistic'))
 
 interface Customer { id: string; firstName: string; lastName?: string | null }
 interface Worker { id: string; firstName: string; lastName?: string | null; specialty?: string | null }
@@ -56,68 +56,41 @@ const successMessage = ref('')
 const orgId = () => authStore.user?.organizationId || authStore.currentOrganization?.id
 
 const copiedPortalLink = ref(false)
-const portalThemeMode = computed<BeautyFocusMode>(() => verticalsStore.beautyFocusMode)
-function setPortalThemeMode(mode: BeautyFocusMode) {
-  const id = orgId() || ''
-  verticalsStore.setBeautyFocusMode(id, mode)
-}
+const portalThemeMode = computed<'HOLISTIC' | 'BEAUTY'>(() =>
+  isHolisticRoute.value ? 'HOLISTIC' : 'BEAUTY'
+)
 
 const adminLabels = computed(() => {
-  switch (portalThemeMode.value) {
-    case 'HOLISTIC':
-      return {
-        icon: '🌿',
-        title: 'Agenda de Terapias Holísticas & Bienestar',
-        subtitle:
-          'Sesiones por terapeuta, control de terapias de sanación y cobro integrado con el POS.',
-        staffBtn: '👥 Terapeutas',
-        clientsBtn: '📒 Pacientes',
-        newBtn: '＋ Nueva Sesión / Terapia',
-        modalTitle: 'Agendar Nueva Sesión / Terapia Holística',
-        customerLabel: 'Paciente / Consultante',
-        workerLabel: 'Terapeuta / Guía Holístico',
-        servicesLabel: 'Terapias o Sesiones',
-      }
-    case 'PSYCHOLOGY':
-      return {
-        icon: '🧠',
-        title: 'Agenda de Consultorio Psicológico',
-        subtitle:
-          'Consultas por psicólogo(a), seguimiento de sesiones y cobro integrado con el POS.',
-        staffBtn: '👥 Psicólogos',
-        clientsBtn: '📒 Pacientes',
-        newBtn: '＋ Nueva Consulta',
-        modalTitle: 'Agendar Nueva Consulta Psicológica',
-        customerLabel: 'Paciente',
-        workerLabel: 'Psicólogo(a) / Terapeuta',
-        servicesLabel: 'Tipo de Consulta',
-      }
-    case 'SPA':
-      return {
-        icon: '💆‍♀️',
-        title: 'Agenda de Spa, Masajes & Relajación',
-        subtitle: 'Reservas por terapeuta de Spa, control de cabina y cobro integrado con el POS.',
-        staffBtn: '👥 Terapeutas Spa',
-        clientsBtn: '📒 Clientes',
-        newBtn: '＋ Nueva Reserva Spa',
-        modalTitle: 'Agendar Nuevo Masaje / Ritual de Spa',
-        customerLabel: 'Cliente',
-        workerLabel: 'Terapeuta de Spa / Esteticista',
-        servicesLabel: 'Rituales o Tratamientos',
-      }
-    default:
-      return {
-        icon: '💇',
-        title: 'Agenda de Belleza & Salón',
-        subtitle: 'Citas por profesional, control de servicio y cobro integrado con el POS.',
-        staffBtn: '👥 Equipo',
-        clientsBtn: '📒 Clientes',
-        newBtn: '＋ Nueva cita',
-        modalTitle: 'Nueva cita',
-        customerLabel: 'Cliente',
-        workerLabel: 'Profesional / Estilista',
-        servicesLabel: 'Servicios',
-      }
+  if (isHolisticRoute.value) {
+    return {
+      icon: '🌿',
+      title: 'Agenda de Terapias Holísticas & Bienestar',
+      subtitle:
+        'Sesiones por terapeuta, control de terapias de sanación y cobro integrado con el POS.',
+      staffBtn: '👥 Terapeutas',
+      staffRoute: '/holistic-staff',
+      clientsBtn: '📒 Pacientes',
+      clientsRoute: '/holistic-patients',
+      newBtn: '＋ Nueva Sesión / Terapia',
+      modalTitle: 'Agendar Nueva Sesión / Terapia Holística',
+      customerLabel: 'Paciente / Consultante',
+      workerLabel: 'Terapeuta / Guía Holístico',
+      servicesLabel: 'Terapias o Sesiones',
+    }
+  }
+  return {
+    icon: '💇',
+    title: 'Agenda de Belleza & Spa',
+    subtitle: 'Citas por profesional, control de servicio y cobro integrado con el POS.',
+    staffBtn: '👥 Equipo',
+    staffRoute: '/beauty-staff',
+    clientsBtn: '📒 Clientes',
+    clientsRoute: '/beauty-clients',
+    newBtn: '＋ Nueva cita',
+    modalTitle: 'Nueva cita',
+    customerLabel: 'Cliente',
+    workerLabel: 'Profesional / Estilista',
+    servicesLabel: 'Servicios',
   }
 })
 const publicPortalUrl = computed(() => {
@@ -369,18 +342,6 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <label for="portal-mode-select" class="sr-only">Enfoque del Negocio (Admin y Portal)</label>
-          <select
-            id="portal-mode-select"
-            :value="portalThemeMode"
-            @change="setPortalThemeMode(($event.target as HTMLSelectElement).value as any)"
-            class="px-2.5 py-2 bg-indigo-50/70 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold cursor-pointer"
-          >
-            <option value="HOLISTIC">🌿 Modo: Terapias Holísticas & Bienestar</option>
-            <option value="PSYCHOLOGY">🧠 Modo: Consultorio Psicológico & Terapia</option>
-            <option value="SPA">💆‍♀️ Modo: Spa, Masajes & Relajación</option>
-            <option value="BEAUTY">💇‍♀️ Modo: Salón de Belleza & Estética</option>
-          </select>
           <button type="button" @click="copyPublicPortalLink" class="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 cursor-pointer">
             {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Citas Online' }}
           </button>
@@ -391,8 +352,8 @@ onMounted(async () => {
           <input v-model="selectedDate" type="date" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold" />
           <button @click="shiftDay(1)" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50">→</button>
           <button @click="selectedDate = todayStr()" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">Hoy</button>
-          <router-link to="/beauty-staff" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.staffBtn }}</router-link>
-          <router-link to="/beauty-clients" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.clientsBtn }}</router-link>
+          <router-link :to="adminLabels.staffRoute" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.staffBtn }}</router-link>
+          <router-link :to="adminLabels.clientsRoute" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.clientsBtn }}</router-link>
           <button @click="openModal" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-black shadow-md">{{ adminLabels.newBtn }}</button>
         </div>
       </header>

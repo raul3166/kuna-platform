@@ -62,18 +62,22 @@ const portalMode = computed<PortalMode>(() => {
 
   const verts = activeVerticals.value
   if (verts.length === 1) {
+    if (verts[0] === 'HOLISTIC') return 'HOLISTIC'
     if (verts[0] === 'AUTOMOTIVE') return 'AUTOMOTIVE'
     if (verts[0] === 'LAUNDRY') return 'LAUNDRY'
     if (verts[0] === 'VETERINARY') return 'VETERINARY'
     if (verts[0] === 'BEAUTY') return 'BEAUTY'
   }
 
-  if (verts.includes('BEAUTY') && !verts.includes('AUTOMOTIVE') && !verts.includes('LAUNDRY')) {
+  if (verts.includes('HOLISTIC') && !verts.includes('BEAUTY')) {
     return 'HOLISTIC'
   }
-  if (verts.includes('AUTOMOTIVE') && !verts.includes('BEAUTY')) return 'AUTOMOTIVE'
-  if (verts.includes('LAUNDRY') && !verts.includes('BEAUTY')) return 'LAUNDRY'
-  if (verts.includes('VETERINARY') && !verts.includes('BEAUTY')) return 'VETERINARY'
+  if (verts.includes('BEAUTY') && !verts.includes('HOLISTIC') && !verts.includes('AUTOMOTIVE') && !verts.includes('LAUNDRY')) {
+    return 'BEAUTY'
+  }
+  if (verts.includes('AUTOMOTIVE') && !verts.includes('BEAUTY') && !verts.includes('HOLISTIC')) return 'AUTOMOTIVE'
+  if (verts.includes('LAUNDRY') && !verts.includes('BEAUTY') && !verts.includes('HOLISTIC')) return 'LAUNDRY'
+  if (verts.includes('VETERINARY') && !verts.includes('BEAUTY') && !verts.includes('HOLISTIC')) return 'VETERINARY'
 
   return 'HOLISTIC'
 })

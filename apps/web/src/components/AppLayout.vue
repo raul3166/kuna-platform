@@ -18,53 +18,6 @@ function handleLogout() {
 
 // Filtra las secciones e ítems visibles según los verticales activos de la organización y los permisos RBAC del usuario
 const visibleNavigation = computed(() => {
-  const focus = verticalsStore.beautyFocusMode
-  const beautyAdaptation: Record<
-    string,
-    {
-      sectionLabel: string
-      agendaLabel: string
-      agendaIcon: string
-      staffLabel: string
-      clientsLabel: string
-      servicesLabel: string
-    }
-  > = {
-    HOLISTIC: {
-      sectionLabel: 'Terapias Holísticas & Bienestar',
-      agendaLabel: 'Agenda de Terapias',
-      agendaIcon: '🌿',
-      staffLabel: 'Terapeutas y Horarios',
-      clientsLabel: 'Pacientes y Expediente',
-      servicesLabel: 'Catálogo de Terapias',
-    },
-    PSYCHOLOGY: {
-      sectionLabel: 'Consultorio Psicológico',
-      agendaLabel: 'Agenda de Consultas',
-      agendaIcon: '🧠',
-      staffLabel: 'Psicólogos y Horarios',
-      clientsLabel: 'Pacientes y Seguimiento',
-      servicesLabel: 'Tipos de Consulta',
-    },
-    SPA: {
-      sectionLabel: 'Spa, Masajes & Bienestar',
-      agendaLabel: 'Agenda de Spa',
-      agendaIcon: '💆‍♀️',
-      staffLabel: 'Terapeutas de Spa',
-      clientsLabel: 'Clientes y Preferencias',
-      servicesLabel: 'Catálogo de Rituales',
-    },
-    BEAUTY: {
-      sectionLabel: 'Belleza / Salón / Spa',
-      agendaLabel: 'Agenda de Citas',
-      agendaIcon: '💇',
-      staffLabel: 'Equipo y Horarios',
-      clientsLabel: 'Clientes y Fórmulas',
-      servicesLabel: 'Catálogo de Servicios',
-    },
-  }
-  const bCopy = beautyAdaptation[focus] || beautyAdaptation.HOLISTIC
-
   return navigationSections
     .map((section) => {
       const isVerticalAllowed =
@@ -75,30 +28,14 @@ const visibleNavigation = computed(() => {
       if (!isVerticalAllowed) return null
       if (!authStore.hasPermission(section.requiredPermission)) return null
 
-      const allowedItems = section.items
-        .filter((item) => authStore.hasPermission(item.requiredPermission))
-        .map((item) => {
-          if (section.key !== 'beauty') return item
-          if (item.to === '/beauty-agenda') {
-            return { ...item, label: bCopy.agendaLabel, icon: bCopy.agendaIcon }
-          }
-          if (item.to === '/beauty-staff') {
-            return { ...item, label: bCopy.staffLabel }
-          }
-          if (item.to === '/beauty-clients') {
-            return { ...item, label: bCopy.clientsLabel }
-          }
-          if (item.to === '/service-items') {
-            return { ...item, label: bCopy.servicesLabel }
-          }
-          return item
-        })
+      const allowedItems = section.items.filter((item) =>
+        authStore.hasPermission(item.requiredPermission)
+      )
 
       if (allowedItems.length === 0) return null
 
       return {
         ...section,
-        label: section.key === 'beauty' ? bCopy.sectionLabel : section.label,
         items: allowedItems,
       }
     })

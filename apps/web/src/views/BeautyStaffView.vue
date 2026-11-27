@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
-import { useVerticalsStore } from '../stores/verticals'
 
+const route = useRoute()
 const authStore = useAuthStore()
-const verticalsStore = useVerticalsStore()
+const isHolisticRoute = computed(() => route.path.startsWith('/holistic'))
 
-const staffTitle = computed(() => {
-  switch (verticalsStore.beautyFocusMode) {
-    case 'HOLISTIC':
-      return 'Terapeutas Holísticos y Horarios'
-    case 'PSYCHOLOGY':
-      return 'Psicólogos y Horarios de Consulta'
-    case 'SPA':
-      return 'Terapeutas de Spa y Horarios'
-    default:
-      return 'Equipo y Horarios'
-  }
-})
+const staffTitle = computed(() =>
+  isHolisticRoute.value ? 'Terapeutas Holísticos y Horarios' : 'Equipo y Horarios'
+)
+const agendaBackRoute = computed(() =>
+  isHolisticRoute.value ? '/holistic-agenda' : '/beauty-agenda'
+)
 
 interface Worker { id: string; firstName: string; lastName?: string | null; specialty?: string | null; commissionPercentage?: number | string }
 interface Block { dayOfWeek: number; enabled: boolean; startTime: string; endTime: string }
@@ -168,7 +163,7 @@ onMounted(async () => {
             El alta de profesionales y sus comisiones se gestiona en <router-link to="/service-workers" class="text-pink-600 font-bold underline">Técnicos / Personal</router-link>.
           </p>
         </div>
-        <router-link to="/beauty-agenda" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 self-start">← Agenda</router-link>
+        <router-link :to="agendaBackRoute" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200 self-start">← Agenda</router-link>
       </header>
 
       <div v-if="message" :class="['p-3 rounded-xl border text-xs font-bold', isError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-green-50 border-green-200 text-green-800']">{{ message }}</div>

@@ -162,6 +162,19 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
+    key: 'holistic',
+    label: 'Terapias Holísticas & Bienestar',
+    requiredVertical: 'HOLISTIC',
+    requiredPermission: 'beauty.read',
+    items: [
+      { label: 'Agenda de Terapias', icon: '🌿', to: '/holistic-agenda', requiredPermission: 'beauty.read' },
+      { label: 'Terapeutas y Horarios', icon: '👥', to: '/holistic-staff', requiredPermission: 'beauty.read' },
+      { label: 'Pacientes y Expediente', icon: '📒', to: '/holistic-patients', requiredPermission: 'beauty.read' },
+      { label: 'Catálogo de Terapias', icon: '📋', to: '/service-items', requiredPermission: 'beauty.create' },
+      { label: 'Liquidación de Terapeutas', icon: '💰', to: '/service-commissions', requiredPermission: 'beauty.create' },
+    ],
+  },
+  {
     key: 'veterinary',
     label: 'Veterinaria & Pet Shop',
     requiredVertical: 'VETERINARY',
