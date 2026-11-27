@@ -3,8 +3,49 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
+import { useVerticalsStore } from '../stores/verticals'
 
 const authStore = useAuthStore()
+const verticalsStore = useVerticalsStore()
+
+const clientsLabels = computed(() => {
+  switch (verticalsStore.beautyFocusMode) {
+    case 'HOLISTIC':
+      return {
+        title: 'Pacientes y Expediente Holístico',
+        subtitle:
+          'Historial de sesiones, evolución energética/física, alergias y notas terapéuticas de cada paciente.',
+        notesTitle: 'Expediente y Notas de Terapia',
+        noteTitlePlaceholder: 'Título (ej. Sesión Reiki / Diagnóstico energético / Observación)',
+        noteContentPlaceholder: 'Detalle de la sesión, intención trabajada, recomendaciones, contraindicaciones…',
+      }
+    case 'PSYCHOLOGY':
+      return {
+        title: 'Pacientes y Seguimiento Clínico',
+        subtitle: 'Historial de consultas psicológicas y notas de evolución del paciente.',
+        notesTitle: 'Notas de Evolución y Seguimiento',
+        noteTitlePlaceholder: 'Título (ej. Sesión #1 - Valoración inicial)',
+        noteContentPlaceholder: 'Observaciones de la sesión, objetivos terapéuticos y seguimiento…',
+      }
+    case 'SPA':
+      return {
+        title: 'Clientes y Preferencias de Spa',
+        subtitle: 'Historial de rituales, presión de masaje preferida, aromas y alergias.',
+        notesTitle: 'Preferencias y Notas de Cabina',
+        noteTitlePlaceholder: 'Título (ej. Preferencia de masaje / Alergias)',
+        noteContentPlaceholder: 'Detalle: presión, aceites esenciales, zonas de tensión, alergias…',
+      }
+    default:
+      return {
+        title: 'Clientes y Fórmulas',
+        subtitle:
+          'Historial de visitas, gasto y notas técnicas (fórmulas de color, preferencias, alergias).',
+        notesTitle: 'Notas y fórmulas',
+        noteTitlePlaceholder: 'Título (ej. Fórmula de color)',
+        noteContentPlaceholder: 'Detalle: tintes, oxidante, tiempos, alergias, preferencias…',
+      }
+  }
+})
 
 interface Customer { id: string; firstName: string; lastName?: string | null; phoneNumber?: string | null; email?: string | null }
 interface Worker { id: string; firstName: string; lastName?: string | null }
@@ -131,10 +172,10 @@ onMounted(loadBase)
         <div>
           <div class="flex items-center gap-2">
             <span class="text-3xl">📒</span>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Clientes y Fórmulas</h1>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">{{ clientsLabels.title }}</h1>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Historial de visitas, gasto y notas técnicas (fórmulas de color, preferencias, alergias).
+            {{ clientsLabels.subtitle }}
             Los datos de contacto se administran en el CRM de Clientes.
           </p>
         </div>
@@ -186,14 +227,14 @@ onMounted(loadBase)
           </section>
 
           <section class="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
-            <h2 class="text-sm font-black text-slate-900">Notas y fórmulas</h2>
+            <h2 class="text-sm font-black text-slate-900">{{ clientsLabels.notesTitle }}</h2>
             <div class="grid md:grid-cols-[1fr_1fr] gap-2">
-              <input v-model="noteForm.title" type="text" placeholder="Título (ej. Fórmula de color)" class="border border-slate-300 rounded-xl p-2 text-xs" />
+              <input v-model="noteForm.title" type="text" :placeholder="clientsLabels.noteTitlePlaceholder" class="border border-slate-300 rounded-xl p-2 text-xs" />
               <select v-model="noteForm.workerId" class="border border-slate-300 rounded-xl p-2 text-xs">
                 <option value="">Profesional (opcional)</option>
                 <option v-for="w in workers" :key="w.id" :value="w.id">{{ fullName(w) }}</option>
               </select>
-              <textarea v-model="noteForm.content" rows="2" placeholder="Detalle: tintes, oxidante, tiempos, alergias, preferencias…" class="md:col-span-2 border border-slate-300 rounded-xl p-2 text-xs"></textarea>
+              <textarea v-model="noteForm.content" rows="2" :placeholder="clientsLabels.noteContentPlaceholder" class="md:col-span-2 border border-slate-300 rounded-xl p-2 text-xs"></textarea>
             </div>
             <button @click="addNote" class="px-4 py-2 rounded-xl text-xs font-black bg-pink-600 text-white hover:bg-pink-700">Guardar nota</button>
 

@@ -602,9 +602,29 @@ onMounted(() => {
               </div>
 
               <!-- Descripción -->
-              <p class="text-xs text-slate-600 mt-2 mb-4 leading-relaxed">
+              <p class="text-xs text-slate-600 mt-2 mb-3 leading-relaxed">
                 {{ vert.description || 'Módulo especializado para la operación de este tipo de negocio.' }}
               </p>
+
+              <!-- Selector de Enfoque para la Vertical de Agenda / Bienestar / Citas (BEAUTY) -->
+              <div
+                v-if="vert.code === 'BEAUTY' && vert.isActiveForOrg"
+                class="mb-3 rounded-lg bg-indigo-50/70 border border-indigo-200 p-2.5 space-y-1"
+              >
+                <label class="block text-[11px] font-bold uppercase text-indigo-900">
+                  Enfoque en Menú Admin y Portal:
+                </label>
+                <select
+                  :value="verticalsStore.beautyFocusMode"
+                  @change="verticalsStore.setBeautyFocusMode(selectedOrgForVerticals, ($event.target as HTMLSelectElement).value as any)"
+                  class="w-full rounded-lg border border-indigo-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                >
+                  <option value="HOLISTIC">🌿 Terapias Holísticas & Bienestar</option>
+                  <option value="PSYCHOLOGY">🧠 Consultorio Psicológico & Terapia</option>
+                  <option value="SPA">💆‍♀️ Spa, Masajes & Relajación</option>
+                  <option value="BEAUTY">💇‍♀️ Salón de Belleza & Estética</option>
+                </select>
+              </div>
             </div>
 
             <!-- Footer / Botón de Acción -->

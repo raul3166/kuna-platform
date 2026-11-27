@@ -3,8 +3,23 @@ import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
+import { useVerticalsStore } from '../stores/verticals'
 
 const authStore = useAuthStore()
+const verticalsStore = useVerticalsStore()
+
+const staffTitle = computed(() => {
+  switch (verticalsStore.beautyFocusMode) {
+    case 'HOLISTIC':
+      return 'Terapeutas Holísticos y Horarios'
+    case 'PSYCHOLOGY':
+      return 'Psicólogos y Horarios de Consulta'
+    case 'SPA':
+      return 'Terapeutas de Spa y Horarios'
+    default:
+      return 'Equipo y Horarios'
+  }
+})
 
 interface Worker { id: string; firstName: string; lastName?: string | null; specialty?: string | null; commissionPercentage?: number | string }
 interface Block { dayOfWeek: number; enabled: boolean; startTime: string; endTime: string }
@@ -146,7 +161,7 @@ onMounted(async () => {
         <div>
           <div class="flex items-center gap-2">
             <span class="text-3xl">👥</span>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Equipo y Horarios</h1>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">{{ staffTitle }}</h1>
           </div>
           <p class="text-xs text-slate-500 mt-1">
             Define la jornada semanal y ausencias de cada profesional. La agenda solo ofrece huecos dentro de estos horarios.

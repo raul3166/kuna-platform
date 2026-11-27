@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/auth'
+import { useVerticalsStore, type BeautyFocusMode } from '../stores/verticals'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const verticalsStore = useVerticalsStore()
 
 interface Customer { id: string; firstName: string; lastName?: string | null }
 interface Worker { id: string; firstName: string; lastName?: string | null; specialty?: string | null }
@@ -54,13 +56,70 @@ const successMessage = ref('')
 const orgId = () => authStore.user?.organizationId || authStore.currentOrganization?.id
 
 const copiedPortalLink = ref(false)
-const portalThemeMode = ref<'HOLISTIC' | 'PSYCHOLOGY' | 'SPA' | 'BEAUTY'>(
-  (localStorage.getItem('kuna_beauty_portal_mode') as any) || 'HOLISTIC'
-)
-function setPortalThemeMode(mode: 'HOLISTIC' | 'PSYCHOLOGY' | 'SPA' | 'BEAUTY') {
-  portalThemeMode.value = mode
-  localStorage.setItem('kuna_beauty_portal_mode', mode)
+const portalThemeMode = computed<BeautyFocusMode>(() => verticalsStore.beautyFocusMode)
+function setPortalThemeMode(mode: BeautyFocusMode) {
+  const id = orgId() || ''
+  verticalsStore.setBeautyFocusMode(id, mode)
 }
+
+const adminLabels = computed(() => {
+  switch (portalThemeMode.value) {
+    case 'HOLISTIC':
+      return {
+        icon: '🌿',
+        title: 'Agenda de Terapias Holísticas & Bienestar',
+        subtitle:
+          'Sesiones por terapeuta, control de terapias de sanación y cobro integrado con el POS.',
+        staffBtn: '👥 Terapeutas',
+        clientsBtn: '📒 Pacientes',
+        newBtn: '＋ Nueva Sesión / Terapia',
+        modalTitle: 'Agendar Nueva Sesión / Terapia Holística',
+        customerLabel: 'Paciente / Consultante',
+        workerLabel: 'Terapeuta / Guía Holístico',
+        servicesLabel: 'Terapias o Sesiones',
+      }
+    case 'PSYCHOLOGY':
+      return {
+        icon: '🧠',
+        title: 'Agenda de Consultorio Psicológico',
+        subtitle:
+          'Consultas por psicólogo(a), seguimiento de sesiones y cobro integrado con el POS.',
+        staffBtn: '👥 Psicólogos',
+        clientsBtn: '📒 Pacientes',
+        newBtn: '＋ Nueva Consulta',
+        modalTitle: 'Agendar Nueva Consulta Psicológica',
+        customerLabel: 'Paciente',
+        workerLabel: 'Psicólogo(a) / Terapeuta',
+        servicesLabel: 'Tipo de Consulta',
+      }
+    case 'SPA':
+      return {
+        icon: '💆‍♀️',
+        title: 'Agenda de Spa, Masajes & Relajación',
+        subtitle: 'Reservas por terapeuta de Spa, control de cabina y cobro integrado con el POS.',
+        staffBtn: '👥 Terapeutas Spa',
+        clientsBtn: '📒 Clientes',
+        newBtn: '＋ Nueva Reserva Spa',
+        modalTitle: 'Agendar Nuevo Masaje / Ritual de Spa',
+        customerLabel: 'Cliente',
+        workerLabel: 'Terapeuta de Spa / Esteticista',
+        servicesLabel: 'Rituales o Tratamientos',
+      }
+    default:
+      return {
+        icon: '💇',
+        title: 'Agenda de Belleza & Salón',
+        subtitle: 'Citas por profesional, control de servicio y cobro integrado con el POS.',
+        staffBtn: '👥 Equipo',
+        clientsBtn: '📒 Clientes',
+        newBtn: '＋ Nueva cita',
+        modalTitle: 'Nueva cita',
+        customerLabel: 'Cliente',
+        workerLabel: 'Profesional / Estilista',
+        servicesLabel: 'Servicios',
+      }
+  }
+})
 const publicPortalUrl = computed(() => {
   const org = authStore.currentOrganization as any
   const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo'
@@ -301,26 +360,26 @@ onMounted(async () => {
       <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-3xl">💇</span>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Agenda de Belleza</h1>
+            <span class="text-3xl">{{ adminLabels.icon }}</span>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">{{ adminLabels.title }}</h1>
           </div>
           <p class="text-xs text-slate-500 mt-1">
-            Citas por profesional, control de servicio y cobro integrado con el POS.
+            {{ adminLabels.subtitle }}
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <label for="portal-mode-select" class="sr-only">Enfoque del Portal Público</label>
+          <label for="portal-mode-select" class="sr-only">Enfoque del Negocio (Admin y Portal)</label>
           <select
             id="portal-mode-select"
             :value="portalThemeMode"
             @change="setPortalThemeMode(($event.target as HTMLSelectElement).value as any)"
             class="px-2.5 py-2 bg-indigo-50/70 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold cursor-pointer"
           >
-            <option value="HOLISTIC">🌿 Portal: Terapias Holísticas & Bienestar</option>
-            <option value="PSYCHOLOGY">🧠 Portal: Consultorio Psicológico & Terapia</option>
-            <option value="SPA">💆‍♀️ Portal: Spa, Masajes & Relajación</option>
-            <option value="BEAUTY">💇‍♀️ Portal: Salón de Belleza & Estética</option>
+            <option value="HOLISTIC">🌿 Modo: Terapias Holísticas & Bienestar</option>
+            <option value="PSYCHOLOGY">🧠 Modo: Consultorio Psicológico & Terapia</option>
+            <option value="SPA">💆‍♀️ Modo: Spa, Masajes & Relajación</option>
+            <option value="BEAUTY">💇‍♀️ Modo: Salón de Belleza & Estética</option>
           </select>
           <button type="button" @click="copyPublicPortalLink" class="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 cursor-pointer">
             {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Citas Online' }}
@@ -332,9 +391,9 @@ onMounted(async () => {
           <input v-model="selectedDate" type="date" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold" />
           <button @click="shiftDay(1)" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50">→</button>
           <button @click="selectedDate = todayStr()" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">Hoy</button>
-          <router-link to="/beauty-staff" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">👥 Equipo</router-link>
-          <router-link to="/beauty-clients" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">📒 Clientes</router-link>
-          <button @click="openModal" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-black shadow-md">＋ Nueva cita</button>
+          <router-link to="/beauty-staff" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.staffBtn }}</router-link>
+          <router-link to="/beauty-clients" class="px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold hover:bg-slate-200">{{ adminLabels.clientsBtn }}</router-link>
+          <button @click="openModal" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl text-xs font-black shadow-md">{{ adminLabels.newBtn }}</button>
         </div>
       </header>
 
@@ -425,16 +484,16 @@ onMounted(async () => {
     <!-- Modal nueva cita -->
     <div v-if="isModalOpen" class="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4" @click.self="isModalOpen = false">
       <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
-        <h2 class="text-lg font-black text-slate-900">Nueva cita</h2>
+        <h2 class="text-lg font-black text-slate-900">{{ adminLabels.modalTitle }}</h2>
 
         <div class="grid md:grid-cols-2 gap-3">
-          <label class="text-xs font-bold text-slate-600">Cliente
+          <label class="text-xs font-bold text-slate-600">{{ adminLabels.customerLabel }}
             <select v-model="form.customerId" class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-sm">
               <option value="" disabled>Selecciona…</option>
               <option v-for="c in customers" :key="c.id" :value="c.id">{{ fullName(c) }}</option>
             </select>
           </label>
-          <label class="text-xs font-bold text-slate-600">Profesional
+          <label class="text-xs font-bold text-slate-600">{{ adminLabels.workerLabel }}
             <select v-model="form.workerId" class="mt-1 w-full border border-slate-300 rounded-xl p-2 text-sm">
               <option value="">Sin asignar</option>
               <option v-for="w in workers" :key="w.id" :value="w.id">{{ fullName(w) }}{{ w.specialty ? ' · ' + w.specialty : '' }}</option>
@@ -443,7 +502,7 @@ onMounted(async () => {
         </div>
 
         <div>
-          <p class="text-xs font-bold text-slate-600 mb-1">Servicios</p>
+          <p class="text-xs font-bold text-slate-600 mb-1">{{ adminLabels.servicesLabel }}</p>
           <div class="grid sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
             <label v-for="s in services" :key="s.id" class="flex items-center gap-2 border border-slate-200 rounded-xl p-2 text-xs cursor-pointer hover:bg-slate-50">
               <input v-model="form.serviceIds" type="checkbox" :value="s.id" />
