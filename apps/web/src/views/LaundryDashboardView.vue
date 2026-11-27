@@ -404,7 +404,7 @@ const copiedPortalLink = ref(false);
 const publicPortalUrl = computed(() => {
   const org = authStore.currentOrganization as any;
   const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo';
-  return `${window.location.origin}/public-portal/${slugOrId}`;
+  return `${window.location.origin}/public-portal/${slugOrId}?mode=LAUNDRY`;
 });
 const copyPublicPortalLink = async () => {
   try {

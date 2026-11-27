@@ -54,10 +54,17 @@ const successMessage = ref('')
 const orgId = () => authStore.user?.organizationId || authStore.currentOrganization?.id
 
 const copiedPortalLink = ref(false)
+const portalThemeMode = ref<'HOLISTIC' | 'PSYCHOLOGY' | 'SPA' | 'BEAUTY'>(
+  (localStorage.getItem('kuna_beauty_portal_mode') as any) || 'HOLISTIC'
+)
+function setPortalThemeMode(mode: 'HOLISTIC' | 'PSYCHOLOGY' | 'SPA' | 'BEAUTY') {
+  portalThemeMode.value = mode
+  localStorage.setItem('kuna_beauty_portal_mode', mode)
+}
 const publicPortalUrl = computed(() => {
   const org = authStore.currentOrganization as any
   const slugOrId = org?.slug || org?.id || authStore.user?.organizationId || 'empresa-demo'
-  return `${window.location.origin}/public-portal/${slugOrId}`
+  return `${window.location.origin}/public-portal/${slugOrId}?mode=${portalThemeMode.value}`
 })
 async function copyPublicPortalLink() {
   try {
@@ -303,6 +310,18 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <label for="portal-mode-select" class="sr-only">Enfoque del Portal Público</label>
+          <select
+            id="portal-mode-select"
+            :value="portalThemeMode"
+            @change="setPortalThemeMode(($event.target as HTMLSelectElement).value as any)"
+            class="px-2.5 py-2 bg-indigo-50/70 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold cursor-pointer"
+          >
+            <option value="HOLISTIC">🌿 Portal: Terapias Holísticas & Bienestar</option>
+            <option value="PSYCHOLOGY">🧠 Portal: Consultorio Psicológico & Terapia</option>
+            <option value="SPA">💆‍♀️ Portal: Spa, Masajes & Relajación</option>
+            <option value="BEAUTY">💇‍♀️ Portal: Salón de Belleza & Estética</option>
+          </select>
           <button type="button" @click="copyPublicPortalLink" class="px-3 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 cursor-pointer">
             {{ copiedPortalLink ? '✅ ¡Link Copiado!' : '🔗 Copiar Link Citas Online' }}
           </button>
